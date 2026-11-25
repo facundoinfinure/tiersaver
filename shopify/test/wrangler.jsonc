@@ -1,0 +1,12 @@
+{
+  // Test-only Worker: the Workflow and the database, without the React Router app.
+  "name": "tiersaver-app-test",
+  "main": "./worker-entry.ts",
+  "compatibility_date": "2026-11-12",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "tiersaver-test", "database_id": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "workflows": [
+    { "name": "tiersaver-suppression-run-test", "binding": "SUPPRESSION_RUN", "class_name": "SuppressionRunWorkflow" }
+  ]
+}
