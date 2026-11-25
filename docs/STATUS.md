@@ -403,3 +403,19 @@ Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado 
 
 **Verificado de punta a punta en la app desplegada, con clics reales**: conectar Klaviyo (OAuth), auditoría, simulación, aprobación, limpieza, refresh del token, deshacer. **Sin probar todavía en la interfaz**: descarga del CSV, "Check jobs in Klaviyo", Settings (reglas, grupos protegidos, programación), suscripción y cargo en Shopify, desconectar.
 **Abierto para decidir**: una limpieza que se deshace igual se cobra (hoy sí, una vez confirmados los jobs).
+
+### 2026-11-25/26 (cuarta sesión, cierre): decisiones, UI y pasos pendientes
+
+**Decisiones de Facundo ("dale, las 3")**, aplicadas en `00-HANDOVER.md` y en código:
+- Historial de pedidos completo con `read_all_orders` (`FULL_ORDER_HISTORY_SINCE`; el backfill sigue limitado a 1.000 páginas, unos 250.000 pedidos, en Workers Free: si no alcanza, la cobertura no se marca y la regla de compras protege a todos).
+- No se cobra una limpieza deshecha entera antes del cargo (`cleanup_undone`).
+- La app no muestra estimación de plan de Klaviyo (ya no se mostraba; queda decidido).
+
+**UI (desplegada, Worker `753ff0b7`; vista solo en la vista previa local, no dentro del admin)**
+- Inicio rediseñado (`app/components/home-screen.tsx`): pasos "Get started" con estado, aviso de simulación pendiente con vencimiento, tres números grandes (activos, cumplen criterios, se suprimirían), motivos de conservación, última limpieza, y columna lateral con programación (próxima auditoría), precio, conexión y la nota sobre el plan.
+- "Review cleanup" con los mismos números grandes; Settings oculta los campos del modo ampliado hasta que se activa.
+- **Vista previa local**: `node scripts/preview-ui.mjs <carpeta>` renderiza las pantallas puras con `polaris.js` real y datos de ejemplo; así se revisó el diseño en Chromium.
+- Hallazgos de Polaris con React 18: las props de varias palabras funcionan en camelCase (no en kebab-case); un booleano `false` se escribe como el texto "false" y algunos componentes lo toman como activo (`loading`): se pasa solo lo que está encendido (`flags()`); los eventos de los componentes no llegan por props (se escuchan con `addEventListener`).
+- Dentro del admin no hay colores ni logo propios (es Polaris). La marca va en el ícono de la app, la app OAuth de Klaviyo, la ficha, el sitio y los mails.
+
+**Pasos que solo puede hacer Facundo**: `14-PASOS-DASHBOARD.md` (distribución pública, datos protegidos, read_all_orders, ícono, logo en Klaviyo, prueba de cobro).
