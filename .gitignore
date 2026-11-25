@@ -3,3 +3,13 @@
 !.env.example
 node_modules/
 *.har
+.DS_Store
+coverage/
+dist/
+build/
+.react-router/
+.shopify/
+.shopify.lock
+.vercel
+*.sqlite
+*.sqlite-journal
