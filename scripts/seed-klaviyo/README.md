@@ -4,7 +4,7 @@ Carga una cuenta de Klaviyo **de prueba** con 2.000 a 5.000 perfiles ficticios, 
 
 Las cohortes siguen las reglas decididas el 2026-11-25: por defecto, los criterios que Klaviyo publica para sus recomendaciones de supresión (perfil creado hace 365 días o más, 5 o más mails recibidos en unas 72 semanas, y ninguna apertura, clic, visita, checkout ni compra, nunca). El modo ampliado, opt-in, usa ventanas con piso. Cada perfil lleva la decisión esperada en los dos modos. El porqué está en `docs/12-CUMPLIMIENTO-KLAVIYO.md`, secciones 2.7 y 3.1.
 
-Estado al 2026-11-25: escrito contra la documentación vigente y probado offline (138 tests con un Klaviyo falso). **Nunca corrió contra la API real**: todavía no hay cuenta de prueba ni clave. Antes de la primera corrida real leé "Antes de la primera corrida real" y "Lo que no se pudo verificar".
+Estado al 2026-11-25: **corrido y verificado contra la cuenta de prueba SGKvLG** con `--email-domain seed.tiersaver.com` (3.000 perfiles, 21.526 eventos; `--verify` 39 de 39). Resultados de cada punto de "Lo que no se pudo verificar" en `docs/STATUS.md`, tercera sesión. Dos cosas a saber antes de volver a correrlo: el consentimiento SMS es rechazado si la cuenta no tiene un número emisor (la cohorte `sms_consented` queda sin consentimiento), y los eventos con fecha antigua tardan hasta 30 minutos en aparecer: esperá ese tiempo antes de `--verify`.
 
 ## Uso
 
@@ -198,7 +198,7 @@ Cómo usa esto el cliente: un token bucket por endpoint con la **mitad** del lí
 
 ## Lo que no se pudo verificar
 
-Sin cuenta ni clave, nada de esto se probó contra la API real.
+Lista escrita antes de la primera corrida. Resueltos el 2026-11-25 contra la cuenta SGKvLG: 1 (`seed.tiersaver.com` no se descarta), 2 (rechazado sin número emisor), 5 (la API sí deja volver a suprimir: `skipped_count` 0), 6 y 12 (hasta 30 minutos para eventos históricos), 7 (`false` se guarda), 10 (aceptado) y 13 (el filtro funciona). El 4 se confirmó en parte: el import por encima de 250 perfiles no fue frenado y el plan sigue gratis. Siguen abiertos 3, 9 y 11.
 
 1. **Qué dominios caen en "o similares"** del descarte de eventos, y si el import de perfiles acepta esos dominios. Después de sembrar, corré `--verify`: compara lo guardado con lo enviado para un perfil por cohorte.
 2. **Consentimiento SMS**: si Klaviyo acepta números `555-01XX`, y si la cuenta necesita SMS configurado (número emisor, país) para registrar el consentimiento. Tampoco está confirmado que `historical_import` evite todo mensaje por SMS, aunque los números no son ruteables. Por eso es el último paso y su rechazo no aborta la corrida: queda como advertencia y se reintenta en la próxima. `--skip-sms` lo saltea.
