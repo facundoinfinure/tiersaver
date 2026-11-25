@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_PRICE_TABLES,
+  FLAT_PRICE_TIERS,
   KLAVIYO_EMAIL_2026_11,
   KLAVIYO_MARKETING_2026_11,
+  flatTierFor,
   tierFor,
 } from "@tiersaver/core";
 import {
@@ -11,14 +13,14 @@ import {
   describe as describeResult,
   formatUsd,
   largestPublishedPlan,
+  largestTierSaverPlan,
   parseCount,
   parsePercent,
+  planRange,
   tableForPlan,
-  tierSaverPlanFor,
   type CheckInput,
 } from "../src/check/check.js";
-import { DEFAULT_EXAMPLE, siteData } from "../src/data.js";
-import { TIERSAVER_PLANS } from "../src/site-config.js";
+import { DEFAULT_EXAMPLE, SMALL_LIST_EXAMPLE, siteData } from "../src/data.js";
 
 describe("Klaviyo plan sizes come from core's price table", () => {
   it("maps plans onto core's current price tables", () => {
@@ -61,23 +63,53 @@ describe("Klaviyo plan sizes come from core's price table", () => {
   });
 });
 
-describe("TierSaver's flat price by list size (provisional plans in site-config)", () => {
-  it("has the provisional plans", () => {
-    expect(TIERSAVER_PLANS).toEqual([
+describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS", () => {
+  it("core has the four confirmed tiers", () => {
+    expect(FLAT_PRICE_TIERS).toEqual([
+      { maxProfiles: 10_000, monthlyCents: 1_500 },
       { maxProfiles: 25_000, monthlyCents: 2_900 },
       { maxProfiles: 75_000, monthlyCents: 7_900 },
       { maxProfiles: 150_000, monthlyCents: 14_900 },
     ]);
+    expect(largestTierSaverPlan()).toBe(150_000);
+  });
+
+  it("the check returns core's own tier objects: no copy of the table, no second lookup", () => {
+    for (const active of [0, 1, 8_000, 10_000, 10_001, 12_500, 25_000, 25_001, 75_000, 75_001, 150_000, 150_001, 400_000]) {
+      const r = check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" });
+      expect(r.tierSaverPlan).toBe(flatTierFor(active));
+      if (r.tierSaverPlan) expect(FLAT_PRICE_TIERS).toContain(r.tierSaverPlan);
+    }
   });
 
   it("uses inclusive upper bounds and 'contact us' above the largest plan", () => {
-    expect(tierSaverPlanFor(0)?.monthlyCents).toBe(2_900);
-    expect(tierSaverPlanFor(25_000)?.monthlyCents).toBe(2_900);
-    expect(tierSaverPlanFor(25_001)?.monthlyCents).toBe(7_900);
-    expect(tierSaverPlanFor(75_000)?.monthlyCents).toBe(7_900);
-    expect(tierSaverPlanFor(75_001)?.monthlyCents).toBe(14_900);
-    expect(tierSaverPlanFor(150_000)?.monthlyCents).toBe(14_900);
-    expect(tierSaverPlanFor(150_001)).toBeNull();
+    const price = (active: number) =>
+      describeResult(check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" })).tierSaverPrice;
+    expect(price(1)).toBe("$15/month");
+    expect(price(SMALL_LIST_EXAMPLE)).toBe("$15/month");
+    expect(price(10_000)).toBe("$15/month");
+    expect(price(10_001)).toBe("$29/month");
+    expect(price(12_500)).toBe("$29/month");
+    expect(price(25_000)).toBe("$29/month");
+    expect(price(25_001)).toBe("$79/month");
+    expect(price(75_000)).toBe("$79/month");
+    expect(price(75_001)).toBe("$149/month");
+    expect(price(150_000)).toBe("$149/month");
+    expect(price(150_001)).toBe("Contact us");
+  });
+
+  it("describes each plan by the list sizes it covers", () => {
+    expect(FLAT_PRICE_TIERS.map(planRange)).toEqual([
+      "Up to 10,000",
+      "10,001 to 25,000",
+      "25,001 to 75,000",
+      "75,001 to 150,000",
+    ]);
+    const view = (active: number) =>
+      describeResult(check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" })).tierSaverPlan;
+    expect(view(8_000)).toBe("Flat price for lists of up to 10,000 active profiles");
+    expect(view(12_500)).toBe("Flat price for lists of 10,001 to 25,000 active profiles");
+    expect(view(150_001)).toBe("Lists above 150,000 active profiles are quoted individually");
   });
 
   it("is set by the list's current size, not by how many profiles are suppressed", () => {
@@ -171,6 +203,9 @@ describe("default example rendered into the pages", () => {
     expect(data["check.figure"]).toBe("10,000");
     expect(data["check.figure"]).toBe(view.figure);
     expect(data["check.tierSaverPrice"]).toBe("$29/month");
+    expect(data["check.tierSaverPlan"]).toBe(view.tierSaverPlan);
+    expect(data["plans.defaultExamplePrice"]).toBe("$29");
+    expect(data["plans.smallExamplePrice"]).toBe("$15");
     expect(data["check.klaviyoBefore"]).toBe("Up to 12,500 profiles ($275/mo list price)");
     expect(data["check.klaviyoAfter"]).toBe("Up to 10,000 profiles ($150/mo list price)");
     expect(data["check.keptPercent"]).toBe("80");

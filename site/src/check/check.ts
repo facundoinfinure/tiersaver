@@ -8,13 +8,21 @@
  *
  * Klaviyo plan sizes and list prices come from @tiersaver/core's price table,
  * the same data the app uses; nothing about Klaviyo's prices is typed here.
- * TierSaver's own prices come from src/site-config.ts.
+ * TierSaver's own flat prices come from core too (FLAT_PRICE_TIERS), the same
+ * table the app charges from.
  *
  * By design this module computes no saving, no difference between prices and
  * no fee derived from Klaviyo's prices.
  */
-import { CURRENT_PRICE_TABLES, tierFor, type PriceTable, type PriceTier } from "@tiersaver/core";
-import { TIERSAVER_PLANS, type TierSaverPlan } from "../site-config.js";
+import {
+  CURRENT_PRICE_TABLES,
+  FLAT_PRICE_TIERS,
+  flatTierFor,
+  tierFor,
+  type FlatPriceTier,
+  type PriceTable,
+  type PriceTier,
+} from "@tiersaver/core";
 
 export type KlaviyoPlan = "email" | "marketing" | "free";
 export type CriteriaUnit = "profiles" | "percent";
@@ -34,7 +42,7 @@ export interface CheckResult {
   profilesSuppressed: number;
   profilesAfter: number;
   /** TierSaver plan for the list's current size; null = larger than the largest plan (contact us). */
-  tierSaverPlan: TierSaverPlan | null;
+  tierSaverPlan: FlatPriceTier | null;
   /** Klaviyo plan size the count falls in today; null on the free plan or above the largest published size. */
   klaviyoBefore: PriceTier | null;
   klaviyoAfter: PriceTier | null;
@@ -56,10 +64,21 @@ export function largestPublishedPlan(table: PriceTable = CURRENT_PRICE_TABLES.em
   return table.tiers[table.tiers.length - 1]!.maxProfiles;
 }
 
-/** TierSaver's flat plan for a list with this many active profiles, or null above the largest plan. */
-export function tierSaverPlanFor(activeProfiles: number): TierSaverPlan | null {
-  const count = Math.ceil(activeProfiles);
-  return TIERSAVER_PLANS.find((p) => count <= p.maxProfiles) ?? null;
+/** Smallest list size a TierSaver plan covers: one more than the previous plan's largest, or null for the first plan. */
+export function planFloor(plan: FlatPriceTier): number | null {
+  const i = FLAT_PRICE_TIERS.indexOf(plan);
+  return i > 0 ? FLAT_PRICE_TIERS[i - 1]!.maxProfiles + 1 : null;
+}
+
+/** "Up to 10,000" or "10,001 to 25,000": the list sizes a TierSaver plan covers. */
+export function planRange(plan: FlatPriceTier): string {
+  const from = planFloor(plan);
+  return from === null ? `Up to ${formatCount(plan.maxProfiles)}` : `${formatCount(from)} to ${formatCount(plan.maxProfiles)}`;
+}
+
+/** Largest list size TierSaver publishes a price for. */
+export function largestTierSaverPlan(): number {
+  return FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!.maxProfiles;
 }
 
 /** Converts the "meet the cleanup criteria" input into a whole number of profiles. */
@@ -108,7 +127,7 @@ export function check(input: CheckInput): CheckResult {
     profilesBefore,
     profilesSuppressed,
     profilesAfter,
-    tierSaverPlan: tierSaverPlanFor(profilesBefore),
+    tierSaverPlan: flatTierFor(profilesBefore),
     klaviyoBefore: before?.tier ?? null,
     klaviyoAfter: after?.tier ?? null,
     beforeAbovePublished: !onFree && before === null,
@@ -195,8 +214,8 @@ export function describe(result: CheckResult): CheckView {
     leaving: `${formatCount(result.profilesSuppressed)} meet the cleanup criteria`,
     tierSaverPrice: plan ? `${formatUsd(plan.monthlyCents)}/month` : "Contact us",
     tierSaverPlan: plan
-      ? `Flat price for lists up to ${formatCount(plan.maxProfiles)} active profiles`
-      : `Lists above ${formatCount(TIERSAVER_PLANS[TIERSAVER_PLANS.length - 1]!.maxProfiles)} active profiles are quoted individually`,
+      ? `Flat price for lists of ${planRange(plan).replace(/^Up/, "up")} active profiles`
+      : `Lists above ${formatCount(largestTierSaverPlan())} active profiles are quoted individually`,
     klaviyoBefore: klaviyoText(result.klaviyoBefore, result.beforeAbovePublished, result.klaviyoPlan),
     klaviyoAfter: klaviyoText(result.klaviyoAfter, result.afterAbovePublished, result.klaviyoPlan),
   };

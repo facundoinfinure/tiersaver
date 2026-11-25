@@ -1,8 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { CURRENT_PRICE_TABLES, DEFAULT_SCHEDULE, SIMULATION_TTL_MS } from "@tiersaver/core";
-import { CLEANUP_CRITERIA, TIERSAVER_PLANS } from "../src/site-config.js";
+import {
+  CURRENT_PRICE_TABLES,
+  DEFAULT_RULE_SETTINGS,
+  DEFAULT_SCHEDULE,
+  EMAILS_RECEIVED_WINDOW_DAYS,
+  FLAT_PRICE_TIERS,
+  RULE_LIMITS,
+  SIMULATION_TTL_MS,
+} from "@tiersaver/core";
+import { cleanupCriteria } from "../src/data.js";
 import { SITE_DIR, generate } from "../build/build.mjs";
 import { checkLinks } from "../build/check-links.mjs";
 import { headersFor, parseHeaders } from "../build/serve.mjs";
@@ -70,19 +78,35 @@ describe("build output", () => {
   });
 });
 
-describe("numbers on the pages come from core and site-config", () => {
+describe("numbers on the pages come from core", () => {
   const usd = (cents: number) => `$${(cents / 100).toLocaleString("en-US")}`;
 
-  it("pricing: every provisional plan is shown, on the landing page and in the help center", () => {
-    for (const path of ["index.html", "help/pricing.html"]) {
-      const text = textOf(generated.get(path)!);
-      for (const plan of TIERSAVER_PLANS) {
-        expect(text, path).toContain(`${plan.maxProfiles.toLocaleString("en-US")}`);
-        expect(text, path).toMatch(new RegExp(`\\${usd(plan.monthlyCents)} per month`));
-      }
-      expect(text, path).toContain("Above 150,000");
-      expect(text, path).toContain("Contact us");
-    }
+  it("pricing: core's four tiers plus 'contact us' are shown, on the landing page and in the help center", () => {
+    expect(FLAT_PRICE_TIERS).toHaveLength(4);
+    const n = (count: number) => count.toLocaleString("en-US");
+    const expected = FLAT_PRICE_TIERS.map((tier, i) => ({
+      range: i === 0 ? `Up to ${n(tier.maxProfiles)}` : `${n(FLAT_PRICE_TIERS[i - 1]!.maxProfiles + 1)} to ${n(tier.maxProfiles)}`,
+      price: `${usd(tier.monthlyCents)} per month`,
+    }));
+    const top = n(FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!.maxProfiles);
+
+    // Landing page: five cards, in core's order.
+    const landing = generated.get("index.html")!;
+    const cards = [...landing.matchAll(/<li class="plan(?: plan--contact)?">[\s\S]*?<\/li>/g)].map((m) => textOf(m[0]).trim());
+    expect(cards).toEqual([
+      ...expected.map((e) => `${e.range} active profiles ${e.price}`),
+      `Above ${top} active profiles Contact us`,
+    ]);
+
+    // Help article: five table rows, same order.
+    const help = generated.get("help/pricing.html")!;
+    const rows = [...help.matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)].map((m) => [m[1], m[2]]);
+    expect(rows).toEqual([...expected.map((e) => [e.range, e.price]), [`Above ${top}`, "Contact us"]]);
+
+    // Copy that names a price for an example list.
+    expect(textOf(help)).toContain("a list of 8,000 active profiles is $15 per month, and a list of 12,500 is $29 per month");
+    expect(textOf(landing)).toContain("$29/month");
+    expect(textOf(landing)).toContain("Flat price for lists of 10,001 to 25,000 active profiles");
     const landing = textOf(generated.get("index.html")!);
     expect(landing).toContain("A month in which no cleanup runs is not charged.");
     expect(landing).toContain("The audit is free.");
@@ -100,7 +124,20 @@ describe("numbers on the pages come from core and site-config", () => {
     expect(generated.get("index.html")!).toContain('href="https://help.klaviyo.com/hc/en-us/articles/24263920096027"');
   });
 
-  it("cleanup criteria", () => {
+  it("cleanup criteria are derived from core's rules", () => {
+    const CLEANUP_CRITERIA = cleanupCriteria();
+    expect(CLEANUP_CRITERIA).toEqual({
+      minProfileAgeDays: DEFAULT_RULE_SETTINGS.newProfileDays,
+      minEmailsReceived: DEFAULT_RULE_SETTINGS.minEmailsReceived,
+      emailsReceivedWeeks: EMAILS_RECEIVED_WINDOW_DAYS / 7,
+      widerMinEngagementDays: RULE_LIMITS.clickDays.min,
+      widerMinPurchaseDays: RULE_LIMITS.purchaseDays.min,
+      widerMinProfileAgeDays: RULE_LIMITS.newProfileDays.min,
+      undoLockDays: DEFAULT_RULE_SETTINGS.reactivationLockDays,
+    });
+    expect(RULE_LIMITS.openDays.min).toBe(RULE_LIMITS.clickDays.min);
+    expect(RULE_LIMITS.siteActivityDays.min).toBe(RULE_LIMITS.clickDays.min);
+    expect(Number.isInteger(CLEANUP_CRITERIA.emailsReceivedWeeks)).toBe(true);
     const text = textOf(generated.get("help/cleanup-criteria.html")!);
     expect(text).toContain(`created at least ${CLEANUP_CRITERIA.minProfileAgeDays} days ago`);
     expect(text).toContain(
@@ -184,7 +221,7 @@ describe("copy rules (brand/messaging.md)", () => {
   });
 
   it("Klaviyo list prices only appear on the landing page, dated and labelled as list prices", () => {
-    const tierSaverPrices = new Set(TIERSAVER_PLANS.map((p) => `$${p.monthlyCents / 100}`));
+    const tierSaverPrices = new Set(FLAT_PRICE_TIERS.map((p) => `$${p.monthlyCents / 100}`));
     for (const [path, html] of pages) {
       const text = textOf(html);
       const other = (text.match(/\$[\d,]+(\.\d\d)?/g) ?? []).filter((m) => !tierSaverPrices.has(m));

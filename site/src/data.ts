@@ -2,13 +2,33 @@
  * Build-time data for the static pages. build/build.mjs bundles this module,
  * calls siteData() and replaces {{token}} placeholders in src/pages.
  *
- * Klaviyo plan sizes and list prices come from @tiersaver/core's price table.
- * TierSaver's own prices and the cleanup criteria come from src/site-config.ts.
- * No page types one of these numbers by hand.
+ * Everything the app also knows comes from @tiersaver/core: Klaviyo's plan
+ * sizes and list prices (price table), TierSaver's own prices
+ * (FLAT_PRICE_TIERS) and the cleanup criteria (rules.ts). The one fact core
+ * does not hold, Klaviyo's re-suppression waiting period, is in
+ * src/site-config.ts. No page types one of these numbers by hand.
  */
-import { CURRENT_PRICE_TABLES, DEFAULT_SCHEDULE, SIMULATION_TTL_MS } from "@tiersaver/core";
-import { check, describe, formatCount, formatUsd, largestPublishedPlan, type CheckInput } from "./check/check.js";
-import { CLEANUP_CRITERIA, KLAVIYO_RESUPPRESS_WAIT_DAYS, TIERSAVER_PLANS } from "./site-config.js";
+import {
+  CURRENT_PRICE_TABLES,
+  DEFAULT_RULE_SETTINGS,
+  DEFAULT_SCHEDULE,
+  EMAILS_RECEIVED_WINDOW_DAYS,
+  FLAT_PRICE_TIERS,
+  RULE_LIMITS,
+  SIMULATION_TTL_MS,
+  flatTierFor,
+} from "@tiersaver/core";
+import {
+  check,
+  describe,
+  formatCount,
+  formatUsd,
+  largestPublishedPlan,
+  largestTierSaverPlan,
+  planRange,
+  type CheckInput,
+} from "./check/check.js";
+import { KLAVIYO_RESUPPRESS_WAIT_DAYS } from "./site-config.js";
 import { KLAVIYO_SOURCES, SOURCES_READ_ON } from "./sources.js";
 
 /** The example the hero and the list health check show before anyone types. */
@@ -19,34 +39,68 @@ export const DEFAULT_EXAMPLE = {
   plan: "email",
 } as const satisfies CheckInput;
 
+/** Smaller list used next to the default example where a page names two prices. */
+export const SMALL_LIST_EXAMPLE = 8_000;
+
+/**
+ * The cleanup criteria the pages state, derived from core's rules.
+ * Throws instead of printing a number that no longer matches how a page words it.
+ */
+export function cleanupCriteria() {
+  const d = DEFAULT_RULE_SETTINGS;
+  // The pages say "never opened, clicked, visited or bought": every default window must be "ever".
+  if (d.purchaseDays !== null || d.clickDays !== null || d.openDays !== null || d.siteActivityDays !== null) {
+    throw new Error("Core's default rules no longer mean 'never engaged'; the criteria pages need rewording");
+  }
+  if (EMAILS_RECEIVED_WINDOW_DAYS % 7 !== 0) throw new Error("Emails-received window is not a whole number of weeks");
+  // The help article has one row for opens, clicks and site activity.
+  const engagement = [RULE_LIMITS.openDays.min, RULE_LIMITS.clickDays.min, RULE_LIMITS.siteActivityDays.min];
+  if (new Set(engagement).size !== 1) throw new Error("Wider-mode floors for opens, clicks and site activity differ");
+  return {
+    /** Default: the profile was created at least this many days ago. */
+    minProfileAgeDays: d.newProfileDays,
+    /** Default: the profile received at least this many emails… */
+    minEmailsReceived: d.minEmailsReceived,
+    /** …in roughly this many weeks. */
+    emailsReceivedWeeks: EMAILS_RECEIVED_WINDOW_DAYS / 7,
+    /** Wider mode: shortest window allowed for opens, clicks and site activity. */
+    widerMinEngagementDays: engagement[0]!,
+    /** Wider mode: shortest window allowed for purchases. */
+    widerMinPurchaseDays: RULE_LIMITS.purchaseDays.min,
+    /** Wider mode: youngest profile age allowed. */
+    widerMinProfileAgeDays: RULE_LIMITS.newProfileDays.min,
+    /** Profiles restored by an undo are not eligible for cleanup again for this long. */
+    undoLockDays: d.reactivationLockDays,
+  };
+}
+
 function planCards(): string {
-  const cards = TIERSAVER_PLANS.map((plan, i) => {
-    const from = i === 0 ? null : TIERSAVER_PLANS[i - 1]!.maxProfiles + 1;
-    const range = from
-      ? `${formatCount(from)} to ${formatCount(plan.maxProfiles)} active profiles`
-      : `Up to ${formatCount(plan.maxProfiles)} active profiles`;
-    return `          <li class="plan">
-            <p class="plan__range">${range}</p>
+  const cards = FLAT_PRICE_TIERS.map(
+    (plan) => `          <li class="plan">
+            <p class="plan__range">${planRange(plan)} active profiles</p>
             <p class="plan__price"><span class="plan__amount">${formatUsd(plan.monthlyCents)}</span> <span class="plan__per">per month</span></p>
-          </li>`;
-  });
-  const last = TIERSAVER_PLANS[TIERSAVER_PLANS.length - 1]!;
+          </li>`,
+  );
   cards.push(`          <li class="plan plan--contact">
-            <p class="plan__range">Above ${formatCount(last.maxProfiles)} active profiles</p>
+            <p class="plan__range">Above ${formatCount(largestTierSaverPlan())} active profiles</p>
             <p class="plan__price"><span class="plan__amount">Contact us</span></p>
           </li>`);
   return `<ul class="plans">\n${cards.join("\n")}\n        </ul>`;
 }
 
 function planRows(): string {
-  const rows = TIERSAVER_PLANS.map((plan, i) => {
-    const from = i === 0 ? null : TIERSAVER_PLANS[i - 1]!.maxProfiles + 1;
-    const range = from ? `${formatCount(from)} to ${formatCount(plan.maxProfiles)}` : `Up to ${formatCount(plan.maxProfiles)}`;
-    return `      <tr><td>${range}</td><td>${formatUsd(plan.monthlyCents)} per month</td></tr>`;
-  });
-  const last = TIERSAVER_PLANS[TIERSAVER_PLANS.length - 1]!;
-  rows.push(`      <tr><td>Above ${formatCount(last.maxProfiles)}</td><td>Contact us</td></tr>`);
+  const rows = FLAT_PRICE_TIERS.map(
+    (plan) => `      <tr><td>${planRange(plan)}</td><td>${formatUsd(plan.monthlyCents)} per month</td></tr>`,
+  );
+  rows.push(`      <tr><td>Above ${formatCount(largestTierSaverPlan())}</td><td>Contact us</td></tr>`);
   return rows.join("\n");
+}
+
+/** "$15" for a list size that has a public price; throws for one that does not. */
+function priceFor(activeProfiles: number): string {
+  const plan = flatTierFor(activeProfiles);
+  if (!plan) throw new Error(`No public price for ${activeProfiles} profiles`);
+  return formatUsd(plan.monthlyCents);
 }
 
 function source(key: keyof typeof KLAVIYO_SOURCES): string {
@@ -61,19 +115,20 @@ export function siteData(): Record<string, string> {
 
   const result = check(DEFAULT_EXAMPLE);
   const view = describe(result);
-  const firstPlan = TIERSAVER_PLANS[0]!;
-  const lastPlan = TIERSAVER_PLANS[TIERSAVER_PLANS.length - 1]!;
+  const criteria = cleanupCriteria();
 
   return {
     // Klaviyo price table (plan sizes), from core
     "prices.capturedOn": email.capturedOn,
     "prices.maxProfiles": formatCount(largestPublishedPlan(email)),
 
-    // TierSaver's own flat prices (provisional), from site-config
+    // TierSaver's own flat prices, from core
     "plans.cards": planCards(),
     "plans.rows": planRows(),
-    "plans.from": formatUsd(firstPlan.monthlyCents),
-    "plans.maxProfiles": formatCount(lastPlan.maxProfiles),
+    "plans.maxProfiles": formatCount(largestTierSaverPlan()),
+    "plans.smallExample": formatCount(SMALL_LIST_EXAMPLE),
+    "plans.smallExamplePrice": priceFor(SMALL_LIST_EXAMPLE),
+    "plans.defaultExamplePrice": priceFor(DEFAULT_EXAMPLE.activeProfiles),
 
     // Default example of the list health check, rendered statically
     "ex.before": formatCount(result.profilesBefore),
@@ -91,14 +146,14 @@ export function siteData(): Record<string, string> {
     "check.klaviyoBefore": view.klaviyoBefore,
     "check.klaviyoAfter": view.klaviyoAfter,
 
-    // Cleanup criteria (provisional), from site-config
-    "criteria.ageDays": String(CLEANUP_CRITERIA.minProfileAgeDays),
-    "criteria.emails": String(CLEANUP_CRITERIA.minEmailsReceived),
-    "criteria.weeks": String(CLEANUP_CRITERIA.emailsReceivedWeeks),
-    "criteria.widerEngagementDays": String(CLEANUP_CRITERIA.widerMinEngagementDays),
-    "criteria.widerPurchaseDays": String(CLEANUP_CRITERIA.widerMinPurchaseDays),
-    "criteria.widerAgeDays": String(CLEANUP_CRITERIA.widerMinProfileAgeDays),
-    "criteria.undoLockDays": String(CLEANUP_CRITERIA.undoLockDays),
+    // Cleanup criteria, from core's rules
+    "criteria.ageDays": String(criteria.minProfileAgeDays),
+    "criteria.emails": String(criteria.minEmailsReceived),
+    "criteria.weeks": String(criteria.emailsReceivedWeeks),
+    "criteria.widerEngagementDays": String(criteria.widerMinEngagementDays),
+    "criteria.widerPurchaseDays": String(criteria.widerMinPurchaseDays),
+    "criteria.widerAgeDays": String(criteria.widerMinProfileAgeDays),
+    "criteria.undoLockDays": String(criteria.undoLockDays),
     "klaviyo.resuppressDays": String(KLAVIYO_RESUPPRESS_WAIT_DAYS),
 
     // Simulation and schedule, from core
