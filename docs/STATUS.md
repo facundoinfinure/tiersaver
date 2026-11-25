@@ -66,8 +66,8 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 7. **Vercel Hobby no permite uso comercial.**
 8. **Supabase free: 2 proyectos gratis en total** entre todas las organizaciones donde Facundo es Owner/Admin; ya están ocupados por dos proyectos existentes.
 9. **Klaviyo tiene dos planes pagos** (Email y Marketing); el paquete solo contemplaba Email. Los ejemplos del paquete se confirman con precios oficiales: 12.500 → 10.000 ahorra US$ 125; 50.000 → 20.000 ahorra US$ 345.
-11. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
-12. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
+10. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
+11. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
 
 ## Decisiones pendientes de Facundo
 
