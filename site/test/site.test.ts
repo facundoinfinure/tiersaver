@@ -107,9 +107,8 @@ describe("numbers on the pages come from core", () => {
     expect(textOf(help)).toContain("a list of 8,000 active profiles is $15 per month, and a list of 12,500 is $29 per month");
     expect(textOf(landing)).toContain("$29/month");
     expect(textOf(landing)).toContain("Flat price for lists of 10,001 to 25,000 active profiles");
-    const landing = textOf(generated.get("index.html")!);
-    expect(landing).toContain("A month in which no cleanup runs is not charged.");
-    expect(landing).toContain("The audit is free.");
+    expect(textOf(landing)).toContain("A month in which no cleanup runs is not charged.");
+    expect(textOf(landing)).toContain("The audit is free.");
   });
 
   it("list health check: static default equals core's plan sizes, dated", () => {
