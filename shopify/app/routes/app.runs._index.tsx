@@ -1,21 +1,13 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { STATUS_LABELS } from "../runs/labels";
 import { listRuns } from "../runs/view.server";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   return { runs: await listRuns(session.shop) };
-};
-
-export const STATUS_LABELS: Record<string, { label: string; tone: "info" | "success" | "warning" | "critical" }> = {
-  queued: { label: "Queued", tone: "info" },
-  running: { label: "In progress", tone: "info" },
-  completed: { label: "Completed", tone: "success" },
-  completed_with_errors: { label: "Completed with issues", tone: "warning" },
-  failed: { label: "Did not run", tone: "critical" },
-  cancelled: { label: "Cancelled", tone: "warning" },
 };
 
 const number = (n: number) => n.toLocaleString("en-US");

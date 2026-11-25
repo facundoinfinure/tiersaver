@@ -7,10 +7,10 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
+import { STATUS_LABELS } from "../runs/labels";
 import { startUndoRun } from "../runs/start.server";
 import { checkRunJobs, loadRunDetail, type JobsCheck } from "../runs/view.server";
 import { authenticate } from "../shopify.server";
-import { STATUS_LABELS } from "./app.runs._index";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
