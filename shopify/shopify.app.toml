@@ -1,8 +1,12 @@
-# Shopify app configuration. client_id is filled by `shopify app config link`
-# once the app exists in the Dev Dashboard.
+# Shopify app configuration. client_id comes from the app's Settings page in the
+# Dev Dashboard. Deployed with `shopify app deploy` (see docs/13-INSTRUCTIVO-CUENTAS.md).
 client_id = ""
 name = "TierSaver for Klaviyo"
+application_url = "https://tiersaver-app.tiersaver.workers.dev"
 embedded = true
+
+[auth]
+redirect_urls = ["https://tiersaver-app.tiersaver.workers.dev/auth/callback"]
 
 [access_scopes]
 # read_all_orders and protected customer data (email) are requested in Phase 3,

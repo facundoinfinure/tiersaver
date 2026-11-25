@@ -171,7 +171,7 @@ Sin `--protected-list-id`, la cohorte `protected_group` no entra a ninguna lista
 
 1. Crear la cuenta de prueba y convertirla en test account (Settings > Account > Testing).
 2. Revisar Billing: plan gratis, sin auto-upgrade (hallazgo 4).
-3. Crear una clave privada con los scopes mínimos: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`. (`events:read` y `profiles:read` son para `--verify` y para consultar jobs.)
+3. Crear una clave privada con los scopes mínimos: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`, `usage:read` (para leer el uso de facturación; las claves no se pueden editar después de creadas, así que conviene incluirlo desde el principio). (`events:read` y `profiles:read` son para `--verify` y para consultar jobs.)
 4. Definir el dominio de los mails (hallazgo 3).
 5. Correr el plan, después `--execute`, esperar unos minutos y correr `--verify`.
 6. Anotar en `docs/STATUS.md` lo que resulte de los puntos de "Lo que no se pudo verificar".

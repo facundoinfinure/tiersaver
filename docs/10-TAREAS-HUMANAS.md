@@ -7,9 +7,9 @@ Una sesión de Claude no crea cuentas, no escribe contraseñas ni datos bancario
 | # | Tarea | Qué entregar a la sesión |
 | --- | --- | --- |
 | 1 | Crear repo privado en GitHub y copiar este paquete | Acceso al repo |
-| 2 | Crear cuenta de Shopify Partner a nombre de la LLC | Acceso con Shopify CLI (login interactivo en la sesión) |
-| 3 | Crear una tienda de desarrollo desde el panel de partners | Dominio `*.myshopify.com` |
-| 4 | Crear una cuenta de Klaviyo nueva, solo para pruebas | Clave privada de API de esa cuenta, en `.env` |
+| 2 | Crear cuenta de Shopify Partner y la app en el Dev Dashboard (pasos en `13-INSTRUCTIVO-CUENTAS.md`). Se puede empezar como individuo y sumar la LLC después | Client ID, y por formulario seguro: Client secret y token de service account |
+| 3 | Crear una tienda de desarrollo desde el Dev Dashboard (pasos en `13-INSTRUCTIVO-CUENTAS.md`) | Dominio `*.myshopify.com` |
+| 4 | Crear una cuenta de Klaviyo nueva, solo para pruebas, y convertirla en test account (pasos en `13-INSTRUCTIVO-CUENTAS.md`) | Clave privada como variable `KLAVIYO_TEST_PRIVATE_KEY` del entorno "tiersaver" |
 | 5 | Crear una cuenta de Cloudflare nueva solo para TierSaver, mover tiersaver.com ahí y crear un API token (ver abajo). Reemplaza Vercel + Supabase (decisión del 2026-11-25) | Account ID; el token se carga por el formulario seguro que abre la sesión |
 
 `.env` es local: no se sube al repo. La sesión provee `.env.example` con los nombres de las variables.
