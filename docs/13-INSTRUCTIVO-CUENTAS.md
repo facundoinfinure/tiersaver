@@ -27,7 +27,7 @@ Para saber antes de empezar:
 
 ### A3. Crear la app
 
-1. Dev Dashboard → **Apps** → **Create app** → **Start from Dev Dashboard** → nombre `TierSaver for Klaviyo` (provisorio; se puede cambiar después, ver `10-TAREAS-HUMANAS.md`, tarea 18) → **Create**.
+1. Dev Dashboard → **Apps** → **Create app** → **Start from Dev Dashboard** → nombre `TierSaver for Klaviyo` → **Create**.
 2. En la app → **Settings**: copiar **Client ID** y **Client secret**.
 3. En **Settings** → **App CLI automation token** → **Manage** → **Add service account**: nombre `TierSaver deploy`, vencimiento 90 días, permiso **App development** sobre esta app → **Add service account**. Copiar el token (se muestra una sola vez).
 4. Entregar a la sesión: el Client ID y el dominio de la tienda por chat (no son secretos); el Client secret y el token del service account como variables del entorno "tiersaver" (`SHOPIFY_API_SECRET` y `SHOPIFY_SERVICE_ACCOUNT_TOKEN`) y abrir una sesión nueva.

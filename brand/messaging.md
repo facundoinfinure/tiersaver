@@ -5,7 +5,7 @@
 ## Name
 
 - Parent brand: **TierSaver**.
-- Product: **TierSaver: List Hygiene for Klaviyo** (descriptor decided by the owner on 2026-11-25). "for Klaviyo" goes at the end, so a third party's brand is never used as our own name. The Shopify App Store name field is limited to 30 characters and this is 35: the name for that field is still open (see `docs/10-TAREAS-HUMANAS.md`, task 18).
+- Product: **TierSaver: List Hygiene for Klaviyo** (descriptor decided by the owner on 2026-11-25). "for Klaviyo" goes at the end, so a third party's brand is never used as our own name. The Shopify App Store name field is limited to 30 characters, so the listing name is **TierSaver for Klaviyo**, with "list hygiene" in the subtitle.
 - Open decision for the owner, not applied: whether to keep this descriptor, change it to "TierSaver: List Hygiene for Klaviyo", or change the brand. Until then the name stays as it is.
 - "Klaviyo" appears only as descriptive text about compatibility. Never Klaviyo's logo, typeface or colors. Never "official", "certified", "recommended by" or "Klaviyo partner".
 - In the Shopify App Store, "tier" is often read as a volume discount. The listing subtitle and the first headline on the site must say what the product does, with no ambiguity: list hygiene for Klaviyo.

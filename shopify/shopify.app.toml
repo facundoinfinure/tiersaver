@@ -1,8 +1,8 @@
 # Shopify app configuration. client_id comes from the app's Settings page in the
 # Dev Dashboard. Deployed with `shopify app deploy` (see docs/13-INSTRUCTIVO-CUENTAS.md).
 client_id = ""
-# Provisional. The product name is "TierSaver: List Hygiene for Klaviyo" (35 characters);
-# this field allows 30, so the short form is pending (docs/10-TAREAS-HUMANAS.md, task 18).
+# App Store name (30-character limit). The full product name is
+# "TierSaver: List Hygiene for Klaviyo"; "list hygiene" goes in the listing subtitle.
 name = "TierSaver for Klaviyo"
 application_url = "https://tiersaver-app.tiersaver.workers.dev"
 embedded = true

@@ -200,3 +200,10 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - Dominio de los mails ficticios del seed: `seed.tiersaver.com`.
 - Descriptor del nombre: "TierSaver: List Hygiene for Klaviyo". Aplicado en documentos y guía de mensajes. **No entra en el campo de nombre de la ficha de Shopify** (35 caracteres; el límite anotado es 30, dato de extracto a confirmar): `shopify.app.toml` y el borrador de ficha siguen con "TierSaver for Klaviyo" hasta que Facundo elija la versión corta (tarea 18).
 - Siguen abiertos: cortes de precio (25.000 / 75.000 / 150.000), cuentas de Shopify y Klaviyo, datos legales del sitio.
+
+### 2026-11-25 (cuarta tanda)
+
+- Nombre en la ficha de Shopify: "TierSaver for Klaviyo", con "list hygiene" en el subtítulo. El nombre completo de producto sigue siendo "TierSaver: List Hygiene for Klaviyo".
+- Entidad legal para el sitio y los legales: Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131. Facundo escribió "153 e Flaggler st, Miami 33131"; la sesión normalizó la calle a "Flagler" y agregó "FL": **a confirmar por Facundo**, junto con si lleva número de suite.
+- Cortes de precio: siguen sin confirmar. Facundo preguntó si están bien; la sesión le pasó la comparación con el precio de lista de Klaviyo por tamaño.
+- Siguen como placeholders en el sitio: mail de contacto, mail de soporte, fecha de vigencia y URL de la ficha.

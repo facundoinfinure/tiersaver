@@ -43,9 +43,9 @@ Operación
 
 Reescrita el 2026-11-25 con las reglas de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2. Sigue siendo un borrador: la revisa Facundo antes del envío.
 
-**Name**: a definir entre "TierSaver: List Hygiene" y "TierSaver for Klaviyo"
+**Name**: TierSaver for Klaviyo
 
-Facundo decidió el descriptor "TierSaver: List Hygiene for Klaviyo" el 2026-11-25, pero tiene 35 caracteres y el campo admite 30 (requisito 4.1.2; confirmar el límite vigente). Ver `10-TAREAS-HUMANAS.md`, tarea 18.
+Decidido por Facundo el 2026-11-25. El nombre completo del producto es "TierSaver: List Hygiene for Klaviyo" (35 caracteres; el campo admite 30), así que "list hygiene" va en el subtítulo.
 
 **Subtitle**: Automatic list hygiene for Klaviyo, with preview and undo
 

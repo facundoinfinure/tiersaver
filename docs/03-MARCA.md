@@ -9,7 +9,7 @@
 
 Cuidado: en el Shopify App Store "tier" suele leerse como descuento por volumen. El subtítulo de la ficha y el primer titular del sitio tienen que decir sin ambigüedad qué hace el producto: higiene de lista para Klaviyo. No encabezan con la factura de Klaviyo (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2).
 
-**Decidido el 2026-11-25:** se mantiene la marca TierSaver y el descriptor pasa a "TierSaver: List Hygiene for Klaviyo" (opción 2 de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3). Queda abierto solo el campo de nombre de la ficha de Shopify, que admite 30 caracteres y este nombre tiene 35: ver `10-TAREAS-HUMANAS.md`, tarea 18.
+**Decidido el 2026-11-25:** se mantiene la marca TierSaver y el descriptor pasa a "TierSaver: List Hygiene for Klaviyo" (opción 2 de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3). En la ficha de Shopify, cuyo campo de nombre admite 30 caracteres, va "TierSaver for Klaviyo" con "list hygiene" en el subtítulo.
 
 Uso de la marca de Klaviyo: "Klaviyo" solo como texto descriptivo de compatibilidad. Sin su logo, tipografía ni colores, y sin "official", "certified", "recommended by" ni "partner".
 
