@@ -10,7 +10,7 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 | 1 · Teardown | No iniciada (depende de Facundo) | |
 | 2 · Marca | Cerrada: logo B aplicado, mensajes aprobados, descriptor del nombre decidido. Queda la versión corta del nombre para la ficha | 2026-11-25 |
 | 3 · Construcción | En curso: capa de Klaviyo, ingesta de pedidos, motor de corridas y gateway hechos y probados offline. Faltan rutas de OAuth, orquestación de auditoría y simulación, interfaz, programación, deshacer y cobro | 2026-11-25 |
-| 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
+| 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar; scripts de build reconstruidos y versionados en `site/build/`. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
 | 5 · Lanzamiento | No iniciada | |
 
 ## Cómo se verificó (importante)
@@ -215,3 +215,30 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - App creada por Facundo en el Dev Dashboard. Client ID cargado en `shopify/shopify.app.toml` y como `SHOPIFY_API_KEY` del Worker. `SHOPIFY_API_SECRET` del Worker sigue provisorio: la app todavía no puede autenticar contra Shopify. Faltan el Client secret y el token de service account como variables del entorno "tiersaver" (`SHOPIFY_API_SECRET`, `SHOPIFY_SERVICE_ACCOUNT_TOKEN`); después, `shopify app deploy` y la instalación en `tiersaver.myshopify.com`.
 - Mails del sitio: contacto `hello@tiersaver.com`, soporte `support@tiersaver.com` (aplicados en `site/`). **Las casillas todavía no existen**: el dominio sigue en la otra cuenta de Cloudflare; hay que crearlas (o reenviarlas) antes de publicar el sitio. Placeholders que quedan: fecha de vigencia, ley aplicable y jurisdicción, y un punto de la política de privacidad sobre mails de notificación.
 - Facundo cargó `SHOPIFY_API_SECRET` y `SHOPIFY_SERVICE_ACCOUNT_TOKEN` en el entorno "tiersaver". No llegan a esta sesión (solo a sesiones nuevas): el deploy de la configuración de Shopify y la carga del secret real quedan para la sesión siguiente.
+
+### 2026-11-25 (scripts de build del sitio reconstruidos)
+
+Sesión aparte, rama `claude/dazzling-mendel-gbvlv2` (parte de `main`). No se publicó nada.
+
+**Qué pasó.** `site/package.json` llama a `build/build.mjs`, `images.mjs`, `serve.mjs` y `check-links.mjs`, pero la regla `build/` del `.gitignore` de la raíz (pensada para la salida del bundler) también tapaba `site/build/`: la sesión que los escribió nunca los subió y se perdieron. `npm run build` del sitio fallaba y `site/test/site.test.ts` no podía importar.
+
+**Qué se hizo.**
+- `.gitignore`: se agregaron `!site/build/` y `!site/build/**` después de `build/`. `git status` ahora muestra la carpeta; `shopify/build/` sigue ignorada.
+- `site/build/build.mjs`: reconstruido a partir de `site/src/**`, las páginas ya versionadas y lo que piden los tests. Lee el front matter de `src/pages`, reemplaza `{{token}}` con `siteData()` (de `src/data.ts`, empaquetado con esbuild), arma cabecera, pie, migas, índice de ayuda, `sitemap.xml` y `assets/list-check.js`. `--check` no escribe y sale con 1 si hay diferencias. Un token o parcial desconocido corta el build. Sin requests de red; la salida no depende del reloj.
+- `site/build/serve.mjs`: vista previa local que imita el deploy de Workers (respeta `.assetsignore`, URLs sin `.html`, `404.html` con estado 404 y los encabezados de `_headers`, CSP incluida). Exporta `parseHeaders` y `headersFor`, que usa el test de la CSP.
+- `site/build/check-links.mjs`: revisa en disco enlaces internos, assets, anclas, ids duplicados, `aria-labelledby`, `url()` de los CSS y el sitemap. Las URLs externas se listan, nunca se piden. `href="#"` solo pasa si lleva `data-todo`.
+- `site/build/images.mjs`: renderiza `favicon-32.png`, `apple-touch-icon.png` y `og-image.png` con Chromium (Playwright, sin red). Por defecto deja el resultado en `site/.wrangler/images/` para revisar; `--write` pisa los de `assets/`. Playwright no es dependencia del paquete: usa el que esté instalado.
+
+**Verificado.**
+- Las 17 páginas HTML y `sitemap.xml` salen **idénticos byte a byte** a los versionados. La CSP de `_headers` no se tocó.
+- Las tres imágenes salen idénticas byte a byte a las versionadas con el Chromium de esta sesión (no se reescribieron). `apple-touch-icon.png` sale de `brand/logo/final/app-icon.svg`, no de `favicon.svg`.
+- `npm test -w @tiersaver/site`: 293 de 293 (20 de `site.test.ts` más 273). `npm run build:check -w @tiersaver/site`: sin diferencias. `npm test` y `npm run typecheck` en la raíz: todo pasa.
+- `check-links`: 829 referencias, 0 rotas; las únicas URLs externas son los 6 artículos del centro de ayuda de Klaviyo. Probado también en negativo (enlace, ancla y fuente rotos a propósito en una copia: los detecta).
+- Pasada en Chromium sobre el servidor local con la CSP real: 17 páginas, sin errores de consola, sin requests a otro origen, y el chequeo de lista responde al escribir.
+
+**Diferencias con lo que había, para revisar.**
+1. `site/assets/list-check.js` cambió en tres identificadores. El bundle nuevo es igual al anterior token por token salvo el nombre minificado de tres variables internas que nadie usa (`V`, `q`, `ee` pasaron a `Y`, `H`, `J`; son las constantes `DAY_MS` de core que esbuild deja). No cambia el comportamiento. No se encontró la combinación exacta de opciones de esbuild del script original (se probaron objetivo, plataforma, `pure`, dos pasadas, varias entradas y las otras versiones de esbuild instaladas); la actual es `bundle + minify + iife + pure: ["Object.freeze"]`, con esbuild 0.28.2.
+2. `_headers`, `robots.txt` y `styleguide.html` **no** los genera el build: no tienen fuente en `site/src` y se tratan como archivos mantenidos a mano. Si el script original los generaba, hoy da lo mismo (no cambiaron), pero un cambio ahí se edita directo en el archivo.
+3. Nombre de la entidad legal, año del copyright, texto del pie y navegación viven ahora en `site/build/build.mjs` (constante `SITE` y plantillas), porque no estaban en `site/src`.
+
+**Pendiente.** Nada de esta tarea. Publicar el sitio sigue siendo un freno (lo aprueba Facundo) y siguen los placeholders ya anotados (URL de la ficha, fecha de vigencia, ley aplicable). La rama `claude/lucid-brahmagupta-ss214o` también agrega entradas al final de este archivo: al juntar las dos ramas va a haber un conflicto trivial acá.

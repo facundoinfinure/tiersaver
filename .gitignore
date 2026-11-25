@@ -7,6 +7,9 @@ node_modules/
 coverage/
 dist/
 build/
+# site/build/ holds the site generator's source (not bundler output): keep it tracked.
+!site/build/
+!site/build/**
 .react-router/
 .shopify/
 .shopify.lock
