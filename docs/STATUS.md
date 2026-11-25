@@ -96,4 +96,7 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - Cloudflare: cuenta "TierSaver" creada y `tiersaver.com` agregado ahí (zona en estado *pending*, plan Free, DNSSEC apagado). API token cargado como network secret y verificado (activo).
 - tiersaver.com se registró el 2026-11-25 05:17 UTC en la cuenta de Infinure. Cloudflare exige más de 10 días para moverlo entre cuentas: el move recién se puede pedir desde el **2026-12-05 05:18 UTC**. Hasta entonces la app se despliega en `*.workers.dev`.
 - El token ve las tres cuentas (Alupont, Infinure, TierSaver) a nivel cuenta; conviene restringir "Account resources" a TierSaver.
+- Cuenta TierSaver: D1 `tiersaver` creada (región ENAM) con la migración aplicada; subdominio `tiersaver.workers.dev` creado; `wrangler.jsonc` fija el `account_id` de TierSaver.
+- Deploy bloqueado por el entorno: el proxy de la sesión reemplaza el header `Authorization` en todo api.cloudflare.com, y la subida de assets de wrangler usa su propio JWT en ese header (401). Solución: pasar el token de *network secret* a variable de entorno `CLOUDFLARE_API_TOKEN` del entorno "tiersaver".
+- Recordatorio programado para el 2026-12-05 09:00 (Buenos Aires) para mover el dominio.
 

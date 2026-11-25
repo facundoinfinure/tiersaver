@@ -1,6 +1,8 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "tiersaver-app",
+  // TierSaver Cloudflare account (pinned so deploys never land in another account).
+  "account_id": "6b463774c79fa154bac8b0b07ad049b1",
   "main": "./workers/app.ts",
   "compatibility_date": "2026-11-12",
   "observability": { "enabled": true },
@@ -9,13 +11,12 @@
     {
       "binding": "DB",
       "database_name": "tiersaver",
-      // Placeholder for local development. Replaced by the real id when the
-      // Cloudflare account exists (`wrangler d1 create tiersaver`).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "d8082eef-a8c1-4941-99ec-ab010c9e1860",
       "migrations_dir": "drizzle"
     }
   ],
   "vars": {
-    "SCOPES": "read_orders"
+    "SCOPES": "read_orders",
+    "SHOPIFY_APP_URL": "https://tiersaver-app.tiersaver.workers.dev"
   }
 }

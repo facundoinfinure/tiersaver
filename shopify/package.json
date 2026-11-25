@@ -13,10 +13,10 @@
     "shopify": "shopify",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "typecheck": "wrangler types && react-router typegen && tsc --noEmit",
+    "typecheck": "wrangler types --strict-vars=false && react-router typegen && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "preview": "npm run build && vite preview",
-    "cf-typegen": "wrangler types && react-router typegen",
+    "cf-typegen": "wrangler types --strict-vars=false && react-router typegen",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "deploy:worker": "npm run build && wrangler deploy",
     "smoke:worker": "node scripts/smoke-worker.mjs"

@@ -4,7 +4,6 @@ declare namespace Cloudflare {
   interface Env {
     SHOPIFY_API_KEY: string;
     SHOPIFY_API_SECRET: string;
-    SHOPIFY_APP_URL: string;
     TOKEN_ENCRYPTION_KEY: string;
   }
 }
