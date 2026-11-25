@@ -10,9 +10,18 @@ Una sesión de Claude no crea cuentas, no escribe contraseñas ni datos bancario
 | 2 | Crear cuenta de Shopify Partner a nombre de la LLC | Acceso con Shopify CLI (login interactivo en la sesión) |
 | 3 | Crear una tienda de desarrollo desde el panel de partners | Dominio `*.myshopify.com` |
 | 4 | Crear una cuenta de Klaviyo nueva, solo para pruebas | Clave privada de API de esa cuenta, en `.env` |
-| 5 | Crear proyecto en Vercel y en Supabase, o autorizar a la sesión a crearlos | Tokens en `.env` |
+| 5 | Crear una cuenta de Cloudflare nueva solo para TierSaver, mover tiersaver.com ahí y crear un API token (ver abajo). Reemplaza Vercel + Supabase (decisión del 2026-11-25) | Account ID; el token se carga por el formulario seguro que abre la sesión |
 
 `.env` es local: no se sube al repo. La sesión provee `.env.example` con los nombres de las variables.
+
+### Pasos de la tarea 5 (según la documentación de Cloudflare vigente)
+
+1. Crear la cuenta nueva con un mail que controles (idealmente de la LLC o de TierSaver).
+2. En la cuenta nueva: **Add a domain** → `tiersaver.com` → plan Free. Copiar el **Account ID**.
+3. En la cuenta vieja: **Domain Registration → Manage Domains → tiersaver.com → Configuration**. Apagar DNSSEC si está activo y pedir el **move** a la cuenta nueva con su Account ID.
+4. Aprobar el mail que llega a la cuenta nueva (hay 5 días; si no, se cancela).
+
+Condiciones: el dominio tiene que tener más de 10 días de registrado y el mail del titular verificado. La configuración de la cuenta vieja se pierde y el dominio queda bloqueado para transferencias 30 días. Fuente: developers.cloudflare.com/registrar/account-options/inter-account-transfer/
 
 ## Durante la construcción
 

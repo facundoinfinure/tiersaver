@@ -77,7 +77,7 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 | B · Cuándo se cobra | 20% del ahorro verificado con `usage_max` de la Billing Usage API tras la renovación; onboarding pide activar el auto-downgrade |
 | C · Cobro en Shopify | Billing API con `cappedAmount` US$ 149 |
 | D · Datos de compras | Mantener el cruce con pedidos de Shopify: `read_orders` + `read_all_orders` + email nivel 2, guardando solo hashes |
-| E · Stack | Pendiente: Facundo pidió alternativas (Cloudflare) |
+| E · Stack | Cloudflare (Workers + D1 + Workflows + Cron), aprobado junto con el spike. Cuenta de Cloudflare dedicada a TierSaver |
 
 Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, `04-PRECIO-Y-COBRO.md`, `08-RIESGOS-Y-METRICAS.md`, `10-TAREAS-HUMANAS.md` y en `packages/core` (`verifiedSavings`, `billableSavingsCents`, `hashEmail`).
 
@@ -90,3 +90,6 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - Sesión: paquete copiado al repo; monorepo con `shopify/` (plantilla oficial React Router, API 2026-10, build y typecheck OK) y `packages/core/` (tablas oficiales de precios de Klaviyo, tramos, ahorro, cargo, reglas de protección, compuerta de simulación, programación por fecha de facturación, lotes y rate limit) con 63 tests unitarios pasando (69 tras aplicar las decisiones).
 - Dudas de `02` y `04` resueltas con las salvedades de arriba. Fase 0 frenada en el corte de `08-RIESGOS-Y-METRICAS.md` hasta que Facundo decida A–E.
 - Bloqueantes humanas sin hacer: no hay `.env` en la sesión, ni Shopify Partner / Dev Dashboard, ni tienda de desarrollo, ni cuenta de Klaviyo de prueba. Vercel y Supabase están conectados pero sin proyectos de TierSaver.
+- Facundo aprobó A–E. Docs actualizados; `packages/core` suma ahorro verificado, hash de mails y cifrado de tokens (73 tests).
+- Spike de Cloudflare: la app corre en `workerd` con D1, sesiones cifradas y webhooks de cumplimiento; 8 de 8 chequeos de humo pasan. Pendiente: instalación real en la tienda de desarrollo (requiere cuenta de Shopify y deploy).
+- Pendiente de Facundo: cuenta de Cloudflare nueva para TierSaver y mover tiersaver.com (pasos en `10-TAREAS-HUMANAS.md`).
