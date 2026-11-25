@@ -71,6 +71,20 @@ Decidido por Facundo el 2026-11-25: `seed.tiersaver.com`. No hace falta crear ni
 
 El seed se corre con `--email-domain seed.tiersaver.com`.
 
+### B5. App OAuth de Klaviyo (para que la app de Shopify se conecte a Klaviyo)
+
+La clave privada sirve solo para el seed y las pruebas. La app de Shopify se conecta a la cuenta de cada merchant por OAuth, y para eso hace falta registrar una app OAuth en Klaviyo. Pasos según developers.klaviyo.com/en/docs/create_a_public_oauth_app (leída el 2026-11-25); la crea un usuario Owner, Admin o Manager.
+
+1. Entrar a https://www.klaviyo.com/manage-apps con la cuenta de TierSaver → **Create app**.
+2. Nombre: `TierSaver`. Copiar **Client ID** y **Client secret** (el secret se muestra una sola vez; se puede generar otro después) → **Create** → **Continue**.
+3. **Scopes**, en una sola línea separados por espacios (son exactamente los que pide el código, `shopify/app/klaviyo/config.ts`):
+   `accounts:read profiles:read profiles:write subscriptions:write subscriptions:read lists:read segments:read segments:write metrics:read usage:read`
+4. **Redirect URLs**: `https://tiersaver-app.tiersaver.workers.dev/klaviyo/oauth/callback` (cuando la app pase a `app.tiersaver.com` se agrega la nueva).
+5. **Save**.
+6. Cargar en el entorno "tiersaver" las variables `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` y abrir una sesión nueva. La sesión las sube al Worker como secretos.
+
+Crear la app no la publica ni la manda a revisión: una app OAuth sin listar se instala con el enlace de autorización directo. Listarla en el marketplace de Klaviyo es otro trámite (pide 5 instalaciones activas) y es decisión de Facundo.
+
 ## No confirmado
 
 1. Los campos exactos del formulario de alta de Partner.
