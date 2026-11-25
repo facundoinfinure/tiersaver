@@ -2,8 +2,10 @@ import { env } from "cloudflare:workers";
 import { RULE_LIMITS } from "@tiersaver/core";
 import { and, eq, isNull } from "drizzle-orm";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useEffect, useRef, useState } from "react";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { flags } from "../components/home-screen";
 import { db, schema } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { listGroupsPage, type GroupKind } from "../klaviyo/api";
@@ -124,6 +126,16 @@ export default function Settings() {
   const result = useActionData<typeof action>();
   const busy = useNavigation().state !== "idle";
   const { rules } = data;
+  // React 18 does not deliver custom-element events through props, so the checkbox is listened to directly.
+  const [wider, setWider] = useState(!data.recommended);
+  const widerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = widerRef.current;
+    if (!el) return;
+    const onChange = () => setWider(Boolean((el as HTMLElement & { checked?: boolean }).checked));
+    el.addEventListener("change", onChange);
+    return () => el.removeEventListener("change", onChange);
+  }, []);
   const window = (key: "purchaseDays" | "clickDays" | "openDays" | "siteActivityDays") =>
     `Leave empty for "ever". Otherwise between ${RULE_LIMITS[key].min} and ${RULE_LIMITS[key].max} days.`;
 
@@ -153,26 +165,32 @@ export default function Settings() {
               consent, in a protected list or segment, or restored in the last 365 days are always kept active.
             </s-paragraph>
             <s-checkbox
+              ref={(el: unknown) => {
+                widerRef.current = el as HTMLElement | null;
+              }}
               name="wider"
               value="yes"
               label="Use wider windows instead of Klaviyo's recommended criteria"
               details="Optional. Wider windows also treat profiles as inactive when their last activity is older than the number of days you set. The minimums below cannot be lowered. Automatic cleanups are not available with wider windows."
               {...checked(!data.recommended)}
             />
-            <s-paragraph>The fields below apply only when wider windows are on.</s-paragraph>
+            <div style={{ display: wider ? "block" : "none" }}>
+              <s-stack gap="base">
             <s-number-field name="purchaseDays" label="Keep active if they purchased in the last (days)" value={days(rules.purchaseDays)} min={RULE_LIMITS.purchaseDays.min} max={RULE_LIMITS.purchaseDays.max} details={window("purchaseDays")} />
             <s-number-field name="clickDays" label="Keep active if they clicked an email in the last (days)" value={days(rules.clickDays)} min={RULE_LIMITS.clickDays.min} max={RULE_LIMITS.clickDays.max} details={window("clickDays")} />
             <s-number-field name="openDays" label="Keep active if they opened an email in the last (days)" value={days(rules.openDays)} min={RULE_LIMITS.openDays.min} max={RULE_LIMITS.openDays.max} details={window("openDays")} />
             <s-number-field name="siteActivityDays" label="Keep active if they were on your site in the last (days)" value={days(rules.siteActivityDays)} min={RULE_LIMITS.siteActivityDays.min} max={RULE_LIMITS.siteActivityDays.max} details={window("siteActivityDays")} />
             <s-number-field name="newProfileDays" label="Keep active if created or subscribed in the last (days)" value={String(rules.newProfileDays)} min={RULE_LIMITS.newProfileDays.min} max={RULE_LIMITS.newProfileDays.max} details={`Between ${RULE_LIMITS.newProfileDays.min} and ${RULE_LIMITS.newProfileDays.max} days.`} />
             <s-number-field name="minEmailsReceived" label="Emails a profile must have received in about 72 weeks" value={String(rules.minEmailsReceived)} min={RULE_LIMITS.minEmailsReceived.min} max={RULE_LIMITS.minEmailsReceived.max} details={`At least ${RULE_LIMITS.minEmailsReceived.min}. Nobody is inactive if you never wrote to them.`} />
-            <s-checkbox
-              name="ignoreMachineOpens"
-              value="yes"
-              label="Ignore opens that Klaviyo flags as automatic (Apple Mail Privacy Protection)"
-              details="Off by default: every open keeps a profile active."
-              {...checked(!rules.countMachineOpens)}
-            />
+                <s-checkbox
+                  name="ignoreMachineOpens"
+                  value="yes"
+                  label="Ignore opens that Klaviyo flags as automatic (Apple Mail Privacy Protection)"
+                  details="Off by default: every open keeps a profile active."
+                  {...checked(!rules.countMachineOpens)}
+                />
+              </s-stack>
+            </div>
           </s-stack>
         </s-section>
 
@@ -229,7 +247,7 @@ export default function Settings() {
         </s-section>
 
         <s-section>
-          <s-button type="submit" variant="primary" disabled={busy}>
+          <s-button type="submit" variant="primary" {...flags({ disabled: busy })}>
             Save settings
           </s-button>
         </s-section>

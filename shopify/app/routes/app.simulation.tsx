@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { flags, Metric } from "../components/home-screen";
 import { getBillingStatus, requestSubscription, subscriptionTerms } from "../billing/billing";
 import { requestAdminGraphql } from "../billing/billing.server";
 import { db } from "../db.server";
@@ -174,7 +175,7 @@ function CandidateDownload({ simulationId, parts }: { simulationId: string; part
       </s-paragraph>
       <s-stack direction="inline" gap="base">
         {Array.from({ length: Math.min(parts, 40) }, (_, i) => i + 1).map((part) => (
-          <s-button key={part} variant="secondary" disabled={busy !== null} loading={busy === part} onClick={() => download(part)}>
+          <s-button key={part} variant="secondary" {...flags({ disabled: busy !== null, loading: busy === part })} onClick={() => download(part)}>
             {parts > 1 ? `Download file ${part}` : "Download candidates (CSV)"}
           </s-button>
         ))}
@@ -233,46 +234,27 @@ export default function Simulation() {
             {sim.origin === "scheduled" ? " by your monthly schedule" : ""}. Nothing has changed in Klaviyo.
             {sim.state === "open" || sim.state === "approved" ? ` It can be approved and run until ${dateTime(sim.expiresAt)}.` : ""}
           </s-paragraph>
-          <s-table>
-            <s-table-header-row>
-              <s-table-header>Profiles</s-table-header>
-              <s-table-header format="numeric">Count</s-table-header>
-            </s-table-header-row>
-            <s-table-body>
-              <s-table-row>
-                <s-table-cell>Active profiles</s-table-cell>
-                <s-table-cell>{number(sim.activeProfiles)}</s-table-cell>
-              </s-table-row>
-              <s-table-row>
-                <s-table-cell>Meet Klaviyo's long-term inactive criteria</s-table-cell>
-                <s-table-cell>{number(sim.evaluated)}</s-table-cell>
-              </s-table-row>
-              {sim.keptActive.map((row) => (
-                <s-table-row key={row.label}>
-                  <s-table-cell>Kept active: {row.label.charAt(0).toLowerCase() + row.label.slice(1)}</s-table-cell>
-                  <s-table-cell>{number(row.count)}</s-table-cell>
-                </s-table-row>
-              ))}
-              {sim.candidatesByReason.map((row) => (
-                <s-table-row key={row.label}>
-                  <s-table-cell>Would be suppressed: {row.label.charAt(0).toLowerCase() + row.label.slice(1)}</s-table-cell>
-                  <s-table-cell>{number(row.count)}</s-table-cell>
-                </s-table-row>
-              ))}
-              <s-table-row>
-                <s-table-cell>
-                  <s-text type="strong">Would be suppressed by this cleanup</s-text>
-                </s-table-cell>
-                <s-table-cell>
-                  <s-text type="strong">{number(sim.candidates)}</s-text>
-                </s-table-cell>
-              </s-table-row>
-              <s-table-row>
-                <s-table-cell>Active profiles after the cleanup</s-table-cell>
-                <s-table-cell>{number(Math.max(0, sim.activeProfiles - sim.candidates))}</s-table-cell>
-              </s-table-row>
-            </s-table-body>
-          </s-table>
+          <s-grid gridTemplateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap="base">
+            <Metric label="Active profiles now" value={number(sim.activeProfiles)} />
+            <Metric label="This cleanup would suppress" value={number(sim.candidates)} detail={sim.candidatesByReason.map((r) => r.label).join("; ") || undefined} emphasis />
+            <Metric label="Active profiles after" value={number(Math.max(0, sim.activeProfiles - sim.candidates))} />
+          </s-grid>
+          <s-stack gap="small-200">
+            <s-stack direction="inline" justifyContent="space-between" gap="base">
+              <s-text color="subdued">Meet Klaviyo's long-term inactive criteria</s-text>
+              <s-text>{number(sim.evaluated)}</s-text>
+            </s-stack>
+            {sim.keptActive.map((row) => (
+              <s-stack key={row.label} direction="inline" justifyContent="space-between" gap="base">
+                <s-text color="subdued">Kept active: {row.label.charAt(0).toLowerCase() + row.label.slice(1)}</s-text>
+                <s-text>{number(row.count)}</s-text>
+              </s-stack>
+            ))}
+            <s-stack direction="inline" justifyContent="space-between" gap="base">
+              <s-text type="strong">Would be suppressed</s-text>
+              <s-text type="strong">{number(sim.candidates)}</s-text>
+            </s-stack>
+          </s-stack>
           {sim.keptActive.length > 1 ? (
             <s-paragraph>A profile can be kept active for more than one reason, so those rows can overlap.</s-paragraph>
           ) : null}
@@ -319,7 +301,7 @@ export default function Simulation() {
                     value="yes"
                     label={`I have read the notices above and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`}
                   />
-                  <s-button type="submit" variant="primary" disabled={busy}>
+                  <s-button type="submit" variant="primary" {...flags({ disabled: busy })}>
                     Approve simulation
                   </s-button>
                 </s-stack>
@@ -344,7 +326,7 @@ export default function Simulation() {
                         Before the first cleanup, Shopify asks you to accept TierSaver's pricing. {data.terms} Accepting
                         does not charge anything by itself.
                       </s-paragraph>
-                      <s-button type="submit" variant="primary" disabled={busy}>
+                      <s-button type="submit" variant="primary" {...flags({ disabled: busy })}>
                         Review pricing in Shopify
                       </s-button>
                     </s-stack>
@@ -354,7 +336,7 @@ export default function Simulation() {
                   <Form method="post">
                     <input type="hidden" name="intent" value="start" />
                     <input type="hidden" name="simulationId" value={sim.id} />
-                    <s-button type="submit" variant="primary" disabled={busy || !data.cleanupsEnabled}>
+                    <s-button type="submit" variant="primary" {...flags({ disabled: busy || !data.cleanupsEnabled })}>
                       Start cleanup: suppress {number(sim.candidates)} profiles
                     </s-button>
                   </Form>

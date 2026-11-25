@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation, useRevalidator } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { flags } from "../components/home-screen";
 import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
@@ -246,7 +247,7 @@ export default function Run() {
             <Form method="post">
               <input type="hidden" name="intent" value="jobs" />
               <input type="hidden" name="page" value={result?.jobs && result.jobs.page < result.jobs.pages ? result.jobs.page + 1 : 1} />
-              <s-button type="submit" variant="secondary" disabled={busy}>
+              <s-button type="submit" variant="secondary" {...flags({ disabled: busy })}>
                 {result?.jobs ? (result.jobs.page < result.jobs.pages ? "Check next page" : "Check again") : "Check jobs in Klaviyo"}
               </s-button>
             </Form>
@@ -294,7 +295,7 @@ export default function Run() {
                       </s-stack>
                     </s-banner>
                   ) : null}
-                  <s-button type="submit" tone="critical" disabled={busy}>
+                  <s-button type="submit" tone="critical" {...flags({ disabled: busy })}>
                     Restore {number(undo.restorable)} profiles
                   </s-button>
                 </s-stack>
