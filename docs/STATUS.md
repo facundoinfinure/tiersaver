@@ -15,13 +15,13 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 ## Cómo se verificó (importante)
 
-La red de la sesión del 25/11 no llegaba a klaviyo.com, help.klaviyo.com, developers.klaviyo.com, shopify.dev ni vercel.com. Fuentes usadas:
+Al inicio, la red de la sesión no llegaba a klaviyo.com, help.klaviyo.com, developers.klaviyo.com, shopify.dev ni vercel.com. Fuentes usadas:
 
 - **Spec OpenAPI oficial de Klaviyo** (`github.com/klaviyo/openapi`, `openapi/stable.json`, commit del 2026-11-20, revisión `2026-10-15`): confianza alta.
 - **Docs oficiales de Supabase** (búsqueda del conector) y **código de pg-boss** publicado en npm: confianza alta.
 - **Extractos de búsqueda** de páginas oficiales de Klaviyo, Shopify y Vercel que no se pudieron abrir: confianza media. Se marcan "(extracto)".
 
-Cuando se habiliten esos hosts, releer las páginas marcadas "(extracto)" y confirmar.
+Después se creó el entorno de red `tiersaver` con esos hosts habilitados; con eso se leyeron directo la AUP y el slider de precios. Pendiente: releer las demás páginas marcadas "(extracto)".
 
 ## Dudas técnicas (`02-ARQUITECTURA.md`)
 
@@ -29,9 +29,9 @@ Cuando se habiliten esos hosts, releer las páginas marcadas "(extracto)" y conf
 | --- | --- | --- | --- |
 | 1 | **Sí, a medias.** Nuevo `GET /api/billing-usage` (GA en `2026-10-15`, scope `usage:read`, 10/s · 150/m) devuelve por tipo de uso `usage_used`, `usage_max` (máximo del plan actual), `period_start`, `period_end`. No devuelve nombre ni precio del plan. El ID del tipo para perfiles activos de email no figura en el spec: leerlo en la cuenta de prueba. `usage_max` permite **verificar el tramo** antes y después de la limpieza | Spec OpenAPI `list_billing_usage` | 2026-11-25 |
 | 2 | **Sí, indirecto**: `period_start` / `period_end` del uso de perfiles. Klaviyo cuenta los perfiles "poco antes de renovar el ciclo" y la actualización tras una limpieza puede tardar hasta 72 h (extracto). Sin billing-usage, el merchant carga el día | Spec + help.klaviyo.com/115000976672 (extracto) | 2026-11-25 |
-| 3 | **No.** No hay tabla ni API de precios oficial; solo el slider de klaviyo.com/pricing. La tabla de `packages/core/src/price-tables/klaviyo-email.ts` es borrador sin verificar y tiene huecos (12.500–25.000, >50.000). Plan: leer el slider con navegador headless cuando se habilite el host | Búsqueda + blogs de terceros | 2026-11-25 |
+| 3 | **No hay API, pero sí dato oficial.** Se leyó el slider de klaviyo.com/pricing con navegador headless: 49 tramos de 500 a 150.000 perfiles para el plan **Email** y para el plan nuevo **Marketing** (email + móvil). Cargados en `packages/core/src/price-tables/klaviyo.ts` como verificados. Más de 150.000: precio a medida. Se cruza con `usage_max` de la Billing Usage API: si el tramo real de la cuenta no coincide con la tabla, no se estima ahorro. Refrescar mensualmente | klaviyo.com/pricing, leído el 2026-11-25 | 2026-11-25 |
 | 4 | **Sí (confianza media).** Una app OAuth no listada se instala con la URL de autorización directa; la revisión aplica solo para listarse en el marketplace (pide 5 instalaciones activas). PKCE obligatorio, `accounts:read` obligatorio, access token ~1 h, refresh token vence si no se usa 90 días. Crean y autorizan: Owner, Admin o Manager | developers.klaviyo.com/en/docs/set_up_oauth y create_a_public_oauth_app (extracto) | 2026-11-25 |
-| 5 | **Riesgo real, no bloqueo explícito.** La Acceptable Use Policy prohíbe usar los servicios "in a manner designed to avoid or circumvent bills, invoices, or other fees that Klaviyo would otherwise be entitled to collect"; los API Terms permiten revocar acceso "at our sole discretion". La propia ayuda de Klaviyo dice que los perfiles suprimidos no cuentan para el plan y Klaviyo recomienda suprimir. Requiere opinión de abogado (tarea humana 12). Ver decisión A | klaviyo.com/legal/acceptable-use-policy y /api-terms (extracto) | 2026-11-25 |
+| 5 | **Riesgo real, no bloqueo explícito.** La Acceptable Use Policy (actualizada el 9 de abril de 2026, leída directo) prohíbe usar los servicios "in a manner designed to avoid or circumvent bills, invoices, or other fees that Klaviyo would otherwise be entitled to collect"; los API Terms permiten revocar acceso "at our sole discretion". La propia ayuda de Klaviyo dice que los perfiles suprimidos no cuentan para el plan y Klaviyo recomienda suprimir. Requiere opinión de abogado (tarea humana 12). Ver decisión A | klaviyo.com/legal/acceptable-use-policy (leída) y /api-terms (extracto) | 2026-11-25 |
 | 6 | Cada evento "Opened Email" trae la propiedad "Machine Open" (en la UI "Apple Privacy Open"); Klaviyo aclara que indica que *pudo* ser automática. Se puede filtrar en condiciones de segmento (`metric_filters`) y en `GET /api/events`. Diseño: aperturas cuentan como protección por defecto; el merchant puede optar por ignorar las automáticas | help.klaviyo.com/4416791883163 (extracto) + spec | 2026-11-25 |
 | 7 | **Vigente con matiz.** Tras una des-supresión manual hay que esperar 90 días **desde la supresión original** para volver a suprimir (otras fuentes dicen desde la des-supresión). La API no lo documenta; se presume que el job lo cuenta en `skipped_count`. Las reglas protegen 90 días desde la reactivación (conservador). Probar en la cuenta de prueba | help.klaviyo.com/24263920096027 (extracto) | 2026-11-25 |
 | 8 | Hobby: máx. 300 s por función, cron solo una vez por día, y **uso comercial prohibido**. Pro: 800 s (1.800 s en beta), cron por minuto. Diseño elegido: tabla de jobs en Postgres con lease y cursor, tick por cron cada minuto procesando ~4 min por tick; sin worker dedicado ni pg-boss. Requiere Vercel Pro (ver decisión D) | vercel.com/docs (vía buscador de docs de Vercel) | 2026-11-25 |
@@ -65,8 +65,9 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 6. **365 días de pedidos exige `read_all_orders`** con aprobación, y el mail exige datos protegidos nivel 2.
 7. **Vercel Hobby no permite uso comercial.**
 8. **Supabase free: 2 proyectos gratis en total** entre todas las organizaciones donde Facundo es Owner/Admin; ya están ocupados por dos proyectos existentes.
-9. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
-10. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
+9. **Klaviyo tiene dos planes pagos** (Email y Marketing); el paquete solo contemplaba Email. Los ejemplos del paquete se confirman con precios oficiales: 12.500 → 10.000 ahorra US$ 125; 50.000 → 20.000 ahorra US$ 345.
+11. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
+12. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
 
 ## Decisiones pendientes de Facundo
 
@@ -78,6 +79,6 @@ Ver el mensaje de la sesión del 2026-11-25. Resumen: A) términos de Klaviyo, B
 - Paquete de handover creado. Sin código todavía.
 - Nombre TierSaver elegido; tiersaver.com registrado en Cloudflare.
 - USPTO sin resultados para "Tiersaver".
-- Sesión: paquete copiado al repo; monorepo con `shopify/` (plantilla oficial React Router, API 2026-10, build y typecheck OK) y `packages/core/` (tramos, ahorro, cargo, reglas de protección, compuerta de simulación, programación por fecha de facturación, lotes y rate limit) con 60 tests unitarios pasando.
+- Sesión: paquete copiado al repo; monorepo con `shopify/` (plantilla oficial React Router, API 2026-10, build y typecheck OK) y `packages/core/` (tablas oficiales de precios de Klaviyo, tramos, ahorro, cargo, reglas de protección, compuerta de simulación, programación por fecha de facturación, lotes y rate limit) con 63 tests unitarios pasando.
 - Dudas de `02` y `04` resueltas con las salvedades de arriba. Fase 0 frenada en el corte de `08-RIESGOS-Y-METRICAS.md` hasta que Facundo decida A–E.
 - Bloqueantes humanas sin hacer: no hay `.env` en la sesión, ni Shopify Partner / Dev Dashboard, ni tienda de desarrollo, ni cuenta de Klaviyo de prueba. Vercel y Supabase están conectados pero sin proyectos de TierSaver.

@@ -5,4 +5,4 @@ export * from "./rules.js";
 export * from "./simulation.js";
 export * from "./schedule.js";
 export * from "./batch.js";
-export * from "./price-tables/klaviyo-email.js";
+export * from "./price-tables/klaviyo.js";

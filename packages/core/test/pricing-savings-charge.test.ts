@@ -4,7 +4,9 @@ import {
   chargeIdempotencyKey,
   estimateSavings,
   formatUsd,
-  KLAVIYO_EMAIL_2026_11_DRAFT,
+  KLAVIYO_EMAIL_2026_11,
+  KLAVIYO_MARKETING_2026_11,
+  isKnownTierBoundary,
   isTableFullyVerified,
   PriceTableError,
   profilesToDropOneTier,
@@ -30,9 +32,10 @@ describe("tierFor", () => {
 });
 
 describe("assertValidPriceTable", () => {
-  it("accepts the fixture and the draft table", () => {
+  it("accepts the fixture and the official tables", () => {
     expect(() => assertValidPriceTable(TEST_TABLE)).not.toThrow();
-    expect(() => assertValidPriceTable(KLAVIYO_EMAIL_2026_11_DRAFT)).not.toThrow();
+    expect(() => assertValidPriceTable(KLAVIYO_EMAIL_2026_11)).not.toThrow();
+    expect(() => assertValidPriceTable(KLAVIYO_MARKETING_2026_11)).not.toThrow();
   });
   it("rejects unsorted tiers and decreasing prices", () => {
     const bad: PriceTable = { ...TEST_TABLE, tiers: [TEST_TABLE.tiers[1]!, TEST_TABLE.tiers[0]!] };
@@ -46,8 +49,13 @@ describe("assertValidPriceTable", () => {
     };
     expect(() => assertValidPriceTable(cheaper)).toThrow(PriceTableError);
   });
-  it("draft table is not marked verified", () => {
-    expect(isTableFullyVerified(KLAVIYO_EMAIL_2026_11_DRAFT)).toBe(false);
+  it("official tables are fully verified and cover 500–150,000", () => {
+    for (const t of [KLAVIYO_EMAIL_2026_11, KLAVIYO_MARKETING_2026_11]) {
+      expect(isTableFullyVerified(t)).toBe(true);
+      expect(t.tiers).toHaveLength(49);
+      expect(t.tiers[0]!.maxProfiles).toBe(500);
+      expect(t.tiers.at(-1)!.maxProfiles).toBe(150_000);
+    }
   });
 });
 
@@ -142,5 +150,24 @@ describe("formatting and keys", () => {
     const k = chargeIdempotencyKey("shop.myshopify.com", "run_123");
     expect(k).toBe(chargeIdempotencyKey("shop.myshopify.com", "run_123"));
     expect(k.length).toBeLessThanOrEqual(255);
+  });
+});
+
+describe("official Klaviyo Email table (2026-11-25)", () => {
+  const t = KLAVIYO_EMAIL_2026_11;
+  it("reproduces the handover examples", () => {
+    expect(estimateSavings({ profilesBefore: 12_500, profilesRemoved: 2_500, table: t }).monthlySavingsCents).toBe(12_500);
+    expect(estimateSavings({ profilesBefore: 50_000, profilesRemoved: 30_000, table: t }).monthlySavingsCents).toBe(34_500);
+  });
+  it("prices known points", () => {
+    expect(tierFor(150_000, t)?.tier.monthlyCents).toBe(195_500);
+    expect(tierFor(10_000, t)?.tier.monthlyCents).toBe(15_000);
+    expect(tierFor(10_001, t)?.tier.monthlyCents).toBe(17_500);
+    expect(tierFor(150_001, t)).toBeNull();
+  });
+  it("recognizes real tier boundaries only", () => {
+    expect(isKnownTierBoundary(12_500, t)).toBe(true);
+    expect(isKnownTierBoundary(12_000, t)).toBe(true);
+    expect(isKnownTierBoundary(8_000, t)).toBe(false);
   });
 });
