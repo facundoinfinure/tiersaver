@@ -323,13 +323,38 @@ function fakeAdmin(opts: { subscribed?: boolean; reject?: boolean } = {}) {
   return { graphql, records };
 }
 
+/** Klaviyo confirmed every job, with more than enough profiles processed. */
+const CONFIRMED = { done: true, suppressed: 1_000_000 };
+
 describe("charging a cleanup", () => {
+  it("is only an estimate until Klaviyo's jobs confirm; nothing reaches Shopify before that", async () => {
+    const { runId } = await finishedCleanup(4);
+    const admin = fakeAdmin();
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId)).toEqual({ status: "estimated", feeCents: 1500 });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId, { done: false, suppressed: 4 })).toEqual({ status: "estimated", feeCents: 1500 });
+    expect(admin.records).toHaveLength(0);
+    expect((await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }))?.status).toBe("pending");
+
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId, { done: true, suppressed: 3 })).toEqual({ status: "charged", feeCents: 1500 });
+    expect(admin.records).toHaveLength(1);
+    expect(await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) })).toMatchObject({ status: "charged", profilesSuppressed: 3 });
+  });
+
+  it("is not charged when Klaviyo confirms that no profile was suppressed", async () => {
+    const { runId } = await finishedCleanup(4);
+    const admin = fakeAdmin();
+    await settleRunCharge({ db, graphql: admin.graphql }, runId);
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId, { done: true, suppressed: 0 })).toEqual({ status: "not_charged", reason: "no_cleanup" });
+    expect(admin.records).toHaveLength(0);
+    expect(await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) })).toMatchObject({ status: "not_charged", feeCents: 0 });
+  });
+
   it("charges the flat price of the simulated list size, once", async () => {
     const { shop, runId, simulationId } = await finishedCleanup(4);
     await db.update(schema.simulations).set({ activeProfiles: 12_000 }).where(eq(schema.simulations.id, simulationId));
     const admin = fakeAdmin();
-    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId)).toEqual({ status: "charged", feeCents: 2900 });
-    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId)).toEqual({ status: "charged", feeCents: 2900 });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId, CONFIRMED)).toEqual({ status: "charged", feeCents: 2900 });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, runId, CONFIRMED)).toEqual({ status: "charged", feeCents: 2900 });
     expect(admin.records).toHaveLength(1);
     expect(admin.records[0]).toMatchObject({ price: { amount: 29, currencyCode: "USD" }, idempotencyKey: `tiersaver:${shop}:run:${runId}` });
     expect(admin.records[0]!.description).not.toMatch(/sav|bill/i);
@@ -345,29 +370,29 @@ describe("charging a cleanup", () => {
     gateway.skip = (r) => r.profileIds; // nobody could be suppressed
     await executeRun({ db, gateway, step: new FakeSteps() }, created.runId);
     const admin = fakeAdmin();
-    expect(await settleRunCharge({ db, graphql: admin.graphql }, created.runId)).toEqual({ status: "not_charged", reason: "no_cleanup" });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, created.runId, CONFIRMED)).toEqual({ status: "not_charged", reason: "no_cleanup" });
 
     const first = await finishedCleanup(2);
-    expect((await settleRunCharge({ db, graphql: admin.graphql }, first.runId)).status).toBe("charged");
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, first.runId, CONFIRMED)).status).toBe("charged");
     const second = await seedSimulation({ shop: first.shop, candidates: 2 });
     const run2 = await createSuppressionRun(db, { shop: first.shop, simulationId: second.simulationId, createdBy: "user:1" });
     if (!run2.ok) throw new Error(run2.reason);
     await executeRun({ db, gateway: new FakeGateway(), step: new FakeSteps() }, run2.runId);
-    expect(await settleRunCharge({ db, graphql: admin.graphql }, run2.runId)).toEqual({ status: "not_charged", reason: "already_charged_this_cycle" });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, run2.runId, CONFIRMED)).toEqual({ status: "not_charged", reason: "already_charged_this_cycle" });
 
     const undo = await createUndoRun(db, { shop: first.shop, runId: first.runId, createdBy: "user:1", confirmAfterRenewal: true });
     if (!undo.ok) throw new Error(undo.reason);
-    expect(await settleRunCharge({ db, graphql: admin.graphql }, undo.runId)).toEqual({ status: "skipped", reason: "not_a_cleanup" });
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, undo.runId, CONFIRMED)).toEqual({ status: "skipped", reason: "not_a_cleanup" });
     expect(admin.records).toHaveLength(1);
   });
 
   it("stays open and can be retried when Shopify has no subscription or rejects the record", async () => {
     const { runId } = await finishedCleanup(2);
-    expect(await settleRunCharge({ db, graphql: fakeAdmin({ subscribed: false }).graphql }, runId)).toEqual({ status: "failed", error: "no_active_subscription" });
-    expect(await settleRunCharge({ db, graphql: fakeAdmin({ reject: true }).graphql }, runId)).toEqual({ status: "failed", error: "usage_record_rejected" });
+    expect(await settleRunCharge({ db, graphql: fakeAdmin({ subscribed: false }).graphql }, runId, CONFIRMED)).toEqual({ status: "failed", error: "no_active_subscription" });
+    expect(await settleRunCharge({ db, graphql: fakeAdmin({ reject: true }).graphql }, runId, CONFIRMED)).toEqual({ status: "failed", error: "usage_record_rejected" });
     expect((await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }))?.status).toBe("failed");
     const admin = fakeAdmin();
-    expect((await settleRunCharge({ db, graphql: admin.graphql }, runId)).status).toBe("charged");
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, runId, CONFIRMED)).status).toBe("charged");
     expect(admin.records).toHaveLength(1);
   });
 

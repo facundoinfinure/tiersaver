@@ -46,7 +46,19 @@ import { RUN_BATCH_SIZE, type BatchRequest, type BatchResult, type SuppressionGa
 export type GatewayEnv = KlaviyoSecrets & {
   DB: D1Database;
   SUPPRESSION_ENABLED?: string;
+  /**
+   * Optional second lock. When set, suppress batches are refused unless the
+   * shop is connected to exactly this Klaviyo account (`suppression_not_allowed_for_account`).
+   * Used to try real cleanups on the test account only. Undo is exempt, like above.
+   */
+  SUPPRESSION_ALLOWED_ACCOUNT_ID?: string;
 };
+
+/** Whether this deployment may suppress for a shop connected to `klaviyoAccountId`. */
+export function suppressionAllowed(env: Pick<GatewayEnv, "SUPPRESSION_ENABLED" | "SUPPRESSION_ALLOWED_ACCOUNT_ID">, klaviyoAccountId: string | null | undefined): boolean {
+  if (env.SUPPRESSION_ENABLED !== "true") return false;
+  return !env.SUPPRESSION_ALLOWED_ACCOUNT_ID || env.SUPPRESSION_ALLOWED_ACCOUNT_ID === klaviyoAccountId;
+}
 
 export interface GatewayDeps {
   fetch?: typeof fetch;
@@ -77,6 +89,7 @@ export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: Ga
         const connection = await getConnection(db, shop);
         if (!connection) refuse("klaviyo_not_connected");
         if (connection.status !== "connected") refuse(`klaviyo_${connection.status}`);
+        if (request.kind !== "undo" && !suppressionAllowed(env, connection.klaviyoAccountId)) refuse("suppression_not_allowed_for_account");
 
         const client = createKlaviyoClient(connectionDeps, shop);
 

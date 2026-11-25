@@ -139,6 +139,8 @@ const USAGE_MUTATION = `#graphql
 
 export type SettleResult =
   | { status: "charged"; feeCents: number }
+  /** Quoted from what the run sent; waiting for Klaviyo's jobs to confirm before anything is charged. */
+  | { status: "estimated"; feeCents: number }
   | { status: "not_charged"; reason: string }
   | { status: "failed"; error: string }
   | { status: "skipped"; reason: "run_not_found" | "not_a_cleanup" | "not_finished" };
@@ -149,10 +151,17 @@ const FINISHED = ["completed", "completed_with_errors", "failed", "cancelled"] a
  * Settles the charge of one cleanup. Safe to call any number of times: there
  * is one `usage_charges` row per run, and Shopify gets the same idempotency
  * key every time. A failed attempt stays "failed" and is tried again later.
+ * Two stages: first an ESTIMATE from what the run sent, then, once Klaviyo's
+ * jobs are complete, the real charge for what Klaviyo confirmed.
  */
 export async function settleRunCharge(
   deps: { db: Db; graphql: AdminGraphql | null; now?: () => Date },
   runId: string,
+  /**
+   * What Klaviyo's jobs report for the run (app/runs/confirm.ts). Until it is
+   * `done` the charge is only an estimate and nothing is sent to Shopify.
+   */
+  confirmation: { done: boolean; suppressed: number } | null = null,
 ): Promise<SettleResult> {
   const { db } = deps;
   const now = (deps.now ?? (() => new Date()))();
@@ -214,6 +223,21 @@ export async function settleRunCharge(
       })
       .onConflictDoNothing();
     if (charge.status === "not_charged") return { status: "not_charged", reason: charge.noChargeReason ?? "no_cleanup" };
+  }
+
+  // The amount is an estimate until Klaviyo confirms how many profiles its jobs processed.
+  if (!confirmation?.done) return { status: "estimated", feeCents: charge.feeCents };
+  const confirmed = Math.max(0, Math.min(Math.trunc(confirmation.suppressed), run.processedCount));
+  if (confirmed === 0) {
+    await db
+      .update(schema.usageCharges)
+      .set({ status: "not_charged", feeCents: 0, profilesSuppressed: 0, noChargeReason: "no_cleanup" })
+      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
+    return { status: "not_charged", reason: "no_cleanup" };
+  }
+  if (confirmed !== charge.profilesSuppressed) {
+    await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed }).where(eq(schema.usageCharges.id, charge.id));
+    charge = { ...charge, profilesSuppressed: confirmed };
   }
 
   const fail = async (error: string): Promise<SettleResult> => {

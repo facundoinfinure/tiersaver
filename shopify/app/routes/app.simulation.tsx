@@ -10,11 +10,15 @@ import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { getConnection } from "../klaviyo/connection.server";
 import { embeddedAppUrl } from "../klaviyo/flow.server";
+import { suppressionAllowed } from "../runs/gateway.server";
 import { startSuppressionRun } from "../runs/start.server";
 import type { ScanSummary } from "../scans/engine";
 import { KEPT_LABELS } from "../scans/view.server";
 import { approveSimulation, CANDIDATE_REASON_LABELS, CSV_PART_SIZE, latestSimulation } from "../simulations/review";
 import { authenticate } from "../shopify.server";
+
+const isSeededAccount = (klaviyoAccountId: string | null | undefined) =>
+  Boolean(env.KLAVIYO_SEEDED_ACCOUNT_ID) && klaviyoAccountId === env.KLAVIYO_SEEDED_ACCOUNT_ID;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -63,7 +67,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
     subscribed,
     terms: subscriptionTerms(),
-    cleanupsEnabled: env.SUPPRESSION_ENABLED === "true",
+    cleanupsEnabled: suppressionAllowed(env, connection?.klaviyoAccountId),
+    // The seeded test account can run without a Shopify subscription, so the flow can be tried before billing is set up.
+    billingOptional: isSeededAccount(connection?.klaviyoAccountId),
   };
 };
 
@@ -116,13 +122,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (intent === "start") {
     // Checked before the simulation is consumed: a refused start must leave it approved and usable.
-    if (env.SUPPRESSION_ENABLED !== "true") return { error: "cleanups_not_enabled" };
     const connection = await getConnection(db, session.shop);
     if (connection?.status !== "connected") return { error: "klaviyo_not_connected" };
-    try {
-      if (!(await getBillingStatus(requestAdminGraphql(admin))).subscription) return { error: "billing_required" };
-    } catch {
-      return { error: "billing_unavailable" };
+    if (!suppressionAllowed(env, connection.klaviyoAccountId)) return { error: "cleanups_not_enabled" };
+    if (!isSeededAccount(connection.klaviyoAccountId)) {
+      try {
+        if (!(await getBillingStatus(requestAdminGraphql(admin))).subscription) return { error: "billing_required" };
+      } catch {
+        return { error: "billing_unavailable" };
+      }
     }
     const started = await startSuppressionRun({ shop: session.shop, simulationId, createdBy: actor });
     return started.ok ? redirect(`/app/runs/${started.runId}`) : { error: started.reason };
@@ -341,7 +349,8 @@ export default function Simulation() {
                       </s-button>
                     </s-stack>
                   </Form>
-                ) : (
+                ) : null}
+                {data.subscribed !== false || data.billingOptional ? (
                   <Form method="post">
                     <input type="hidden" name="intent" value="start" />
                     <input type="hidden" name="simulationId" value={sim.id} />
@@ -349,7 +358,7 @@ export default function Simulation() {
                       Start cleanup: suppress {number(sim.candidates)} profiles
                     </s-button>
                   </Form>
-                )}
+                ) : null}
               </s-stack>
             ) : null}
           </s-stack>

@@ -303,4 +303,15 @@ describe("a whole run through the real engine", () => {
     expect(fake.jobs).toHaveLength(3);
     expect(fake.suppressed.size).toBe(130);
   });
+
+  it("with an allowed account set, refuses to suppress for any other Klaviyo account but still undoes", async () => {
+    const { gateway, gatewayEnv, batch, fake, shop } = await setup({ candidates: 2 });
+    gatewayEnv.SUPPRESSION_ALLOWED_ACCOUNT_ID = "OTHER1";
+    await expect(gateway.submitBatch(batch(0))).rejects.toThrow("suppression_not_allowed_for_account");
+    expect(fake.jobs).toHaveLength(0);
+    await expect(gateway.submitBatch(batch(0, "undo"))).resolves.toMatchObject({ skippedProfileIds: [] });
+    gatewayEnv.SUPPRESSION_ALLOWED_ACCOUNT_ID = fake.accountId;
+    await expect(gateway.submitBatch(batch(0))).resolves.toMatchObject({ skippedProfileIds: [] });
+    void shop;
+  });
 });

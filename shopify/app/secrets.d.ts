@@ -13,6 +13,8 @@ interface TierSaverSecrets {
    * set anywhere by default: see app/runs/gateway.server.ts.
    */
   SUPPRESSION_ENABLED?: string;
+  /** Optional: restricts SUPPRESSION_ENABLED to shops connected to this one Klaviyo account. See app/runs/gateway.server.ts. */
+  SUPPRESSION_ALLOWED_ACCOUNT_ID?: string;
   /** Plain variable in wrangler.jsonc: id of the seeded Klaviyo test account. See app/scans/engine.ts. */
   KLAVIYO_SEEDED_ACCOUNT_ID?: string;
 }

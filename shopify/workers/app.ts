@@ -40,8 +40,12 @@ export default {
           console.error(`schedule tick failed: ${error instanceof Error ? error.name : "error"}`);
         }
         try {
-          for (const open of await runsWithOpenCharges(db)) {
-            await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId);
+          const [{ confirmRunJobs }, { createKlaviyoClient }] = await Promise.all([import("../app/runs/confirm"), import("../app/klaviyo/connection.server")]);
+          // A few per tick: each one reads its jobs from Klaviyo. Runs with more jobs than one invocation can read
+          // are confirmed by their own Workflow.
+          for (const open of (await runsWithOpenCharges(db)).slice(0, 3)) {
+            const confirmation = await confirmRunJobs(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
+            await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId, confirmation);
           }
         } catch (error) {
           console.error(`charge retry failed: ${error instanceof Error ? error.name : "error"}`);

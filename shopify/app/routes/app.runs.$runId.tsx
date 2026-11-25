@@ -65,6 +65,7 @@ const ERRORS: Record<string, string> = {
 
 const RUN_ERRORS: Record<string, string> = {
   suppression_disabled: "Cleanups are not switched on for this installation. Nothing was changed in Klaviyo.",
+  suppression_not_allowed_for_account: "Cleanups are not switched on for this Klaviyo account. Nothing was changed in Klaviyo.",
   klaviyo_needs_reauth: "TierSaver's access to Klaviyo ended. Reconnect Klaviyo from the home page.",
   klaviyo_not_connected: "Klaviyo is not connected.",
   klaviyo_disconnected: "Klaviyo was disconnected.",
@@ -167,7 +168,7 @@ export default function Run() {
                 ? `Charged ${formatUsd(charge.feeCents)} through Shopify${charge.chargedAt ? ` on ${dateTime(charge.chargedAt)}` : ""}.`
                 : charge.status === "not_charged"
                   ? (NO_CHARGE[charge.reason ?? ""] ?? "Not charged.")
-                  : `A charge of ${formatUsd(charge.feeCents)} for this cleanup is pending in Shopify.`}
+                  : `Estimated charge: ${formatUsd(charge.feeCents)}. It becomes final, and is sent to Shopify, once Klaviyo confirms that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.`}
             </s-paragraph>
           ) : null}
           {!isUndo && !running && run.submitted > 0 ? (

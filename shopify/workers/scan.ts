@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { getBillingStatus } from "../app/billing/billing";
 import { offlineAdminGraphql } from "../app/billing/billing.server";
 import { createSuppressionRun } from "../app/runs/engine";
+import { suppressionAllowed } from "../app/runs/gateway.server";
 import { approveAutomatically, decideAutomatic } from "../app/schedule/automatic";
 import * as schema from "../app/db/schema";
 import { createKlaviyoClient } from "../app/klaviyo/connection.server";
@@ -49,7 +50,8 @@ export class ScanWorkflow extends WorkflowEntrypoint<Env, ScanParams> {
           if (!scan || scan.origin !== "scheduled") return "not_scheduled";
           const decision = await decideAutomatic(db, { shop: scan.shop, simulationId });
           if (!decision.run) return decision.reason;
-          if (this.env.SUPPRESSION_ENABLED !== "true") return "suppression_disabled";
+          const connection = await db.query.klaviyoConnections.findFirst({ where: (k, { eq }) => eq(k.shop, scan.shop), columns: { klaviyoAccountId: true } });
+          if (!suppressionAllowed(this.env, connection?.klaviyoAccountId)) return "suppression_disabled";
           const billing = await getBillingStatus(offlineAdminGraphql(scan.shop));
           if (!billing.subscription) return "billing_required";
           if (!(await approveAutomatically(db, { shop: scan.shop, simulationId }))) return "not_open";
