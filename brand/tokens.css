@@ -1,0 +1,35 @@
+/* TierSaver design tokens. Source of truth: docs/03-MARCA.md.
+   Keep in sync with brand/tokens.json and site/styles/tokens.css. */
+:root {
+  /* Color */
+  --bg: #eeeeec;            /* page background */
+  --surface-1: #ffffff;     /* cards */
+  --surface-2: #e4e4e1;     /* tiles, control backgrounds */
+  --surface-3: #dadad6;     /* emphasis card */
+  --surface-deep: #101010;  /* dark closing panels */
+  --line: #dedcd7;          /* hairlines */
+  --line-strong: #85827b;   /* control borders */
+  --ink: #141414;           /* primary text */
+  --ink-2: #2b2a27;         /* secondary text */
+  --muted: #5f5e59;         /* labels and metadata */
+  --faint: #7f7c76;         /* headlines of 24px or larger only */
+  --accent-warm: #e8c9a2;   /* the only accent, on dark panels */
+  --alert: #b34a23;         /* only for what needs attention */
+  --success-bg: #dcebd5;    /* success states */
+  --success-ink: #24502a;
+
+  /* Type */
+  --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --weight-light: 300;
+  --weight-regular: 400;
+  --numeric: tabular-nums;  /* tabular figures, always */
+  --label-transform: uppercase;
+  --label-separator: "·";
+
+  /* Radius */
+  --radius-pill: 999px;     /* everything that can be pressed */
+  --radius-tile: 14px;
+  --radius-card: 20px;
+  --radius-panel: 28px;
+}

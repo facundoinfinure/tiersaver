@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>TierSaver styleguide</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <style>
+    /* Styleguide-only helpers. Not part of the system. */
+    .sg-head { padding-block: 2rem 0; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+    .sg-block { padding-block: 2.5rem; border-top: 1px solid var(--line); }
+    .sg-block > .label { margin-bottom: 1.5rem; display: block; }
+    .sg-swatches { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+    .sg-swatch { border: 1px solid var(--line); border-radius: var(--radius-tile); background: var(--surface-1); overflow: hidden; }
+    .sg-swatch i { display: block; height: 4.5rem; border-bottom: 1px solid var(--line); }
+    .sg-swatch div { padding: 0.625rem 0.75rem 0.75rem; }
+    .sg-swatch b { display: block; font-weight: 400; font-size: 0.9375rem; }
+    .sg-radii { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+    .sg-radii > div { height: 6rem; display: grid; place-items: center; background: var(--surface-1); border: 1px solid var(--line-strong); }
+    .sg-type > * + * { margin-top: 1.25rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="sg-head">
+      <p class="h4">TierSaver</p>
+      <p class="label"><span>Styleguide</span><span>Draft</span><span>Phase 2</span></p>
+    </header>
+
+    <!-- Hero pattern -->
+    <section class="section stack" style="--stack: 1.5rem">
+      <p class="label"><span>For Shopify brands</span><span>Works with Klaviyo</span></p>
+      <h1 class="two-tone"><span>Klaviyo list hygiene</span> that pays for itself.</h1>
+      <p class="lead">TierSaver suppresses profiles that stopped engaging, never your buyers, right before your billing date. Your list stays healthy and your Klaviyo bill can drop a tier.</p>
+      <div class="cluster">
+        <a class="button" href="#">Run my free list audit</a>
+        <a class="button button--secondary" href="#">See how it works</a>
+      </div>
+    </section>
+
+    <!-- Color -->
+    <section class="sg-block">
+      <span class="label"><span>01</span><span>Color</span></span>
+      <div class="sg-swatches">
+        <div class="sg-swatch"><i style="background:var(--bg)"></i><div><b>bg</b><span class="label">#eeeeec</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--surface-1)"></i><div><b>surface-1</b><span class="label">#ffffff</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--surface-2)"></i><div><b>surface-2</b><span class="label">#e4e4e1</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--surface-3)"></i><div><b>surface-3</b><span class="label">#dadad6</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--surface-deep)"></i><div><b>surface-deep</b><span class="label">#101010</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--line)"></i><div><b>line</b><span class="label">#dedcd7</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--line-strong)"></i><div><b>line-strong</b><span class="label">#85827b</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--ink)"></i><div><b>ink</b><span class="label">#141414</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--ink-2)"></i><div><b>ink-2</b><span class="label">#2b2a27</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--muted)"></i><div><b>muted</b><span class="label">#5f5e59</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--faint)"></i><div><b>faint</b><span class="label">#7f7c76</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--accent-warm)"></i><div><b>accent-warm</b><span class="label">#e8c9a2</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--alert)"></i><div><b>alert</b><span class="label">#b34a23</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--success-bg)"></i><div><b>success-bg</b><span class="label">#dcebd5</span></div></div>
+        <div class="sg-swatch"><i style="background:var(--success-ink)"></i><div><b>success-ink</b><span class="label">#24502a</span></div></div>
+      </div>
+    </section>
+
+    <!-- Type -->
+    <section class="sg-block">
+      <span class="label"><span>02</span><span>Type</span></span>
+      <div class="sg-type">
+        <p class="label"><span>H1</span><span>Inter Tight 300</span><span>Two-tone</span></p>
+        <p class="h1 two-tone"><span>Every cleanup is simulated first</span> and can be undone.</p>
+        <p class="label"><span>H2</span><span>Inter Tight 300</span></p>
+        <p class="h2 two-tone"><span>Your buyers stay.</span> Every profile is checked against your Shopify orders.</p>
+        <p class="label"><span>H3</span><span>Inter Tight 300</span></p>
+        <p class="h3">You only pay when Klaviyo confirms a lower tier.</p>
+        <p class="label"><span>Lead</span><span>Inter Tight 300</span></p>
+        <p class="lead">TierSaver suppresses profiles that stopped engaging, never your buyers, right before your billing date.</p>
+        <p class="label"><span>Body</span><span>Inter Tight 400</span></p>
+        <p>Suppressed profiles are not deleted. Their history stays in Klaviyo, and anyone who buys again is reactivated.</p>
+        <p class="label"><span>Secondary</span><span>Muted</span></p>
+        <p class="text-secondary">Secondary text uses ink-2.</p>
+        <p class="text-muted small">Labels and metadata use muted.</p>
+        <p class="label"><span>Mono label</span><span>IBM Plex Mono 400</span><span>Uppercase</span></p>
+        <p class="label"><span>Audit</span><span>Simulate</span><span>Suppress</span><span>Reactivate</span></p>
+        <p class="label"><span>Tabular figures</span></p>
+        <p class="h3" aria-label="Tabular figures sample">0123456789<br>1111111111</p>
+      </div>
+    </section>
+
+    <!-- Buttons and controls -->
+    <section class="sg-block">
+      <span class="label"><span>03</span><span>Buttons and controls</span></span>
+      <div class="stack" style="--stack: 1.25rem">
+        <div class="cluster">
+          <a class="button" href="#">Run my free list audit</a>
+          <a class="button button--secondary" href="#">See how it works</a>
+          <button class="button" disabled>Simulation required</button>
+        </div>
+        <div class="cluster">
+          <a class="button button--small" href="#">Undo</a>
+          <a class="button button--secondary button--small" href="#">View log</a>
+        </div>
+        <div class="cluster">
+          <span class="pill">Simulated</span>
+          <span class="pill pill--success">Buyers protected</span>
+          <span class="pill pill--alert">Needs your approval</span>
+        </div>
+        <div style="max-width: 24rem">
+          <label class="label" for="sg-input" style="display:block;margin-bottom:0.5rem">Store URL</label>
+          <input class="input" id="sg-input" type="text" placeholder="your-store.myshopify.com">
+        </div>
+      </div>
+    </section>
+
+    <!-- Surfaces -->
+    <section class="sg-block">
+      <span class="label"><span>04</span><span>Surfaces</span><span>No shadows</span></span>
+      <div class="grid">
+        <article class="card stack">
+          <p class="label"><span>Card</span><span>20 px</span></p>
+          <h3>Checked against your orders</h3>
+          <p class="text-secondary">Every profile is checked against your Shopify orders before anything changes.</p>
+        </article>
+        <article class="card stack">
+          <p class="label"><span>Card</span><span>20 px</span></p>
+          <h3>Simulated first</h3>
+          <p class="text-secondary">Every cleanup is simulated first and can be undone.</p>
+        </article>
+        <article class="card card--emphasis stack">
+          <p class="label"><span>Emphasis card</span><span>surface-3</span></p>
+          <h3>No savings, no charge</h3>
+          <p class="text-secondary">You only pay when Klaviyo confirms a lower tier.</p>
+        </article>
+      </div>
+      <div class="panel stack" style="margin-top: 1rem; --stack: 1.25rem">
+        <p class="label"><span>Panel</span><span>28 px</span></p>
+        <h2 class="two-tone"><span>Will I lose customers?</span> No one who buys is touched.</h2>
+        <div class="grid">
+          <div class="tile stack" style="--stack: 0.375rem">
+            <p class="label"><span>Tile</span><span>14 px</span></p>
+            <p>Protection rules keep buyers active.</p>
+          </div>
+          <div class="tile stack" style="--stack: 0.375rem">
+            <p class="label"><span>Tile</span><span>14 px</span></p>
+            <p>You approve a simulation before anything runs.</p>
+          </div>
+          <div class="tile stack" style="--stack: 0.375rem">
+            <p class="label"><span>Tile</span><span>14 px</span></p>
+            <p>Every run can be undone.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Radius -->
+    <section class="sg-block">
+      <span class="label"><span>05</span><span>Radius</span></span>
+      <div class="sg-radii">
+        <div style="border-radius: var(--radius-tile)"><span class="label"><span>Tile</span><span>14 px</span></span></div>
+        <div style="border-radius: var(--radius-card)"><span class="label"><span>Card</span><span>20 px</span></span></div>
+        <div style="border-radius: var(--radius-panel)"><span class="label"><span>Panel</span><span>28 px</span></span></div>
+        <div style="border-radius: var(--radius-pill)"><span class="label"><span>Pill</span></span></div>
+      </div>
+    </section>
+
+    <!-- Dark closing panel -->
+    <section class="sg-block" style="padding-bottom: 4rem">
+      <span class="label"><span>06</span><span>Dark closing panel</span><span>accent-warm</span></span>
+      <div class="panel panel--dark stack" style="--stack: 1.5rem">
+        <p class="label"><span>Free audit</span><span>Nothing changes until you approve</span></p>
+        <h2 class="two-tone"><span>Keep your list healthy.</span> See what your audit finds.</h2>
+        <p class="lead">Every cleanup is simulated first and can be undone. You only pay when Klaviyo confirms a lower tier.</p>
+        <div class="cluster">
+          <a class="button" href="#">Run my free list audit</a>
+          <a class="button button--secondary" href="#">Read the help center</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
