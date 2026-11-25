@@ -1,0 +1,40 @@
+<!--
+title: Undo and the 90-day rule
+nav: Undo and the 90-day rule
+description: Undo reactivates exactly the profiles a TierSaver run suppressed. Klaviyo then makes those profiles wait before they can be suppressed again. What that means in practice.
+summary: Undo reverses one run exactly. Klaviyo then makes those profiles wait before they can be suppressed again.
+lead: Every run can be undone. Undo reactivates exactly the profiles that run suppressed, and nothing else.
+layout: doc
+group: help
+order: 5
+updated: 2026-11-25
+-->
+<h2>The run log</h2>
+<p>Each cleanup is recorded: when it ran, whether you started it or the schedule did, the rules in effect, how many profiles were suppressed and how it ended. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what makes undo exact.</p>
+
+<h2>What undo does</h2>
+<ul>
+  <li>It removes the suppression from the profiles of one run.</li>
+  <li>It does not touch profiles that were suppressed by you, by Klaviyo or by an earlier run.</li>
+  <li>It does not change consent. A profile that had unsubscribed before stays unsubscribed.</li>
+</ul>
+<p>After an undo, the set of profiles suppressed by TierSaver is what it was before that run.</p>
+
+<h2>What to expect afterwards</h2>
+<p>Reactivated profiles count as active profiles again. If the run had moved your list under a tier limit, undoing it can move the list back over that limit. Klaviyo's displayed profile count may take up to 72 hours to refresh after a large change.</p>
+
+<h2>The 90-day rule</h2>
+<p>Klaviyo's help center describes a waiting period for manual suppression: once a profile is suppressed and then unsuppressed, it cannot be manually suppressed again until 90 days after the previous suppression. Klaviyo adds that this rule is not active during the first 30 days after a new account is created.</p>
+<p>What this means for you:</p>
+<ul>
+  <li><strong>Undo is not something to toggle back and forth.</strong> Profiles you reactivate cannot go straight back into the next cleanup.</li>
+  <li><strong>TierSaver applies the same wait on its side.</strong> Any profile reactivated in the last {{rule.reactivationLockDays}} days is protected and will not appear as a candidate. This is one of the <a href="/help/protection-rules">protection rules</a>.</li>
+  <li><strong>Reactivation on purchase is off by default for this reason.</strong> TierSaver can reactivate a profile it suppressed when that person buys again. The app explains the waiting period before you switch that on.</li>
+</ul>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". https://help.klaviyo.com/hc/en-us/articles/24312135764251 (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". https://help.klaviyo.com/hc/en-us/articles/24263920096027 (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How Klaviyo billing works". https://help.klaviyo.com/hc/en-us/articles/115000976672 (read 2026-11-25)</li>
+</ul>

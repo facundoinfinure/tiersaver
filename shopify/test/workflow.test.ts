@@ -6,7 +6,7 @@ import { createSuppressionRun } from "../app/runs/engine";
 import { db, profileStatuses, schema, seedSimulation } from "./helpers";
 
 describe("SuppressionRunWorkflow (real Workflows engine)", () => {
-  it("until the Klaviyo gateway exists, a started run fails and touches nobody", async () => {
+  it("while SUPPRESSION_ENABLED is not set, a started run fails and touches nobody", async () => {
     const { shop, simulationId } = await seedSimulation({ candidates: 130 });
     const created = await createSuppressionRun(db, { shop, simulationId, createdBy: "user:1" });
     if (!created.ok) throw new Error(created.reason);
@@ -18,10 +18,11 @@ describe("SuppressionRunWorkflow (real Workflows engine)", () => {
     expect(await instance.getOutput()).toMatchObject({
       status: "failed",
       submitted: 0,
-      error: "klaviyo_gateway_not_implemented",
+      // The deployed gateway refuses before it reads the connection or calls Klaviyo.
+      error: "suppression_disabled",
     });
     const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, created.runId) });
-    expect(run).toMatchObject({ status: "failed", processedCount: 0, lastError: "klaviyo_gateway_not_implemented" });
+    expect(run).toMatchObject({ status: "failed", processedCount: 0, lastError: "suppression_disabled" });
     // Batch 0 is marked failed; the other batch was never reached.
     expect(await profileStatuses(created.runId)).toEqual({ failed: 100, pending: 30 });
   });

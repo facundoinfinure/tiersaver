@@ -1,0 +1,28 @@
+<!--
+title: What happens when you uninstall
+nav: What happens on uninstall
+description: When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted immediately and the rest of your store's data is deleted when Shopify sends its deletion request.
+summary: Suppressed profiles stay suppressed. Tokens are deleted at once, the rest of your data when Shopify asks.
+lead: Uninstalling stops TierSaver. It does not change your Klaviyo list.
+layout: doc
+group: help
+order: 8
+updated: 2026-11-25
+-->
+<h2>Your Klaviyo list</h2>
+<p>Profiles that were suppressed stay suppressed. TierSaver does not reactivate anyone when you uninstall. You can reactivate them from Klaviyo at any time: Klaviyo lets you remove manual suppressions one profile at a time or in bulk for a list or segment.</p>
+<p>If you want a cleanup reversed by TierSaver, <a href="/help/undo-and-the-90-day-rule">undo the run</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its run log is deleted.</p>
+<p>Scheduled cleanups stop. Nothing further is suppressed.</p>
+
+<h2>Your data</h2>
+<ul>
+  <li><strong>Immediately:</strong> TierSaver deletes its access tokens for your Shopify store and your Klaviyo account. From that moment it cannot read or change anything.</li>
+  <li><strong>When Shopify sends its shop deletion request:</strong> TierSaver deletes everything else it stored for your store, including settings, audits, simulations, run logs and hashed purchase records. Shopify sends that request 48 hours after an app is uninstalled.</li>
+</ul>
+<p>What is stored in the first place is listed in <a href="/help/data-and-privacy">data and privacy</a>.</p>
+
+<h2>Billing</h2>
+<p>Charges go through Shopify. After you uninstall, TierSaver creates no further charges. If a cleanup lowered your tier but your Klaviyo billing cycle had not renewed yet when you uninstalled, TierSaver can no longer read your Klaviyo billing data, so it cannot confirm a saving and does not charge for it.</p>
+
+<h2>If only the Klaviyo connection is lost</h2>
+<p>If TierSaver's access to Klaviyo expires or is withdrawn while the app is still installed, the app shows Klaviyo as disconnected and does nothing until you reconnect. Profiles already suppressed stay as they are.</p>

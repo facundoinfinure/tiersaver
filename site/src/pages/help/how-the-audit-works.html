@@ -1,0 +1,39 @@
+<!--
+title: How the audit works
+nav: How the audit works
+description: The TierSaver audit is free and read-only. It counts your active Klaviyo profiles, finds the ones that stopped engaging, and estimates the tier a clean list would fit.
+summary: What the free, read-only audit counts and how each figure is calculated.
+lead: The audit is free and read-only. It tells you where your list stands before you decide anything.
+layout: doc
+group: help
+order: 1
+updated: 2026-11-25
+-->
+<h2>What the audit shows</h2>
+<ul>
+  <li><strong>Active profiles.</strong> The profiles Klaviyo counts toward your plan: profiles with an email address that are not suppressed from email.</li>
+  <li><strong>Profiles that stopped engaging.</strong> Active profiles that none of the <a href="/help/protection-rules">protection rules</a> cover, using the default settings.</li>
+  <li><strong>Your current tier.</strong> The profile limit of your Klaviyo plan, read from Klaviyo's billing usage data.</li>
+  <li><strong>The tier a clean list would fit.</strong> The tier your list would fall into if those profiles were suppressed.</li>
+  <li><strong>Estimated monthly saving.</strong> The difference between the list prices of the two tiers, in US dollars.</li>
+</ul>
+<p>Next to each figure the app explains how it was calculated.</p>
+
+<h2>The audit changes nothing</h2>
+<p>The audit only reads. It does not suppress, tag or edit any profile, and it does not change your Klaviyo plan. Suppression only happens later, after you <a href="/help/simulation-and-approval">approve a simulation</a>.</p>
+
+<h2>Why the saving is an estimate</h2>
+<p>TierSaver uses Klaviyo's published list prices, as read on {{prices.capturedOn}}. Klaviyo does not publish prices through its API, so the app keeps a dated copy of the price table and tells you which copy it used.</p>
+<p>Your invoice can differ from list price. For example, some accounts pay a discounted rate. The audit asks what you pay today; if you tell it, estimates and fees are limited by that amount.</p>
+<p>A saving stops being an estimate when Klaviyo's billing data shows your account on a lower tier after your billing cycle renews. See <a href="/help/how-the-fee-works">how the fee is calculated</a>.</p>
+
+<h2>When the audit cannot estimate a saving</h2>
+<ul>
+  <li><strong>Free plan.</strong> There is no bill to lower, so there is nothing to estimate.</li>
+  <li><strong>More than {{prices.maxProfiles}} active profiles.</strong> Klaviyo quotes custom pricing above that size, so there is no list price to compare.</li>
+  <li><strong>A plan limit that is not in the price table.</strong> If your plan's profile limit does not match a published tier, TierSaver does not guess. It shows the profile counts and no dollar figure.</li>
+  <li><strong>No tier change.</strong> If suppressing the profiles found would leave you in the same tier, the estimated saving is $0 and there would be no fee.</li>
+</ul>
+
+<h2>What you need</h2>
+<p>A Shopify store with the app installed, and a Klaviyo account you can authorize. You connect Klaviyo by signing in to Klaviyo and approving access; TierSaver never asks you to paste a password.</p>

@@ -1,0 +1,27 @@
+{
+  "name": "@tiersaver/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Public site for TierSaver: landing, estimate calculator, legal drafts and help center. Static HTML generated from src/ by build/build.mjs.",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "node build/build.mjs",
+    "build:check": "node build/build.mjs --check",
+    "images": "node build/images.mjs",
+    "serve": "node build/serve.mjs",
+    "check:links": "node build/check-links.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tiersaver/core": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  // Static site for tiersaver.com: assets only, no Worker script.
+  "name": "tiersaver-site",
+  // TierSaver Cloudflare account (same as shopify/wrangler.jsonc), pinned so a
+  // deploy can never land in another account.
+  "account_id": "6b463774c79fa154bac8b0b07ad049b1",
+  "compatibility_date": "2026-11-12",
+  "assets": {
+    // The site folder itself is the web root. .assetsignore keeps sources,
+    // build scripts, tests and config out of the upload.
+    "directory": "./",
+    // /privacy serves privacy.html, /help/ serves help/index.html.
+    "html_handling": "auto-trailing-slash",
+    // Unknown paths get 404.html with status 404.
+    "not_found_handling": "404-page"
+  }
+  // No "routes" yet: tiersaver.com cannot be attached until the domain is moved
+  // into this account (see docs/STATUS.md). Until then a deploy is only
+  // reachable on workers.dev. Response headers, including the CSP, are in _headers.
+}

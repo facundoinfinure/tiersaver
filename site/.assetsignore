@@ -1,0 +1,15 @@
+# Files in site/ that are not part of the published site.
+# Wrangler reads this file (gitignore syntax) when it uploads the assets directory.
+.assetsignore
+package.json
+tsconfig.json
+wrangler.jsonc
+vitest.config.ts
+build/
+src/
+test/
+node_modules/
+.wrangler/
+# Internal reference page for the design system (it also uses inline styles,
+# which the site's Content-Security-Policy does not allow).
+styleguide.html
