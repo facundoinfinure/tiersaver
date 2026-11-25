@@ -1,16 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./db/schema";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prismaGlobal: PrismaClient;
-}
-
-if (process.env.NODE_ENV !== "production") {
-  if (!global.prismaGlobal) {
-    global.prismaGlobal = new PrismaClient();
-  }
-}
-
-const prisma = global.prismaGlobal ?? new PrismaClient();
-
-export default prisma;
+/** Drizzle client bound to the D1 database (binding "DB"). */
+export const db = drizzle(env.DB, { schema });
+export { schema };

@@ -1,0 +1,21 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "tiersaver-app",
+  "main": "./workers/app.ts",
+  "compatibility_date": "2026-11-12",
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tiersaver",
+      // Placeholder for local development. Replaced by the real id when the
+      // Cloudflare account exists (`wrangler d1 create tiersaver`).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "vars": {
+    "SCOPES": "read_orders"
+  }
+}

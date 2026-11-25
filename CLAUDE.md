@@ -34,7 +34,7 @@ Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y es
 
 ## Stack
 
-Ver `docs/02-ARQUITECTURA.md`. Resumen: plantilla oficial de app de Shopify (React Router), Polaris, Postgres en Supabase, deploy en Vercel, jobs con cola. Landing y centro de ayuda en el mismo repo, carpeta `site/`.
+Ver `docs/02-ARQUITECTURA.md`. Resumen: plantilla oficial de app de Shopify (React Router) adaptada a Cloudflare Workers, Polaris web components, D1 (SQLite) con Drizzle, Workflows para las corridas de supresión, Cron Triggers. Landing y centro de ayuda en el mismo repo, carpeta `site/`, también en Workers. (Cambiado de Vercel + Supabase el 2026-11-25.)
 
 ## Idioma
 

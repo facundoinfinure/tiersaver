@@ -27,7 +27,7 @@ App de Shopify que baja la factura de Klaviyo suprimiendo perfiles inactivos ant
 | Cobro en Shopify | Billing API ("Manual Pricing") con suscripción por uso y `cappedAmount` de US$ 149, visible al aprobar. Decidido el 2026-11-25 |
 | Datos de compras | Pedidos de Shopify como diferenciador (`read_orders` + `read_all_orders` con aprobación + mail como dato protegido nivel 2), cruzados con "Placed Order" de Klaviyo. Decidido el 2026-11-25 |
 | Camino | Construir directo, sin validación previa. Los cortes de `08-RIESGOS-Y-METRICAS.md` son el freno |
-| Hosting | **En revisión** (2026-11-25): Vercel Hobby no permite uso comercial y los 2 proyectos gratis de Supabase están ocupados. Alternativas en `STATUS.md` |
+| Hosting | **Cloudflare** (decidido el 2026-11-25): Workers para app y sitio, D1 como base, Workflows para las corridas de supresión, Cron Triggers, Queues y Email Service. Plan Workers Paid (US$ 5/mes) recién al desplegar la beta. Cuenta de Cloudflare dedicada a TierSaver. Reemplaza Vercel + Supabase |
 | Cobro | LLC de EE.UU., por la facturación de Shopify |
 | Soporte | Automatizado: centro de ayuda + bot, escalando lo crítico a Facundo |
 | Mercado | Global en inglés, merchants de Shopify con 5.000 a 150.000 perfiles |

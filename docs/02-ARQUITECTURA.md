@@ -2,20 +2,22 @@
 
 Todo lo técnico de este documento es punto de partida. Confirmalo contra la documentación vigente antes de programar.
 
-## Stack propuesto
+## Stack (decidido el 2026-11-25)
 
 | Capa | Elección | Nota |
 | --- | --- | --- |
-| App | Plantilla oficial de app de Shopify (React Router) | Embebida en el admin |
-| UI | Polaris | Requisito de calidad del App Store |
-| Base de datos | Postgres en Supabase | Sesiones, tiendas, reglas, ejecuciones, bitácora |
-| Deploy | Vercel | App y sitio |
-| Jobs | Cola sobre Postgres (por ejemplo pg-boss) o Supabase Queues + cron | Evaluar límites de tiempo de las funciones de Vercel; si no alcanzan, mover los workers a un proceso dedicado |
-| Mail transaccional | Proveedor a elegir (Resend o similar) | Reportes y avisos |
-| Sitio | Carpeta `site/` en el mismo repo | Landing, calculadora, ayuda, legales |
-| Errores | Sentry o equivalente en plan gratis | |
+| App | Plantilla oficial de Shopify (React Router) sobre Cloudflare Workers | Vite plugin de Cloudflare, adaptador `cf-worker` de `@shopify/shopify-api`, `renderToReadableStream` |
+| UI | Polaris web components | Polaris React está deprecado |
+| Base de datos | D1 (SQLite) con Drizzle | Sesiones de Shopify con `DrizzleSessionStorageSQLite`, tokens cifrados con AES-GCM |
+| Corridas de supresión | Cloudflare Workflows | Cada lote es un paso: reintenta y reanuda sin duplicar |
+| Programación | Cron Triggers | Revisión diaria por tienda |
+| Mail transaccional | Cloudflare Email Service | 3.000 mails/mes incluidos en Workers Paid |
+| Sitio | Carpeta `site/`, Workers static assets | tiersaver.com en la misma cuenta |
+| Errores | Workers Observability | |
 
-Costo objetivo de infraestructura: US$ 60 a 150 por mes cuando haya clientes; cerca de cero antes.
+Plan: Workers Paid (US$ 5/mes) recién al desplegar. El plan gratis no alcanza en producción (10 ms de CPU y 50 subrequests por invocación). Desarrollo local con `workerd` vía `vite preview`/`wrangler`, sin costo.
+
+Spike del 2026-11-25: la app compila y corre en `workerd`; SSR, login, inicio de OAuth, webhooks con HMAC válido (200) e inválido (401) y assets verificados con `npm run smoke:worker -w @tiersaver/shopify`. Falta verificar instalación real en la tienda de desarrollo.
 
 ## Integración con Klaviyo (verificado el 25 de noviembre de 2026 en developers.klaviyo.com)
 

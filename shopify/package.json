@@ -9,39 +9,40 @@
     "deploy": "shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
-    "start": "react-router-serve ./build/server/index.js",
-    "docker-start": "npm run setup && npm run start",
-    "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
-    "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "typecheck": "react-router typegen && tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "typecheck": "wrangler types && react-router typegen && tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "preview": "npm run build && vite preview",
+    "cf-typegen": "wrangler types && react-router typegen",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "deploy:worker": "npm run build && wrangler deploy",
+    "smoke:worker": "node scripts/smoke-worker.mjs"
   },
   "type": "module",
   "engines": {
     "node": ">=22.12"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
     "@react-router/dev": "7.18.2",
     "@react-router/fs-routes": "7.18.2",
-    "@react-router/node": "7.18.2",
-    "@react-router/serve": "7.18.2",
     "@shopify/app-bridge-react": "^4.2.4",
+    "@shopify/shopify-api": "^15.1.2",
     "@shopify/shopify-app-react-router": "^3.0.1",
-    "@shopify/shopify-app-session-storage-prisma": "^11.0.0",
+    "@shopify/shopify-app-session-storage-drizzle": "^6.0.4",
+    "@tiersaver/core": "*",
+    "drizzle-orm": "^0.45.4",
     "isbot": "^5.1.31",
-    "prisma": "^6.19.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "7.18.2",
     "vite-tsconfig-paths": "^6.0.4",
-    "@tiersaver/core": "*"
+    "@shopify/shopify-app-session-storage": "^7.0.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.70.2",
     "@shopify/api-codegen-preset": "^2.0.0",
     "@shopify/polaris-types": "1.0.1",
     "@types/eslint": "^9.6.1",
@@ -50,6 +51,7 @@
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^8.57.1",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
@@ -59,7 +61,8 @@
     "graphql-config": "^5.1.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wrangler": "^4.168.0"
   },
   "overrides": {
     "p-map": "^4.0.0",
