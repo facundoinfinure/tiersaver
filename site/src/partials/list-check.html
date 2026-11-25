@@ -1,0 +1,64 @@
+      <div class="panel calc" data-list-check data-status="ok">
+        <form class="calc__form" novalidate aria-label="List health check">
+          <fieldset class="calc__fields" data-fields disabled>
+            <legend class="visually-hidden">Your Klaviyo list</legend>
+            <div class="field">
+              <label for="check-active">Active profiles now</label>
+              <input class="input" id="check-active" name="active" type="text" inputmode="numeric" autocomplete="off" value="{{check.active}}" aria-describedby="check-active-hint">
+              <p class="field__hint" id="check-active-hint">In Klaviyo: Audience, then Profiles.</p>
+            </div>
+            <fieldset class="field">
+              <legend>Profiles that meet the cleanup criteria</legend>
+              <div class="field__row">
+                <input class="input" id="check-criteria" name="criteria" type="text" inputmode="decimal" autocomplete="off" value="{{check.criteria}}" aria-label="Profiles that meet the cleanup criteria" aria-describedby="check-criteria-hint">
+                <div class="segmented">
+                  <label><input type="radio" name="unit" value="profiles" checked>Profiles</label>
+                  <label><input type="radio" name="unit" value="percent">% of list</label>
+                </div>
+              </div>
+              <p class="field__hint" id="check-criteria-hint">Profiles created at least {{criteria.ageDays}} days ago that received your emails and never opened, clicked, visited or bought. Not sure? The free audit counts them for you.</p>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Your Klaviyo plan</legend>
+              <div class="segmented">
+                <label><input type="radio" name="plan" value="email" checked>Email</label>
+                <label><input type="radio" name="plan" value="marketing">Marketing</label>
+                <label><input type="radio" name="plan" value="free">Free</label>
+              </div>
+              <p class="field__hint">Only used for the plan size reference below the result.</p>
+            </fieldset>
+          </fieldset>
+          <noscript>
+            <p class="note">The list health check needs JavaScript. Without it, the example shown here still applies, and the free audit counts your real numbers.</p>
+          </noscript>
+        </form>
+        <div class="calc__result" aria-live="polite" aria-atomic="true">
+          <p class="label"><span>Profiles that would stay active</span></p>
+          <p class="calc__figure" data-out="figure">{{check.figure}}</p>
+          <p class="calc__message" data-out="message">{{check.message}}</p>
+          <div class="calc__detail">
+            <svg class="split-bar" aria-hidden="true" focusable="false">
+              <rect class="split-bar__track" width="100%" height="100%"/>
+              <rect class="split-bar__kept" data-bar width="{{check.keptPercent}}%" height="100%"/>
+            </svg>
+            <ul class="legend">
+              <li data-out="staying">{{check.staying}}</li>
+              <li data-out="leaving">{{check.leaving}}</li>
+            </ul>
+            <dl class="rows">
+              <div>
+                <dt>TierSaver price for your list size<br><span class="small" data-out="tiersaver-plan">{{check.tierSaverPlan}}</span></dt>
+                <dd class="rows__strong" data-out="tiersaver-price">{{check.tierSaverPrice}}</dd>
+              </div>
+            </dl>
+            <div class="calc__reference">
+              <p class="label"><span>For reference</span><span>Klaviyo plan size</span></p>
+              <dl class="rows rows--plain">
+                <div><dt>Today</dt><dd data-out="klaviyo-before">{{check.klaviyoBefore}}</dd></div>
+                <div><dt>After the cleanup</dt><dd data-out="klaviyo-after">{{check.klaviyoAfter}}</dd></div>
+              </dl>
+              <p class="calc__fine">Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="{{url.activeProfileManagement}}" rel="noopener noreferrer">Klaviyo's help center</a>. Whether you change plans is your decision, made in Klaviyo's billing settings. Klaviyo list prices read on {{prices.capturedOn}}, in US dollars; your invoice may differ.</p>
+            </div>
+          </div>
+        </div>
+      </div>

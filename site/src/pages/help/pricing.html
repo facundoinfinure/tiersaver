@@ -1,0 +1,40 @@
+<!--
+title: How pricing works
+nav: How pricing works
+description: TierSaver has a flat monthly price based on the size of your Klaviyo list, billed through Shopify. The audit is free and a month with no cleanup is not charged.
+summary: A flat monthly price by list size, billed through Shopify. The audit is free; a month with no cleanup is not charged.
+lead: TierSaver has a flat monthly price that depends only on the size of your list. The audit is free, and a month with no cleanup is not charged.
+layout: doc
+group: help
+order: 7
+updated: 2026-11-25
+-->
+<h2>Prices</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="TierSaver prices by list size">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Active profiles in your Klaviyo account</th><th scope="col">Price (USD)</th></tr>
+    </thead>
+    <tbody>
+{{plans.rows}}
+    </tbody>
+  </table>
+</div>
+<p>Your list size is the number of active profiles in your Klaviyo account: profiles with an email address that are not suppressed.</p>
+
+<h2>What is free</h2>
+<ul>
+  <li>The audit, as often as you like.</li>
+  <li>Simulations.</li>
+  <li>Any month in which no cleanup runs. If you do not approve a cleanup, or a simulation finds nobody to suppress, there is no charge for that month.</li>
+</ul>
+
+<h2>What the price does not depend on</h2>
+<p>The price depends on your list size and on nothing else. It is not tied to how many profiles are suppressed, and it is not tied to your Klaviyo plan or invoice in any way.</p>
+
+<h2>How you are billed</h2>
+<p>All charges go through Shopify and appear on your Shopify invoice. TierSaver does not ask for a card. You approve the charge in Shopify before the first paid cleanup, and you can cancel by uninstalling the app.</p>
+
+<h2>If your list changes size</h2>
+<p>The price is set by your active profile count when a cleanup runs. For example, a list of {{plans.smallExample}} active profiles is {{plans.smallExamplePrice}} per month, and a list of {{check.active}} is {{plans.defaultExamplePrice}} per month. The app shows which price applies before each cleanup.</p>
+<p>For lists above {{plans.maxProfiles}} active profiles there is no public price: contact us and we will quote your list individually.</p>

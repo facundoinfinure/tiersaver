@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KLAVIYO_EMAIL_2026_11, billableSavingsCents, hashEmail, normalizeEmail, verifiedSavings } from "../src/index.js";
+import { KLAVIYO_EMAIL_2026_11, hashEmail, normalizeEmail, verifiedSavings } from "../src/index.js";
 
 const t = KLAVIYO_EMAIL_2026_11;
 
@@ -16,23 +16,6 @@ describe("verifiedSavings", () => {
   });
   it("refuses tiers not in the table", () => {
     expect(verifiedSavings({ tierMaxBefore: 8_000, tierMaxAfter: 5_000, table: t }).unavailableReason).toBe("unknown_tier");
-  });
-});
-
-describe("billableSavingsCents", () => {
-  it("takes the lower of estimate and verification", () => {
-    expect(billableSavingsCents({ approvedEstimateCents: 12_500, verifiedCents: 34_500 })).toBe(12_500);
-    expect(billableSavingsCents({ approvedEstimateCents: 34_500, verifiedCents: 12_500 })).toBe(12_500);
-    expect(billableSavingsCents({ approvedEstimateCents: 12_500, verifiedCents: 0 })).toBe(0);
-  });
-  it("caps by the merchant's real price when reported", () => {
-    // Legacy discount: pays $200 instead of $275 list; new tier lists at $150.
-    expect(
-      billableSavingsCents({ approvedEstimateCents: 12_500, verifiedCents: 12_500, reportedCurrentPriceCents: 20_000, listPriceAfterCents: 15_000 }),
-    ).toBe(5_000);
-    expect(
-      billableSavingsCents({ approvedEstimateCents: 12_500, verifiedCents: 12_500, reportedCurrentPriceCents: 14_000, listPriceAfterCents: 15_000 }),
-    ).toBe(0);
   });
 });
 

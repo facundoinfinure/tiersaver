@@ -23,6 +23,21 @@ Consultadas el 25 de noviembre de 2026 salvo indicación.
 | Nae sin reseñas, gratis, lanzada el 25/02/2026 | https://apps.shopify.com/ghost-profile-auditor |
 | USPTO sin resultados para "Tiersaver" | Búsqueda de wordmark en tmsearch.uspto.gov hecha por Facundo |
 
+## Políticas de Klaviyo y de Shopify (agregado el 2026-11-25)
+
+La lista completa, con qué se leyó entero y qué no se pudo leer, está en `12-CUMPLIMIENTO-KLAVIYO.md` ("Fuentes leídas" y "No se pudo leer"). Las que sostienen las decisiones del 2026-11-25:
+
+| Dato | Fuente |
+| --- | --- |
+| Cláusula sobre evadir cargos y responsabilidad de quien ofrece integraciones | https://www.klaviyo.com/legal/acceptable-use-policy |
+| Se puede cobrar por la integración; revocación del acceso a la API sin causa | https://www.klaviyo.com/legal/api-terms |
+| Los perfiles suprimidos no cuentan para el plan; a quién corresponde suprimir; un suprimido que compra sigue suprimido | https://help.klaviyo.com/hc/en-us/articles/24263920096027 |
+| Criterios de las recomendaciones de supresión (365 días, 5 o más mails en ~72 semanas, sin actividad); regla de 90 días | https://help.klaviyo.com/hc/en-us/articles/24312135764251 |
+| Klaviyo revisa el conteo poco antes de renovar el ciclo; auto-downgrade | https://help.klaviyo.com/hc/en-us/articles/4405883690651 |
+| Sin estadísticas ni datos en la ficha (requisito 4.3.3); precios solo en la sección de precios (4.2) | https://shopify.dev/docs/apps/launch/shopify-app-store/app-store-requirements |
+| ListSweep: plan gratis y Pro a US$ 7 por mes, sin reseñas | https://apps.shopify.com/listsweep |
+| ShopiDeck: auditoría gratis y planes desde US$ 9 por mes, sin reseñas | https://apps.shopify.com/shopideck-klaviyo-botcleaner |
+
 ## De terceros (útil, pero confirmar antes de mostrar a un merchant)
 
 | Dato | Fuente |

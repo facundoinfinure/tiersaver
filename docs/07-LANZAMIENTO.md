@@ -19,16 +19,18 @@ Funcional
 - [ ] OAuth de Shopify sin pantallas intermedias propias antes de autenticar.
 - [ ] Todas las pantallas en Polaris, sin errores de consola.
 - [ ] Estados vacíos y de error diseñados.
-- [ ] Cobro probado en modo test: aceptar, rechazar, llegar al tope.
+- [ ] Cobro probado en modo test: aceptar, rechazar, llegar al tope, ciclo sin limpieza (no cobra), segundo cargo antes de 28 días (no cobra).
 - [ ] Webhooks de cumplimiento respondiendo y verificando HMAC.
 - [ ] Scopes mínimos; cada uno justificado por escrito.
 - [ ] Si se leen datos protegidos de clientes: solicitud de acceso completada.
 
 Contenido
-- [ ] Nombre y subtítulo sin promesas que no se puedan probar.
+- [ ] Nombre y subtítulo sin promesas que no se puedan probar, y toda la ficha revisada contra `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2.
+- [ ] Límites de tamaño de lista del precio confirmados por Facundo.
 - [ ] Capturas reales de la app (no mockups).
 - [ ] Video corto de demostración.
-- [ ] Política de privacidad y términos publicados en tiersaver.com.
+- [ ] Política de privacidad y términos publicados en tiersaver.com, con las cláusulas de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 4.1.
+- [ ] Avisos de la sección 4.1 visibles en la app antes de la primera aprobación.
 - [ ] Mail y URL de soporte funcionando.
 - [ ] Instrucciones de prueba para el revisor, con credenciales de una cuenta de Klaviyo de prueba si hacen falta.
 
@@ -39,24 +41,37 @@ Operación
 
 ## Ficha (borrador en inglés)
 
+Reescrita el 2026-11-25 con las reglas de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2. Sigue siendo un borrador: la revisa Facundo antes del envío.
+
 **Name**: TierSaver for Klaviyo
 
-**Subtitle**: Lower your Klaviyo bill by suppressing inactive profiles
+Decidido por Facundo el 2026-11-25. El nombre completo del producto es "TierSaver: List Hygiene for Klaviyo" (35 caracteres; el campo admite 30), así que "list hygiene" va en el subtítulo.
 
-**Introduction**: Klaviyo bills for every active profile, even the ones that never open. TierSaver finds them, shows your savings, and suppresses them before your billing date.
+**Subtitle**: Automatic list hygiene for Klaviyo, with preview and undo
 
-**Details**: Run a free audit to see your current tier, the tier you could be on, and the estimated monthly savings. Set protection rules so recent buyers, recent clickers, SMS subscribers and VIPs are never touched. Simulate every cleanup before it runs, schedule it ahead of your billing date, and undo any run. You pay a share of what you save, and nothing when there are no savings.
+**Introduction**: Keep your Klaviyo list clean: suppress profiles that never engaged, after you approve a simulation.
+
+**Details**: Run a free, read-only audit to see how many profiles meet Klaviyo's own recommended criteria for suppression: created at least a year ago, sent emails, and never opened, clicked, visited or purchased. Every profile is checked against your Shopify orders. Profiles with SMS consent and the lists or segments you mark as protected are never touched. You approve a simulation before anything changes, every run is logged and can be undone, and nothing is deleted. Cleanups run monthly and finish before your plan renews, so Klaviyo's count is up to date. Suppressed profiles don't count toward your Klaviyo plan. If your active profile count drops, you can move to a lower plan in Klaviyo's billing settings. TierSaver is not affiliated with or endorsed by Klaviyo.
 
 **Features**
-- Free audit with estimated savings in dollars
-- Protection rules for buyers, clickers, SMS and VIP segments
-- Simulation before every cleanup, with one-click undo
-- Scheduled runs ahead of your Klaviyo billing date
-- Monthly savings report
+- Free, read-only list audit
+- Klaviyo's own recommended criteria by default
+- Buyers protected with your Shopify order data
+- Simulation and approval before every cleanup
+- A log of every run, with undo
 
-**Palabras clave**: reduce Klaviyo bill, Klaviyo cost, suppress inactive profiles, list cleaning, sunset flow.
+**Pricing** (solo en la sección de precios de la ficha, requisito 4.2): A flat monthly price by list size: $15 up to 10,000 active profiles, $29 up to 25,000, $79 up to 75,000, $149 up to 150,000. Larger lists by agreement. A billing cycle with no cleanup is not charged. The audit is free.
 
-No afirmar un porcentaje de ahorro en la ficha hasta tener datos propios.
+Precios y límites confirmados por Facundo el 2026-11-25.
+
+**Palabras clave**: Klaviyo list cleaning, list hygiene, suppress inactive profiles, unengaged profiles, sunset flow.
+
+Reglas para cualquier cambio de la ficha:
+
+- Ninguna cifra, porcentaje, estadística ni garantía en el texto, el subtítulo ni las imágenes (requisito 4.3.3 de Shopify: "Do not use any statistics or data in your app's listing content"). Los precios van solo en la sección de precios.
+- No encabezar con la factura de Klaviyo ni usarla como palabra clave principal. No presentar el momento de la corrida respecto de la facturación como función.
+- "Klaviyo" solo como texto descriptivo. Sin su logo, y sin "official", "certified", "recommended by" ni "partner".
+- Las capturas tampoco muestran montos ni planes de Klaviyo como resultado prometido.
 
 ## Video
 

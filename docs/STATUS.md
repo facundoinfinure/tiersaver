@@ -6,11 +6,11 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 | Fase | Estado | Fecha |
 | --- | --- | --- |
-| 0 · Base | En curso, frenada por decisiones (ver abajo) | 2026-11-25 |
+| 0 · Base | Desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo; pasos en `13-INSTRUCTIVO-CUENTAS.md`) | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
-| 2 · Marca | No iniciada | |
-| 3 · Construcción | No iniciada (solo lógica de dominio en `packages/core`) | |
-| 4 · Sitio y soporte | No iniciada | |
+| 2 · Marca | Cerrada: logo B aplicado, mensajes aprobados, descriptor del nombre decidido. Queda la versión corta del nombre para la ficha | 2026-11-25 |
+| 3 · Construcción | En curso: capa de Klaviyo, ingesta de pedidos, motor de corridas y gateway hechos y probados offline. Faltan rutas de OAuth, orquestación de auditoría y simulación, interfaz, programación, deshacer y cobro | 2026-11-25 |
+| 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
 | 5 · Lanzamiento | No iniciada | |
 
 ## Cómo se verificó (importante)
@@ -67,7 +67,9 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 8. **Supabase free: 2 proyectos gratis en total** entre todas las organizaciones donde Facundo es Owner/Admin; ya están ocupados por dos proyectos existentes.
 9. **Klaviyo tiene dos planes pagos** (Email y Marketing); el paquete solo contemplaba Email. Los ejemplos del paquete se confirman con precios oficiales: 12.500 → 10.000 ahorra US$ 125; 50.000 → 20.000 ahorra US$ 345.
 10. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
-11. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
+11. Rama de trabajo: cada sesión solo puede empujar a su propia rama (`claude/gallant-knuth-51pv2e`, después `claude/practical-brown-zm2uss`), no a ramas por fase.
+12. **Workflows: el plan gratis admite 1.024 pasos por instancia** (10.000 en Workers Paid, configurable hasta 25.000). Con un paso por lote de 100, una corrida de más de ~100.000 perfiles necesita Workers Paid (developers.cloudflare.com/workflows/reference/limits, leído el 2026-11-25).
+13. **D1 admite 100 parámetros por consulta**: las consultas por lote filtran por `run_id` + `batch_index`, no por lista de IDs.
 
 ## Decisiones de Facundo (2026-11-25)
 
@@ -100,3 +102,116 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - Deploy bloqueado por el entorno: el proxy de la sesión reemplaza el header `Authorization` en todo api.cloudflare.com, y la subida de assets de wrangler usa su propio JWT en ese header (401). Solución: pasar el token de *network secret* a variable de entorno `CLOUDFLARE_API_TOKEN` del entorno "tiersaver".
 - Recordatorio programado para el 2026-12-05 09:00 (Buenos Aires) para mover el dominio.
 
+
+### 2026-11-25 (segunda sesión, rama `claude/practical-brown-zm2uss`)
+
+**Primer deploy (hecho y verificado)**
+- Token de Cloudflare verificado sin imprimirlo (53 caracteres, prefijo `cfut_`, `wrangler whoami` ve la cuenta TierSaver).
+- Worker `tiersaver-app` desplegado en la cuenta TierSaver: https://tiersaver-app.tiersaver.workers.dev
+- Secretos cargados con `wrangler secret bulk` por stdin: `TOKEN_ENCRYPTION_KEY` (32 bytes aleatorios, no guardado en ningún lado), `SHOPIFY_API_KEY` y `SHOPIFY_API_SECRET` **provisorios** (aleatorios; hay que reemplazarlos cuando exista la app de Shopify).
+- Host `tiersaver-app.tiersaver.workers.dev` agregado a la red del entorno "tiersaver".
+- Smoke test contra la URL real: 8 de 8, dos veces (antes y después de sumar el Workflow). Sin errores 1102 de CPU: **el plan Workers Free alcanza por ahora**; no se contrató nada.
+- Para correr el smoke desde la sesión hay que usar `NODE_USE_ENV_PROXY=1` (el `fetch` de Node no usa el proxy por defecto).
+
+**Esquema completo de D1 (hecho y verificado)**
+- `shopify/app/db/schema.ts` y migración `shopify/drizzle/0001_domain.sql`, aplicada en local y en la D1 remota: `shops`, `klaviyo_connections`, `settings`, `audits`, `simulations`, `simulation_candidates`, `runs`, `run_profiles`, `purchase_hashes`, `usage_charges`, `events_log`.
+- Se agregó `simulation_candidates` (no estaba en la lista): guarda el conjunto exacto de perfiles que la simulación suprimiría, para que la corrida ejecute eso y nada más.
+- No se guardan mails: los perfiles se identifican por ID de Klaviyo y el mail se resuelve contra Klaviyo en el momento de cada lote (a implementar en Fase 3). Para reactivación y cruce con pedidos, solo SHA-256.
+- Reglas de producto en la base: una corrida de supresión no puede existir sin simulación (CHECK); una simulación respalda una sola corrida (índice único); aprobación exige aprobador; umbrales por debajo de los mínimos de `RULE_LIMITS` son rechazados; sin ahorro facturable no hay cargo; un cargo por tienda por ciclo de Klaviyo.
+- Todo cuelga de `shops` con borrado en cascada. Webhooks: `shop/redact` borra todo; `customers/redact` borra los hashes del cliente; `app/uninstalled` borra tokens al instante y deja el historial hasta `shop/redact`.
+
+**Esqueleto del Workflow (hecho y verificado, sin Klaviyo real)**
+- `shopify/app/runs/engine.ts`: `createSuppressionRun` (compuerta de simulación en una sola transacción atómica, además del chequeo en memoria) y `executeRun` (un paso por lote de hasta 100, reanudable).
+- `shopify/workers/suppression-run.ts`: `SuppressionRunWorkflow`, desplegado como `tiersaver-suppression-run`. El ID de instancia es el ID de la corrida, así que no puede haber dos ejecuciones de la misma.
+- `shopify/app/runs/gateway.server.ts`: el gateway de Klaviyo es un stub que rechaza todo lote (error no reintentable). Hoy ninguna ruta crea corridas y, si alguna arrancara, termina en `failed` sin tocar a nadie.
+- Política ante fallas: si un lote agota reintentos, la corrida se detiene y el resto queda sin tocar.
+- Pruebas (`npm test -w @tiersaver/shopify`, 57, en `workerd` con D1 local y el motor real de Workflows): esquema = migraciones, compuerta (no aprobada, vencida, reemplazada, otra tienda, concurrencia), corte a mitad de corrida con y sin estado del Workflow, lote que muere después de llegar a Klaviyo, reintentos, cancelación, privacidad.
+
+**Fase 2 · Marca (borrador)**
+- `brand/`: tres opciones de logo (A Step Line, B Lower Step, C Dropped T) con marca, logo claro y oscuro e ícono 1200 × 1200; comparativa en `brand/options.png`; tokens; `messaging.md` (borrador).
+- `site/`: estilos base, fuentes Inter Tight e IBM Plex Mono auto-hospedadas (licencia OFL incluida) y `styleguide.html`.
+- Ningún logo está aplicado. Sin verificar: búsqueda de marcas parecidas, reglas vigentes de ícono del App Store, contraste formal.
+
+**`scripts/seed-klaviyo` (escrito y probado offline; nunca corrió contra Klaviyo)**
+- 3.000 perfiles por defecto (2.000 a 5.000), deterministas, en 26 cohortes que cubren cada regla y sus bordes (89/91, 179/181, 364/366 días). Un test pasa los datos generados por `evaluateProfile` de core y exige que coincidan con la decisión esperada. 123 tests con un Klaviyo falso.
+- Por defecto solo imprime el plan (sin red). La corrida real exige `--execute`, clave solo por `KLAVIYO_TEST_PRIVATE_KEY`, que la cuenta coincida con `--account-id` / `--expect-account-name` y que Klaviyo la marque `test_account: true`.
+- Verificado en el spec OpenAPI `2026-10-15` y la ayuda de Klaviyo (detalle y URLs en `scripts/seed-klaviyo/README.md`): import masivo de 10.000 perfiles por request; eventos masivos de 1.000 por request con `time` retroactivo y `backfill: true` (no dispara flows); suscripción masiva de hasta 1.000 perfiles, que además **quita `USER_SUPPRESSED`**.
+
+Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
+1. **La fecha de creación de un perfil no se puede retroceder por API.** Durante 90 días todo perfil sembrado es `new_profile` y no hay candidatos. El seed guarda la antigüedad pretendida en la propiedad `ts_seed_created_at`; las pruebas de integración necesitan leerla (solo en modo prueba) o esperar 90 días.
+2. **Los eventos creados por API son métricas distintas de las nativas** ("Opened Email" de la integración API ≠ la de Klaviyo). La app tiene que resolver métricas por nombre e integración, y ese mapeo tiene que ser configurable para la cuenta de prueba.
+3. **Klaviyo descarta en silencio eventos de direcciones `@example.com`, `@test.com` "o similares"** (responde 202 igual). La corrida real necesita un dominio propio que no reciba correo (`--email-domain`).
+4. **Una cuenta de prueba es una cuenta común en plan gratis (250 perfiles activos).** Sembrar 3.000 la deja 12 veces por encima. La ayuda dice que eso bloquea envíos; no se encontró nada que diga que cobra ni que no. Posible gasto: confirmar antes de la primera corrida. `usage_max` ahí va a ser 250, que no es un tramo de la tabla.
+5. Sigue abierto el nombre de la propiedad de aperturas automáticas: nuestras notas dicen "Machine Open", la ayuda actual dice "Apple Privacy Open".
+
+**Pendiente / no verificado**
+- Instalación real en la tienda de desarrollo (falta cuenta de Shopify).
+- `npm run lint -w @tiersaver/shopify` falla desde antes de esta sesión (apunta a un `.gitignore` que no existe en `shopify/`). Sin arreglar.
+- No hay Cron Trigger todavía (Fase 3, programación).
+
+### 2026-11-25 (segunda sesión, segunda parte): decisiones de Facundo y avance de fases
+
+**Decisiones de Facundo (reemplazan la B de más arriba y adelantan parte de la A)**
+
+| Tema | Decisión |
+| --- | --- |
+| Logo | Opción B (Lower Step). Archivos en `brand/logo/final/` |
+| Abogado | En lugar de la consulta, análisis de políticas sobre fuentes primarias: `12-CUMPLIMIENTO-KLAVIYO.md`. No es asesoramiento legal |
+| Precio | Tramos fijos por tamaño de lista (US$ 29 / 79 / 149); el ciclo sin limpieza no se cobra. Reemplaza el 20% del ahorro. **Los cortes 25.000 / 75.000 / 150.000 son una propuesta de la sesión, sin confirmar** |
+| Reactivación por compra | Fuera del MVP. Deshacer queda; un perfil restaurado no vuelve a ser candidato por 365 días |
+| Reglas | Por defecto, los criterios publicados por Klaviyo: creado hace 365 días o más, 5 o más mails recibidos en 504 días, nunca abrió, hizo clic, visitó ni compró. Modo ampliado opcional con pisos fijos (compras 365, clics/aperturas/sitio 182, antigüedad 180) |
+| Mensajes | Rigen las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md` sección 3.2 |
+
+**Aplicado en código (probado)**
+- `packages/core`: `charge.ts` (precio fijo, sin cargo sin limpieza, uno por ciclo), `rules.ts` (ventanas `null` = "alguna vez", `emailsReceived`, pisos nuevos, dato desconocido protege también para aperturas automáticas), `simulation.ts`. Se eliminó `billableSavingsCents`. 83 tests.
+- `shopify`: migración `0002_flat_pricing_and_klaviyo_criteria.sql` (reconstruye `settings` y `usage_charges`; quita `reactivation_enabled`).
+- `scripts/seed-klaviyo`: 39 cohortes para las reglas nuevas, con decisión esperada en modo por defecto y ampliado; siembra eventos "Received Email". 138 tests. Sigue sin haber corrido contra Klaviyo.
+- Documentos 00 a 10, `CLAUDE.md` (descripción y regla 6: "si no hay limpieza, no se cobra"), `README.md` y `brand/messaging.md` reescritos según las decisiones.
+
+**Fase 3: capa de Klaviyo (`shopify/app/klaviyo/`, probada offline con un Klaviyo falso; nunca llamó a la API real)**
+- OAuth con PKCE y estado firmado sin tabla; tokens cifrados; refresco serializado por tienda; `invalid_grant` marca `needs_reauth`; `disconnect` revoca en Klaviyo y se llama al desinstalar.
+- Cliente con límite de tasa a la mitad de lo publicado, reintentos con `Retry-After`, errores sin tokens ni mails.
+- **Lectura de inactividad por segmento**: la app crea un segmento en la cuenta del merchant con los criterios de Klaviyo y lee sus miembros (unas 360 requests para 150.000 perfiles; leer eventos serían más de 30.000). Pide el scope `segments:write` y deja un segmento visible en la cuenta. Solo los miembros pueden ser candidatos, así que un segmento roto da menos candidatos, nunca más.
+- Gateway real de supresión: resuelve IDs a mails en el momento, saltea perfiles que ya no existen, sin mail o cuyo mail cambió desde la simulación.
+- **Interruptor `SUPPRESSION_ENABLED`**: ausente por defecto; sin él ninguna corrida suprime. Deshacer no depende del interruptor. Solo Facundo lo enciende.
+- Diferencias con lo anotado antes: el tipo de uso de perfiles activos sí está documentado (`active_profiles`); des-suprimir pide solo `subscriptions:write`; la guía de límites dice 700/min (el spec, 750); la ayuda llama "Apple Privacy Open" a la propiedad de aperturas automáticas; los 90 días para volver a suprimir se cuentan desde la supresión original.
+
+**Fase 3: pedidos de Shopify**
+- `shopify/app/orders/purchases.ts`: guarda por comprador solo el SHA-256 del mail y la fecha del último pedido. Alta de tienda con settings por defecto al instalar, Workflow `tiersaver-orders-backfill` (una página por paso) y webhook `orders/create`.
+- Sin `read_all_orders` la cobertura es de 60 días y, con las reglas nuevas ("nunca compró"), la app no encuentra candidatos: **ese permiso pasa a ser requisito para que el producto haga algo**, salvo que el historial de "Placed Order" de Klaviyo alcance.
+- El Workflow de backfill y el hook de instalación no se pudieron probar contra una tienda real.
+
+**Fase 4: sitio (`site/`, sin publicar)**
+- Landing, chequeo de salud de lista (reemplaza la calculadora de ahorro; usa la tabla de precios de core), precios, 9 artículos de ayuda, 3 guías, privacidad y términos en borrador, CSP estricta, sin requests externas. 291 tests, verificador de enlaces y pasada en Chromium sin errores.
+- Placeholders a completar: URL de la ficha, entidad legal, dirección, mails de contacto y soporte, fecha de vigencia.
+
+**Cuentas**: pasos en `13-INSTRUCTIVO-CUENTAS.md`. Cambios respecto de lo anotado: el CLI de Shopify se autentica con un token de service account (`SHOPIFY_SERVICE_ACCOUNT_TOKEN`); la cuenta gratis de Klaviyo no cobra ni sube de plan por pasarse de 250 perfiles (solo bloquea envíos).
+
+**Abierto / no verificado**
+- Nada de la capa de Klaviyo ni del seed se probó contra una cuenta real. Lo primero a mirar: si `subscriptions.sms` viene en perfiles sin teléfono (si no viene, todo queda protegido y no hay candidatos), el cuerpo exacto que acepta la creación de segmentos y los nombres de las métricas nativas.
+- Guardarraíles de `12-CUMPLIMIENTO-KLAVIYO.md` 3.1 sin implementar: aviso al deshacer una corrida ya contada en una renovación, detector de ciclos, modo automático solo con criterios estrictos.
+- La auditoría todavía guarda una estimación de plan de Klaviyo (`savings.ts`): falta decidir si la app la muestra.
+- El cobro no está conectado a Shopify.
+- `docs/06-TEARDOWN-REA.md` y `docs/09-FUENTES.md` conservan afirmaciones viejas (competidores gratis, ticket promedio).
+
+### 2026-11-25 (tercera tanda de decisiones de Facundo)
+
+- `brand/messaging.md` (versión revisada tras el análisis de políticas): aprobada.
+- Dominio de los mails ficticios del seed: `seed.tiersaver.com`.
+- Descriptor del nombre: "TierSaver: List Hygiene for Klaviyo". Aplicado en documentos y guía de mensajes. **No entra en el campo de nombre de la ficha de Shopify** (35 caracteres; el límite anotado es 30, dato de extracto a confirmar): `shopify.app.toml` y el borrador de ficha siguen con "TierSaver for Klaviyo" hasta que Facundo elija la versión corta (tarea 18).
+- Siguen abiertos: cortes de precio (25.000 / 75.000 / 150.000), cuentas de Shopify y Klaviyo, datos legales del sitio.
+
+### 2026-11-25 (cuarta tanda)
+
+- Nombre en la ficha de Shopify: "TierSaver for Klaviyo", con "list hygiene" en el subtítulo. El nombre completo de producto sigue siendo "TierSaver: List Hygiene for Klaviyo".
+- Entidad legal para el sitio y los legales: Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131. Facundo escribió "153 e Flaggler st, Miami 33131"; la sesión normalizó la calle a "Flagler" y agregó "FL": **a confirmar por Facundo**, junto con si lleva número de suite.
+- Cortes de precio: siguen sin confirmar. Facundo preguntó si están bien; la sesión le pasó la comparación con el precio de lista de Klaviyo por tamaño.
+- Siguen como placeholders en el sitio: mail de contacto, mail de soporte, fecha de vigencia y URL de la ficha.
+
+### 2026-11-25 (quinta tanda)
+
+- **Precios confirmados por Facundo**, con un tramo de entrada nuevo: US$ 15 hasta 10.000 perfiles activos, US$ 29 hasta 25.000, US$ 79 hasta 75.000, US$ 149 hasta 150.000; por encima, por acuerdo. En `packages/core/src/charge.ts` (`FLAT_PRICE_TIERS`); el sitio los lee de ahí.
+- Tienda de desarrollo creada por Facundo: `tiersaver.myshopify.com`. La organización de Partner se llama TierSaver. Falta crear la app en el Dev Dashboard (enlace "Crear app"; **no** correr `npm init @shopify/app@latest`, que crea un proyecto nuevo) y entregar Client ID, Client secret y token de service account.
+- App creada por Facundo en el Dev Dashboard. Client ID cargado en `shopify/shopify.app.toml` y como `SHOPIFY_API_KEY` del Worker. `SHOPIFY_API_SECRET` del Worker sigue provisorio: la app todavía no puede autenticar contra Shopify. Faltan el Client secret y el token de service account como variables del entorno "tiersaver" (`SHOPIFY_API_SECRET`, `SHOPIFY_SERVICE_ACCOUNT_TOKEN`); después, `shopify app deploy` y la instalación en `tiersaver.myshopify.com`.
+- Mails del sitio: contacto `hello@tiersaver.com`, soporte `support@tiersaver.com` (aplicados en `site/`). **Las casillas todavía no existen**: el dominio sigue en la otra cuenta de Cloudflare; hay que crearlas (o reenviarlas) antes de publicar el sitio. Placeholders que quedan: fecha de vigencia, ley aplicable y jurisdicción, y un punto de la política de privacidad sobre mails de notificación.
+- Facundo cargó `SHOPIFY_API_SECRET` y `SHOPIFY_SERVICE_ACCOUNT_TOKEN` en el entorno "tiersaver". No llegan a esta sesión (solo a sesiones nuevas): el deploy de la configuración de Shopify y la carga del secret real quedan para la sesión siguiente.

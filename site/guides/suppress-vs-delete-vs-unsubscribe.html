@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Suppress, delete or unsubscribe in Klaviyo: what each one does · TierSaver</title>
+  <meta name="description" content="The difference between suppressing, deleting and unsubscribing a profile in Klaviyo: what happens to the profile, its history and its consent, and which ones can be reversed.">
+  <link rel="canonical" href="https://tiersaver.com/guides/suppress-vs-delete-vs-unsubscribe">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Suppress, delete or unsubscribe in Klaviyo: what each one does">
+  <meta property="og:description" content="The difference between suppressing, deleting and unsubscribing a profile in Klaviyo: what happens to the profile, its history and its consent, and which ones can be reversed.">
+  <meta property="og:url" content="https://tiersaver.com/guides/suppress-vs-delete-vs-unsubscribe">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Suppress, delete or unsubscribe</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Guide</p>
+          <h1>Suppress, delete or unsubscribe in Klaviyo: what each one does</h1>
+          <p class="lead">Three actions stop marketing email to a profile in Klaviyo. They are not interchangeable, and only one of them can be cleanly reversed.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>At a glance</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Suppress, delete and unsubscribe compared">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col"></th><th scope="col">Suppress</th><th scope="col">Delete</th><th scope="col">Unsubscribe</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">What it is</th><td>A status that blocks marketing email to the profile</td><td>Permanent removal of the profile</td><td>The recipient's choice, recorded as an Unsubscribed consent status</td></tr>
+      <tr><th scope="row">Profile and history</th><td>Stay in your account</td><td>Removed; you can no longer view the profile or its activity</td><td>Stay in your account</td></tr>
+      <tr><th scope="row">Can receive marketing email</th><td>No, even with consent</td><td>No</td><td>No</td></tr>
+      <tr><th scope="row">Counts toward the email plan's active profiles</th><td>No</td><td>No</td><td>No</td></tr>
+      <tr><th scope="row">Changes consent</th><td>No. A Subscribed profile remains Subscribed</td><td>Not applicable</td><td>Yes</td></tr>
+      <tr><th scope="row">Can it be reversed</th><td>Yes, a manual suppression can be removed</td><td>No</td><td>Not by removing a suppression</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Suppress</h2>
+<p>A suppressed profile stays in your account but cannot receive marketing email, even if the person gave consent. Klaviyo skips it at send time. SMS and push eligibility are not affected.</p>
+<p>Profiles become suppressed in several ways, according to Klaviyo:</p>
+<ul>
+  <li>you suppress them manually, one at a time, in bulk for a list or segment, or by uploading a file;</li>
+  <li>an email hard bounced;</li>
+  <li>an email soft bounced 7 consecutive times;</li>
+  <li>the suppression was carried over from a previous email provider.</li>
+</ul>
+<p>A manual suppression is removed when the profile resubscribes to email marketing, or when you remove it. Removing it does not change consent and does not clear a bounce suppression. Once removed, Klaviyo does not let the same profile be manually suppressed again until 90 days after the previous suppression.</p>
+<p><strong>Use it when</strong> you no longer want to email someone but want to keep their data for analysis and a complete picture of your customers. This is what Klaviyo generally recommends.</p>
+
+<h2>Delete</h2>
+<p>Deleting removes the profile from your account. You can no longer open it or see its activity, and Klaviyo states that the action cannot be undone. If the same person engages with your site again, for example through a sign-up form, they enter your account as a new profile.</p>
+<p><strong>Use it when</strong> you are certain you no longer need the data, such as test profiles or contacts imported by mistake. For a customer's data deletion request, Klaviyo has a separate individual deletion process for privacy requests.</p>
+
+<h2>Unsubscribe</h2>
+<p>Unsubscribing is done by the recipient. Klaviyo records it as an Unsubscribed consent status; it is not shown as a suppression reason. With Klaviyo's global unsubscribe setting, which is on by default, someone who unsubscribes from one email is unsubscribed from all your email marketing.</p>
+<p><strong>What you can do about it:</strong> nothing, and that is the point. Removing a suppression does not resubscribe a profile that had unsubscribed.</p>
+
+<h2>Which one for list hygiene</h2>
+<p>For profiles that have never engaged, Klaviyo's guidance is to suppress. You keep the history, the profile no longer receives marketing email, and a mistake can be corrected. The steps are in <a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a>.</p>
+<p>TierSaver only ever suppresses. It does not delete profiles and does not change consent.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "Understanding suppressed email profiles". <a href="https://help.klaviyo.com/hc/en-us/articles/115005246108" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115005246108</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
+</ul>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe" aria-current="page">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

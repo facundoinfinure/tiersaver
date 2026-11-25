@@ -7,6 +7,7 @@ import {
 } from "@shopify/shopify-app-react-router/server";
 import { DrizzleSessionStorageSQLite } from "@shopify/shopify-app-session-storage-drizzle";
 import { db, schema } from "./db.server";
+import { ensureShop } from "./orders/purchases";
 import { EncryptedSessionStorage } from "./session-storage.server";
 
 const sessionStorage = new EncryptedSessionStorage(
@@ -23,6 +24,19 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   sessionStorage,
   distribution: AppDistribution.AppStore,
+  hooks: {
+    afterAuth: async ({ session }) => {
+      await ensureShop(db, session.shop);
+      try {
+        // One backfill per shop per day; a repeated id is rejected by Workflows.
+        const day = new Date().toISOString().slice(0, 10);
+        await env.ORDERS_BACKFILL.create({ id: `orders-${session.shop}-${day}`, params: { shop: session.shop } });
+      } catch {
+        // Already started today, or Workflows is unavailable: installing must not fail.
+        // Until a backfill completes, the purchase rule protects every profile.
+      }
+    },
+  },
   future: {
     expiringOfflineAccessTokens: true,
   },

@@ -5,18 +5,26 @@
  * data ends in "protected", never in "candidate".
  */
 
+/** A time window in days, or null for "at any time in the profile's history". */
+export type Window = number | null;
+
 export interface RuleSettings {
-  /** Protect anyone who purchased in the last N days. */
-  purchaseDays: number;
-  /** Protect anyone who clicked an email in the last N days. */
-  clickDays: number;
-  /** Protect anyone who opened an email in the last N days (weak signal: Apple MPP). */
-  openDays: number;
+  /** Protect anyone who purchased in the last N days. null: anyone who ever purchased. */
+  purchaseDays: Window;
+  /** Protect anyone who clicked an email in the last N days. null: anyone who ever clicked. */
+  clickDays: Window;
+  /** Protect anyone who opened an email in the last N days. null: anyone who ever opened. */
+  openDays: Window;
+  /** Protect anyone active on site or in checkout in the last N days. null: ever. */
+  siteActivityDays: Window;
   /** Protect profiles created / subscribed less than N days ago. */
   newProfileDays: number;
-  /** Protect anyone who started a checkout or was active on site in the last N days. */
-  siteActivityDays: number;
-  /** A profile unsuppressed in the last N days must not be suppressed again. */
+  /**
+   * Protect profiles that received fewer than N emails in the last
+   * EMAILS_RECEIVED_WINDOW_DAYS days: nobody is inactive if they were never written to.
+   */
+  minEmailsReceived: number;
+  /** A profile that was unsuppressed (undo, or by anyone) is not a candidate again for N days. */
   reactivationLockDays: number;
   /**
    * When true, opens flagged as machine/privacy opens (Apple MPP) still protect.
@@ -25,25 +33,44 @@ export interface RuleSettings {
   countMachineOpens: boolean;
 }
 
+/** Klaviyo's suppression recommendations look at "roughly the last 72 weeks" of sends. */
+export const EMAILS_RECEIVED_WINDOW_DAYS = 504;
+
+/**
+ * Defaults = Klaviyo's own published criteria for suppression recommendations
+ * (help.klaviyo.com/hc/en-us/articles/24312135764251, read 2026-11-25):
+ * created at least 365 days ago, received 5 or more emails in ~72 weeks, and
+ * never opened, clicked, visited, started a checkout or purchased.
+ */
 export const DEFAULT_RULE_SETTINGS: RuleSettings = Object.freeze({
-  purchaseDays: 365,
-  clickDays: 180,
-  openDays: 90,
-  newProfileDays: 90,
-  siteActivityDays: 180,
-  reactivationLockDays: 90,
+  purchaseDays: null,
+  clickDays: null,
+  openDays: null,
+  siteActivityDays: null,
+  newProfileDays: 365,
+  minEmailsReceived: 5,
+  reactivationLockDays: 365,
   countMachineOpens: true,
 });
 
-/** Bounds the merchant can set. Lower bounds keep the defaults from being made reckless. */
+/**
+ * Bounds for the opt-in wider mode. The lower bounds are a floor that cannot
+ * be configured away: 182 days is the floor Klaviyo's own bulk suppression
+ * dialog uses for clicks and orders; buyers are never suppressed inside a year.
+ */
 export const RULE_LIMITS: Record<keyof Omit<RuleSettings, "countMachineOpens">, { min: number; max: number }> = {
-  purchaseDays: { min: 90, max: 1095 },
-  clickDays: { min: 60, max: 1095 },
-  openDays: { min: 30, max: 1095 },
-  newProfileDays: { min: 30, max: 365 },
-  siteActivityDays: { min: 30, max: 1095 },
-  reactivationLockDays: { min: 90, max: 365 },
+  purchaseDays: { min: 365, max: 1095 },
+  clickDays: { min: 182, max: 1095 },
+  openDays: { min: 182, max: 1095 },
+  siteActivityDays: { min: 182, max: 1095 },
+  newProfileDays: { min: 180, max: 1095 },
+  minEmailsReceived: { min: 5, max: 50 },
+  reactivationLockDays: { min: 365, max: 1095 },
 };
+
+const WINDOW_KEYS = ["purchaseDays", "clickDays", "openDays", "siteActivityDays"] as const;
+type WindowKey = (typeof WINDOW_KEYS)[number];
+type NumberKey = Exclude<keyof typeof RULE_LIMITS, WindowKey>;
 
 export function validateRuleSettings(input: Partial<RuleSettings>): { settings: RuleSettings; errors: string[] } {
   const settings: RuleSettings = { ...DEFAULT_RULE_SETTINGS };
@@ -51,12 +78,18 @@ export function validateRuleSettings(input: Partial<RuleSettings>): { settings: 
   for (const key of Object.keys(RULE_LIMITS) as (keyof typeof RULE_LIMITS)[]) {
     const value = input[key];
     if (value === undefined) continue;
-    const { min, max } = RULE_LIMITS[key];
-    if (!Number.isInteger(value) || value < min || value > max) {
-      errors.push(`${key} must be a whole number between ${min} and ${max}`);
+    const isWindow = (WINDOW_KEYS as readonly string[]).includes(key);
+    if (value === null && isWindow) {
+      settings[key as WindowKey] = null;
       continue;
     }
-    settings[key] = value;
+    const { min, max } = RULE_LIMITS[key];
+    if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
+      errors.push(`${key} must be a whole number between ${min} and ${max}${isWindow ? ", or empty for any time" : ""}`);
+      continue;
+    }
+    if (isWindow) settings[key as WindowKey] = value;
+    else settings[key as NumberKey] = value;
   }
   if (input.countMachineOpens !== undefined) settings.countMachineOpens = Boolean(input.countMachineOpens);
   return { settings, errors };
@@ -79,8 +112,13 @@ export interface ProfileSignals {
   lastClickAt: Date | null;
   /** Most recent purchase, from Shopify orders and/or Klaviyo "Placed Order". */
   lastPurchaseAt: Date | null;
-  /** Most recent "Started Checkout" / "Active on Site". */
+  /** Most recent "Started Checkout" / "Active on Site" / product view. */
   lastSiteActivityAt?: Date | null;
+  /**
+   * Marketing emails received in the last EMAILS_RECEIVED_WINDOW_DAYS days.
+   * null or undefined = unknown, which protects.
+   */
+  emailsReceived?: number | null;
   smsConsent: boolean;
   /** Member of a list/segment the merchant marked as protected. */
   inProtectedGroup: boolean;
@@ -110,6 +148,8 @@ export type ProtectionReason =
   | "sms_consent"
   | "protected_group"
   | "recently_reactivated"
+  | "not_enough_emails_received"
+  | "unknown_send_history"
   | "unknown_profile_age"
   | "insufficient_engagement_history"
   | "insufficient_purchase_history";
@@ -125,14 +165,26 @@ export type Decision =
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function within(date: Date | null | undefined, days: number, now: Date): boolean {
+/** True when `date` falls inside the window; a null window means any time at all. */
+function within(date: Date | null | undefined, days: Window, now: Date): boolean {
   if (!date) return false;
+  if (days === null) return true;
   return now.getTime() - date.getTime() < days * DAY_MS;
 }
 
-function covers(since: Date | null | undefined, days: number, now: Date): boolean {
+/**
+ * True when our data is complete for the whole window. For a null window
+ * ("ever") the data must reach back to before the profile existed.
+ */
+function covers(since: Date | null | undefined, days: Window, createdAt: Date | null, now: Date): boolean {
   if (!since) return false;
+  if (days === null) return createdAt !== null && since.getTime() <= createdAt.getTime();
   return now.getTime() - since.getTime() >= days * DAY_MS;
+}
+
+/** The wider of two windows; null ("ever") is wider than any number. */
+function widest(a: Window, b: Window): Window {
+  return a === null || b === null ? null : Math.max(a, b);
 }
 
 export function evaluateProfile(
@@ -154,25 +206,29 @@ export function evaluateProfile(
   else if (within(profile.createdAt, settings.newProfileDays, now)) reasons.push("new_profile");
 
   if (within(profile.lastPurchaseAt, settings.purchaseDays, now)) reasons.push("recent_purchase");
-  else if (!covers(coverage.purchasesSince, settings.purchaseDays, now)) reasons.push("insufficient_purchase_history");
+  else if (!covers(coverage.purchasesSince, settings.purchaseDays, profile.createdAt, now)) reasons.push("insufficient_purchase_history");
 
   if (within(profile.lastClickAt, settings.clickDays, now)) reasons.push("recent_click");
 
-  const openDate = settings.countMachineOpens
-    ? profile.lastOpenAt
-    : profile.lastOpenIsMachine
-      ? (profile.lastHumanOpenAt ?? null)
-      : profile.lastOpenAt;
+  // Ignoring machine opens needs to know the last human open. If that is
+  // unknown (undefined, as opposed to a known "none" = null), the open still protects.
+  const openDate =
+    settings.countMachineOpens || !profile.lastOpenIsMachine || profile.lastHumanOpenAt === undefined
+      ? profile.lastOpenAt
+      : profile.lastHumanOpenAt;
   if (within(openDate, settings.openDays, now)) reasons.push("recent_open");
 
-  const engagementWindow = Math.max(settings.clickDays, settings.openDays);
+  const engagementWindow = widest(settings.clickDays, settings.openDays);
   if (
     !reasons.includes("recent_click") &&
     !reasons.includes("recent_open") &&
-    !covers(coverage.engagementSince, engagementWindow, now)
+    !covers(coverage.engagementSince, engagementWindow, profile.createdAt, now)
   ) {
     reasons.push("insufficient_engagement_history");
   }
+
+  if (profile.emailsReceived == null || !Number.isFinite(profile.emailsReceived)) reasons.push("unknown_send_history");
+  else if (profile.emailsReceived < settings.minEmailsReceived) reasons.push("not_enough_emails_received");
 
   if (within(profile.lastSiteActivityAt, settings.siteActivityDays, now)) reasons.push("recent_site_activity");
 

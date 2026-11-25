@@ -1,8 +1,14 @@
-# Shopify app configuration. client_id is filled by `shopify app config link`
-# once the app exists in the Dev Dashboard.
-client_id = ""
+# Shopify app configuration. client_id comes from the app's Settings page in the
+# Dev Dashboard. Deployed with `shopify app deploy` (see docs/13-INSTRUCTIVO-CUENTAS.md).
+client_id = "df0c06b9c152f35785669afb4c2fe5e2"
+# App Store name (30-character limit). The full product name is
+# "TierSaver: List Hygiene for Klaviyo"; "list hygiene" goes in the listing subtitle.
 name = "TierSaver for Klaviyo"
+application_url = "https://tiersaver-app.tiersaver.workers.dev"
 embedded = true
+
+[auth]
+redirect_urls = ["https://tiersaver-app.tiersaver.workers.dev/auth/callback"]
 
 [access_scopes]
 # read_all_orders and protected customer data (email) are requested in Phase 3,
@@ -19,6 +25,11 @@ api_version = "2026-10"
   [[webhooks.subscriptions]]
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
+
+  # Keeps buyer protection current. Needs protected customer data access (email).
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks/orders/create"
 
   # Mandatory compliance topics for App Store apps.
   [[webhooks.subscriptions]]

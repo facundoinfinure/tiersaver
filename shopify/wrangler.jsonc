@@ -15,6 +15,26 @@
       "migrations_dir": "drizzle"
     }
   ],
+  "workflows": [
+    {
+      // Suppression and undo runs. One step per batch of up to 100 profiles.
+      "name": "tiersaver-suppression-run",
+      "binding": "SUPPRESSION_RUN",
+      "class_name": "SuppressionRunWorkflow"
+    },
+    {
+      // One-time read of a shop's order history into hashed buyers, one page per step.
+      "name": "tiersaver-orders-backfill",
+      "binding": "ORDERS_BACKFILL",
+      "class_name": "OrdersBackfillWorkflow"
+    }
+  ],
+  // Not set here on purpose:
+  // - SUPPRESSION_ENABLED: safety switch read by app/runs/gateway.server.ts. While it is absent (or anything
+  //   other than "true") every suppression batch is refused with "suppression_disabled" and no
+  //   merchant's Klaviyo account is touched. Only the owner turns it on, as a var or with `wrangler secret put`.
+  // - Secrets (`wrangler secret put`): SHOPIFY_API_KEY, SHOPIFY_API_SECRET, TOKEN_ENCRYPTION_KEY,
+  //   KLAVIYO_CLIENT_ID, KLAVIYO_CLIENT_SECRET. Declared in app/secrets.d.ts.
   "vars": {
     "SCOPES": "read_orders",
     "SHOPIFY_APP_URL": "https://tiersaver-app.tiersaver.workers.dev"

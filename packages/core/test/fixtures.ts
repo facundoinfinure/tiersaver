@@ -39,6 +39,7 @@ export function inactiveProfile(overrides: Partial<ProfileSignals> = {}): Profil
     lastClickAt: null,
     lastPurchaseAt: null,
     lastSiteActivityAt: null,
+    emailsReceived: 12,
     smsConsent: false,
     inProtectedGroup: false,
     reactivatedAt: null,

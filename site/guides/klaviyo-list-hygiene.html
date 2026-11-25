@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klaviyo list hygiene: how to find and suppress profiles that never engaged · TierSaver</title>
+  <meta name="description" content="A step-by-step guide to list hygiene in Klaviyo using the criteria Klaviyo publishes: find profiles that never engaged, check them against your orders, suppress them and repeat. No app required.">
+  <link rel="canonical" href="https://tiersaver.com/guides/klaviyo-list-hygiene">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Klaviyo list hygiene: how to find and suppress profiles that never engaged">
+  <meta property="og:description" content="A step-by-step guide to list hygiene in Klaviyo using the criteria Klaviyo publishes: find profiles that never engaged, check them against your orders, suppress them and repeat. No app required.">
+  <meta property="og:url" content="https://tiersaver.com/guides/klaviyo-list-hygiene">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Klaviyo list hygiene by hand</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Guide</p>
+          <h1>Klaviyo list hygiene: how to find and suppress profiles that never engaged</h1>
+          <p class="lead">Klaviyo documents how to find and suppress profiles that have never engaged. These are the steps, by hand. No app required.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>What list hygiene means here</h2>
+<p>Klaviyo distinguishes two jobs that are often mixed up:</p>
+<ul>
+  <li><strong>Everyday list cleaning</strong>, for deliverability. Exclude recently unengaged subscribers from your regular campaigns, for example people who received at least 5 emails and have not opened or clicked in 90 days. Klaviyo's advice is to exclude them with a segment, not to suppress them.</li>
+  <li><strong>Active profile management.</strong> Suppress profiles that have shown a long, sustained period of inactivity: no site visits, no purchases, no engagement with your emails. This guide is about this second job.</li>
+</ul>
+
+<h2>Before you start</h2>
+<ul>
+  <li><strong>Suppression is a decision to stop emailing someone.</strong> Klaviyo warns that suppressing too early can cost revenue, and that a suppressed profile stays suppressed even if that person later starts a checkout or buys.</li>
+  <li><strong>Try to win them back first.</strong> Klaviyo recommends running long-inactive profiles through a last sunset flow before suppressing them.</li>
+  <li><strong>Suppress, do not delete.</strong> Deleting cannot be undone. See <a href="/guides/suppress-vs-delete-vs-unsubscribe">suppress, delete or unsubscribe</a>.</li>
+  <li><strong>Check your role.</strong> Owners, Admins and Managers can suppress profiles.</li>
+</ul>
+
+<h2>Step 1. Find the profiles that never engaged</h2>
+<p>Klaviyo offers three ways.</p>
+
+<h3>Build an inactivity segment</h3>
+<p>Klaviyo's suggested definition combines all of these conditions:</p>
+<ul>
+  <li>Person can receive email marketing</li>
+  <li>Email is set</li>
+  <li>Created at least 180 days ago</li>
+  <li>Has received at least 5 emails in the last 72 weeks</li>
+  <li>Has opened email 0 times over all time</li>
+  <li>Has clicked email 0 times over all time</li>
+  <li>Has been active on site 0 times over all time</li>
+  <li>Has viewed product 0 times over all time</li>
+  <li>Has started checkout 0 times over all time</li>
+  <li>Has placed order 0 times over all time</li>
+</ul>
+<p>Creating the segment does not suppress anyone.</p>
+
+<h3>Use Klaviyo's suppression recommendations</h3>
+<p>On the Suppressed profiles page (Audience, Profiles, View suppressed profiles), Klaviyo may show a banner recommending profiles to suppress. Its criteria: can receive email marketing with no suppression added in the last 90 days, created at least 365 days ago, received 5 or more emails over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+
+<h3>Use "Suppress inactive profiles" on a list or segment</h3>
+<p>When you bulk suppress a list or segment, Klaviyo may offer to suppress only inactive profiles. That option keeps active anyone in the group who is subscribed, has not marked your emails as spam, and has clicked an email or placed an order within the last 182 days. Klaviyo says the option is unavailable when your deliverability score for the last 30 days is 60 or lower, or when more than 120,000 profiles qualify as inactive.</p>
+
+<h2>Step 2. Check the list against real buyers</h2>
+<p>This step is not in Klaviyo's instructions, and it is the one that protects revenue. The conditions above rely on the activity Klaviyo has recorded for each profile. Your store's order history is an independent check: export the segment, compare it with your orders, and keep anyone who has bought from you.</p>
+
+<h2>Step 3. Suppress</h2>
+<ol>
+  <li>Go to Audience, then Lists &amp; segments.</li>
+  <li>Open the action menu next to the list or segment and select "Suppress current members".</li>
+  <li>Review the counts. If Klaviyo offers the choice, pick "Suppress inactive profiles" or "Suppress everyone".</li>
+  <li>Confirm. Processing may take some time.</li>
+</ol>
+<p>Two things to keep in mind. The action applies to the current members only; profiles that join the segment later are not suppressed. And suppressing affects email only: SMS and push eligibility do not change.</p>
+
+<h2>Step 4. Keep a record</h2>
+<p>Before you confirm, export the segment and keep the file with the date and the conditions you used. If you later find you suppressed someone you should not have, that file tells you exactly whom to restore. Klaviyo lets you remove manual suppressions one profile at a time or in bulk for a list or segment.</p>
+<p>Remember the waiting period: once a profile is suppressed and then unsuppressed, Klaviyo does not let it be manually suppressed again until 90 days after the previous suppression.</p>
+
+<h2>Step 5. Repeat every month</h2>
+<p>Klaviyo's advice is to manage your active profiles on an ongoing basis. A bulk suppression does not repeat by itself, so put it in your calendar. If you also want Klaviyo's profile count to be current when your plan renews, allow a few days: Klaviyo says the count shown in billing may take up to 72 hours to refresh after a large cleanup. <a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a> explains the rest.</p>
+
+<h2>Where TierSaver fits</h2>
+<p>Everything above works by hand. TierSaver is for Shopify stores that want it done every month: it finds profiles using the same published criteria, checks every candidate against Shopify orders (step 2), shows a simulation for you to approve, keeps the record (step 4) and can undo a run. It never deletes profiles. <a href="/#how-it-works">See how it works</a>.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read 2026-11-25)</li>
+</ul>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene" aria-current="page">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

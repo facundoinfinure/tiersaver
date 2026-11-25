@@ -112,23 +112,3 @@ export function verifiedSavings(args: { tierMaxBefore: number; tierMaxAfter: num
   if (delta <= 0) return { ...base, monthlySavingsCents: 0, unavailableReason: "no_tier_drop" };
   return { ...base, monthlySavingsCents: delta, unavailableReason: null };
 }
-
-/**
- * The amount we bill on: never more than what the merchant approved in the
- * simulation, never more than what Klaviyo confirmed, and, when the merchant
- * told us what they actually pay, never more than their real price difference.
- */
-export function billableSavingsCents(args: {
-  approvedEstimateCents: number;
-  verifiedCents: number;
-  /** Optional: merchant-reported current monthly price, for discounted legacy accounts. */
-  reportedCurrentPriceCents?: number | null;
-  /** List price of the tier after the cleanup. */
-  listPriceAfterCents?: number | null;
-}): number {
-  let cents = Math.min(Math.max(0, args.approvedEstimateCents), Math.max(0, args.verifiedCents));
-  if (args.reportedCurrentPriceCents != null && args.listPriceAfterCents != null) {
-    cents = Math.min(cents, Math.max(0, args.reportedCurrentPriceCents - args.listPriceAfterCents));
-  }
-  return cents;
-}

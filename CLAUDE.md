@@ -1,6 +1,6 @@
 # TierSaver — instrucciones del proyecto
 
-TierSaver es una app embebida de Shopify que suprime perfiles inactivos de Klaviyo antes de cada fecha de facturación, para que el merchant quede en un tramo de precio más bajo. Cobra una parte del ahorro. Dueño: Facundo Bonfigli. Marca independiente (no mencionar Infinure, dnuvi ni Alupont en nada público).
+TierSaver es una app embebida de Shopify que mantiene limpia la lista de Klaviyo del merchant: suprime, con simulación y aprobación previas, los perfiles que nunca interactuaron, según los criterios publicados por Klaviyo. Cobra un precio fijo mensual según el tamaño de la lista. Dueño: Facundo Bonfigli. Marca independiente (no mencionar Infinure, dnuvi ni Alupont en nada público).
 
 Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y estado.
 
@@ -11,7 +11,7 @@ Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y es
 - Las dudas listadas como "a verificar" en `docs/02-ARQUITECTURA.md` se resuelven antes de escribir el código que depende de ellas.
 - No inventes cifras. Todo número que vea un merchant sale de sus datos reales o está rotulado como estimación.
 - Commits chicos y descriptivos. Rama `main` protegida; trabajo en ramas por fase.
-- Tests antes de dar algo por terminado: unitarios para reglas de inactividad y cálculo de ahorro; de integración contra la cuenta de Klaviyo de prueba.
+- Tests antes de dar algo por terminado: unitarios para reglas de inactividad y cálculo del cargo; de integración contra la cuenta de Klaviyo de prueba.
 
 ## Reglas de producto que no se negocian
 
@@ -20,7 +20,7 @@ Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y es
 3. **Todo es reversible y queda registrado**: quién, cuándo, qué perfiles, por qué regla.
 4. **Suprimir, nunca borrar.** La app no elimina perfiles.
 5. **Mínimo de permisos** en Shopify y en Klaviyo. No pedir scopes que el MVP no usa.
-6. **Si no hay ahorro, no se cobra.**
+6. **Si no hay limpieza, no se cobra.**
 7. **Datos personales**: guardar lo mínimo (IDs y hashes antes que mails en claro cuando alcance), cifrar tokens en reposo, borrar todo al desinstalar según los webhooks de privacidad de Shopify.
 
 ## Frenos: parar y preguntarle a Facundo

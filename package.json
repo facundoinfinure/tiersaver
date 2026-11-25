@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "shopify",
-    "scripts/*"
+    "scripts/*",
+    "site"
   ],
   "engines": {
     "node": ">=22.12"
@@ -17,7 +18,8 @@
   },
   "devDependencies": {
     "vitest": "^4.1.12",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "esbuild": "^0.28.2"
   },
   "overrides": {
     "vite": "^7.3.1"

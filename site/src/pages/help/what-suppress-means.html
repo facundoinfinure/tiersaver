@@ -1,0 +1,54 @@
+<!--
+title: What "suppress" means in Klaviyo, and why nothing is deleted
+nav: What suppressing means
+description: Suppressing a Klaviyo profile stops marketing emails to it while the profile and its history stay in your account. How it differs from deleting and from unsubscribing.
+summary: Suppressed profiles stay in Klaviyo with their history. How suppressing differs from deleting and unsubscribing.
+lead: TierSaver suppresses profiles. It never deletes them. A suppressed profile stays in your Klaviyo account with its full history.
+layout: doc
+group: help
+order: 4
+updated: 2026-11-25
+-->
+<h2>What suppression does</h2>
+<p>According to Klaviyo's help center, when a profile is suppressed:</p>
+<ul>
+  <li>it remains in your account, but is no longer considered active for email;</li>
+  <li>it cannot receive marketing emails, even if it had given consent, and Klaviyo skips it at send time;</li>
+  <li>it does not count toward your email plan's active profile count;</li>
+  <li>its ability to receive SMS messages and push notifications is not affected.</li>
+</ul>
+<p>A manual suppression does not change the profile's consent status. Klaviyo's example: a profile that was Subscribed remains Subscribed, but cannot receive email marketing while it is suppressed.</p>
+<div class="note">
+  <p>A suppressed profile stays suppressed even if that person later starts a checkout or buys. Treat suppression as a decision to stop emailing someone, not as a pause. That is why TierSaver's <a href="/help/cleanup-criteria">default criteria</a> only select profiles that have never engaged.</p>
+</div>
+
+<h2>Suppressing and deleting compared</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Suppressing and deleting compared">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col"></th><th scope="col">Suppress</th><th scope="col">Delete</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Profile and history</th><td>Kept in your account.</td><td>Removed. You can no longer open the profile or see its activity.</td></tr>
+      <tr><th scope="row">Can it be reversed?</th><td>Yes. A manual suppression can be removed.</td><td>No. Klaviyo states that deletion cannot be undone.</td></tr>
+      <tr><th scope="row">If the person comes back</th><td>They stay suppressed until they resubscribe or you remove the suppression.</td><td>They can enter your account as a new profile.</td></tr>
+      <tr><th scope="row">Does TierSaver do it?</th><td>Yes.</td><td>Never.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Klaviyo's own guidance is that you should generally aim to suppress profiles instead of deleting them.</p>
+
+<h2>Unsubscribing is something else</h2>
+<p>Unsubscribing is the recipient's own choice. Klaviyo records it as an Unsubscribed consent status, not as a suppression reason. Suppressing a profile does not change its consent, and removing a suppression does not resubscribe anyone. TierSaver never changes consent.</p>
+<p>Klaviyo also suppresses profiles on its own in some cases, for example after a hard bounce or repeated soft bounces. TierSaver does not touch those.</p>
+<p>There is a longer comparison in the guide <a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a>.</p>
+
+<h2>Removing a suppression</h2>
+<p>Removing a manual suppression makes the profile active again. It does not change consent: Klaviyo notes that a profile that had unsubscribed still cannot receive marketing emails after it is unsuppressed, and that suppressions caused by bounces are not removed this way. After that, Klaviyo makes the profile wait before it can be suppressed again. See <a href="/help/undo">undo</a>.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  {{src.bulkSuppress}}
+  {{src.activeProfileManagement}}
+  {{src.suppressedProfiles}}
+</ul>

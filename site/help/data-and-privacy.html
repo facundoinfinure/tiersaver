@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data and privacy · TierSaver</title>
+  <meta name="description" content="What TierSaver stores and what it does not: Klaviyo profile IDs and SHA-256 hashes instead of customer email addresses, encrypted access tokens, and deletion after uninstall.">
+  <link rel="canonical" href="https://tiersaver.com/help/data-and-privacy">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Data and privacy">
+  <meta property="og:description" content="What TierSaver stores and what it does not: Klaviyo profile IDs and SHA-256 hashes instead of customer email addresses, encrypted access tokens, and deletion after uninstall.">
+  <meta property="og:url" content="https://tiersaver.com/help/data-and-privacy">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Data and privacy</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Data and privacy</h1>
+          <p class="lead">TierSaver is built to store as little as it can about your customers: identifiers and one-way hashes, not email addresses.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>What TierSaver stores</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Data stored by TierSaver">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Data</th><th scope="col">Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Your store's myshopify.com address, time zone and install date</td><td>To identify your store and schedule in your time zone</td></tr>
+      <tr><td>Shopify and Klaviyo access tokens, encrypted</td><td>To read orders and to read and suppress profiles on your behalf</td></tr>
+      <tr><td>Your Klaviyo account ID and the permissions you granted</td><td>To know which account is connected</td></tr>
+      <tr><td>Your settings: cleanup criteria, protected lists, renewal day, run mode</td><td>To apply your choices</td></tr>
+      <tr><td>Audit and simulation results: profile counts and the criteria used</td><td>To show you results and keep a history</td></tr>
+      <tr><td>Klaviyo profile IDs of profiles in a simulation or a run, with the reason</td><td>To suppress exactly what you approved and to undo it</td></tr>
+      <tr><td>A SHA-256 hash of each buyer's email address, with the date of their last order</td><td>To recognize buyers without keeping their email address</td></tr>
+      <tr><td>A log of actions: who approved or did what, and when</td><td>So every change is traceable</td></tr>
+      <tr><td>Billing records: the price band that applied and the charges created through Shopify</td><td>To bill correctly</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>What TierSaver does not store</h2>
+<ul>
+  <li>Customer email addresses in readable form.</li>
+  <li>Customer names, postal addresses or phone numbers.</li>
+  <li>The contents of orders: products, amounts or payment details.</li>
+  <li>The content of your emails or campaigns.</li>
+</ul>
+<p>Email addresses pass through TierSaver's systems briefly in two moments: when an order's email is turned into a hash, and when a batch of profiles is sent to Klaviyo for suppression. They are not written to the database or to logs.</p>
+
+<h2>How hashes are used</h2>
+<p>A hash is a one-way fingerprint of a normalized email address. TierSaver compares the fingerprint from a Shopify order with the fingerprint of a Klaviyo profile's email to know that a profile belongs to a buyer. The original address cannot be read back from the stored fingerprint.</p>
+
+<h2>Access and permissions</h2>
+<p>TierSaver requests the smallest set of permissions it needs. In Shopify, it reads orders, and of the protected customer fields only the email address. In Klaviyo, it reads profiles and their activity, and the only change it makes to a profile is its suppression status, for the profiles in a cleanup you approved.</p>
+<p>Access tokens are encrypted before they are stored. The encryption key is held separately from the database.</p>
+
+<h2>Where it runs</h2>
+<p>The app and its database run on Cloudflare. Charges are handled by Shopify.</p>
+
+<h2>Deletion</h2>
+<ul>
+  <li><strong>When you uninstall:</strong> tokens are deleted immediately, and everything else when Shopify sends its shop deletion request, 48 hours after uninstalling. See <a href="/help/uninstalling">what happens on uninstall</a>.</li>
+  <li><strong>When a customer asks your store to erase their data:</strong> Shopify notifies TierSaver, which deletes that customer's hashed purchase record and removes their hash from past runs and simulations.</li>
+  <li><strong>When a customer asks for a copy of their data:</strong> the only data derived from them is the one-way hash and the date of their last order, so there is nothing readable to export.</li>
+</ul>
+<p>Profiles in Klaviyo are never deleted by TierSaver. They are your data, in your Klaviyo account.</p>
+
+<h2>This website</h2>
+<p>tiersaver.com sets no cookies and loads no analytics or third-party scripts. The list health check runs entirely in your browser; the numbers you type are not sent anywhere.</p>
+
+<p>The full policy is in the <a href="/privacy">privacy policy (draft)</a>.</p>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/uninstalling">What happens on uninstall</a></li>
+            <li><a href="/help/data-and-privacy" aria-current="page">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!--
+title: Undo: correcting a run
+nav: Undo
+description: Undo restores exactly the profiles a TierSaver run suppressed. It exists to correct mistakes. Restored profiles are not eligible for cleanup again for 365 days.
+summary: Undo restores exactly the profiles of one run. It is for correcting mistakes, not for switching profiles back and forth.
+lead: Every run can be undone. Undo exists to correct a mistake: it restores exactly the profiles that run suppressed, and nothing else.
+layout: doc
+group: help
+order: 5
+updated: 2026-11-25
+-->
+<h2>The run log</h2>
+<p>Each cleanup is recorded: when it ran, whether you started it or the schedule did, who approved it, the criteria in effect, how many profiles were suppressed and how it ended. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what makes undo exact.</p>
+
+<h2>What undo does</h2>
+<ul>
+  <li>It removes the suppression from the profiles of one run.</li>
+  <li>It does not touch profiles that were suppressed by you, by Klaviyo or by another run.</li>
+  <li>It does not change consent. A profile that had unsubscribed before stays unsubscribed.</li>
+</ul>
+<p>After an undo, the set of profiles suppressed by TierSaver is what it was before that run.</p>
+
+<h2>What happens to restored profiles</h2>
+<ul>
+  <li><strong>They count as active profiles again.</strong> Klaviyo's displayed count may take up to 72 hours to refresh after a large change.</li>
+  <li><strong>TierSaver leaves them alone for {{criteria.undoLockDays}} days.</strong> A restored profile is not eligible for any cleanup during that time. If you undo a run, you are telling TierSaver those profiles should stay.</li>
+  <li><strong>Klaviyo has its own waiting period.</strong> Its help center says that once a profile is suppressed and then unsuppressed, it cannot be manually suppressed again until {{klaviyo.resuppressDays}} days after the previous suppression. The rule is not active during the first 30 days after a new Klaviyo account is created.</li>
+</ul>
+
+<h2>What undo is not for</h2>
+<p>Undo is not a way to suppress profiles for a while and bring them back later. Suppression is a decision to stop emailing someone. If you expect to email a group again, protect it instead: mark the list or segment as protected in the <a href="/help/cleanup-criteria">cleanup criteria</a> and it will never be selected.</p>
+<p>If an undo is requested for a run that is more than one plan renewal old, the app asks you to confirm.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  {{src.bulkSuppress}}
+  {{src.activeProfileManagement}}
+  {{src.billing}}
+</ul>

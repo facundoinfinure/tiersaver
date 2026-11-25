@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   assertValidPriceTable,
   chargeIdempotencyKey,
+  FLAT_PRICE_TIERS,
+  flatTierFor,
   estimateSavings,
   formatUsd,
   KLAVIYO_EMAIL_2026_11,
@@ -108,35 +110,53 @@ describe("profilesToDropOneTier", () => {
   });
 });
 
-describe("quoteCharge", () => {
-  it("charges 20% of savings", () => {
-    const q = quoteCharge({ monthlySavingsCents: 12_500 });
-    expect(q.feeCents).toBe(2_500);
-    expect(q.capApplied).toBe(false);
-    expect(q.noChargeReason).toBeNull();
+describe("quoteCharge (flat price by list size)", () => {
+  it("prices by list size at the tier boundaries", () => {
+    expect(flatTierFor(1)?.monthlyCents).toBe(1_500);
+    expect(flatTierFor(10_000)?.monthlyCents).toBe(1_500);
+    expect(flatTierFor(10_001)?.monthlyCents).toBe(2_900);
+    expect(flatTierFor(25_000)?.monthlyCents).toBe(2_900);
+    expect(flatTierFor(25_001)?.monthlyCents).toBe(7_900);
+    expect(flatTierFor(75_000)?.monthlyCents).toBe(7_900);
+    expect(flatTierFor(75_001)?.monthlyCents).toBe(14_900);
+    expect(flatTierFor(150_000)?.monthlyCents).toBe(14_900);
+    expect(flatTierFor(150_001)).toBeNull();
+    expect(FLAT_PRICE_TIERS.map((t) => t.monthlyCents)).toEqual([1_500, 2_900, 7_900, 14_900]);
   });
-  it("caps at $149 per window", () => {
-    const q = quoteCharge({ monthlySavingsCents: 100_000 });
-    expect(q.uncappedFeeCents).toBe(20_000);
-    expect(q.feeCents).toBe(14_900);
-    expect(q.capApplied).toBe(true);
+  it("charges the tier price when a cleanup suppressed profiles", () => {
+    expect(quoteCharge({ activeProfiles: 8_000, profilesSuppressed: 200 }).feeCents).toBe(1_500);
+    const q = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 3_500 });
+    expect(q).toMatchObject({ feeCents: 2_900, listFeeCents: 2_900, capApplied: false, noChargeReason: null });
+  });
+  it("the fee does not depend on how many profiles were suppressed", () => {
+    const few = quoteCharge({ activeProfiles: 60_000, profilesSuppressed: 1 });
+    const many = quoteCharge({ activeProfiles: 60_000, profilesSuppressed: 40_000 });
+    expect(few.feeCents).toBe(7_900);
+    expect(many.feeCents).toBe(7_900);
+  });
+  it("charges nothing for a cycle without a cleanup", () => {
+    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 0 })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
+    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: -3 })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
+    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: Number.NaN })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
+  });
+  it("never charges automatically above the public tiers", () => {
+    expect(quoteCharge({ activeProfiles: 150_001, profilesSuppressed: 10 })).toMatchObject({
+      feeCents: 0,
+      tier: null,
+      noChargeReason: "above_price_tiers",
+    });
   });
   it("respects what was already charged in the window", () => {
-    const q = quoteCharge({ monthlySavingsCents: 50_000, chargedInWindowCents: 10_000 });
-    expect(q.feeCents).toBe(4_900);
-    const full = quoteCharge({ monthlySavingsCents: 50_000, chargedInWindowCents: 14_900 });
-    expect(full.feeCents).toBe(0);
-    expect(full.noChargeReason).toBe("cap_reached");
-  });
-  it("charges nothing without savings", () => {
-    expect(quoteCharge({ monthlySavingsCents: 0 })).toMatchObject({ feeCents: 0, noChargeReason: "no_savings" });
-    expect(quoteCharge({ monthlySavingsCents: -500 })).toMatchObject({ feeCents: 0, noChargeReason: "no_savings" });
+    const q = quoteCharge({ activeProfiles: 100_000, profilesSuppressed: 10, chargedInWindowCents: 10_000 });
+    expect(q).toMatchObject({ feeCents: 4_900, capApplied: true });
+    const full = quoteCharge({ activeProfiles: 100_000, profilesSuppressed: 10, chargedInWindowCents: 14_900 });
+    expect(full).toMatchObject({ feeCents: 0, noChargeReason: "cap_reached" });
   });
   it("charges at most once per cycle", () => {
-    const q = quoteCharge({ monthlySavingsCents: 12_500, lastChargeAt: daysAgo(10), now: NOW });
+    const q = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 10, lastChargeAt: daysAgo(10), now: NOW });
     expect(q).toMatchObject({ feeCents: 0, noChargeReason: "already_charged_this_cycle" });
-    const later = quoteCharge({ monthlySavingsCents: 12_500, lastChargeAt: daysAgo(29), now: NOW });
-    expect(later.feeCents).toBe(2_500);
+    const later = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 10, lastChargeAt: daysAgo(29), now: NOW });
+    expect(later.feeCents).toBe(2_900);
   });
 });
 
