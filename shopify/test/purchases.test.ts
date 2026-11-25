@@ -22,7 +22,7 @@ describe("ensureShop", () => {
   it("creates the shop with conservative default settings and revives it on reinstall", async () => {
     const shop = uniqueShop();
     await ensureShop(db, shop);
-    await db.update(schema.settings).set({ openDays: 120, version: 4 }).where(eq(schema.settings.shop, shop));
+    await db.update(schema.settings).set({ openDays: 200, version: 4 }).where(eq(schema.settings.shop, shop));
     await db.update(schema.shops).set({ status: "uninstalled", uninstalledAt: new Date() }).where(eq(schema.shops.shop, shop));
 
     await ensureShop(db, shop);
@@ -30,7 +30,7 @@ describe("ensureShop", () => {
     const row = await db.query.shops.findFirst({ where: eq(schema.shops.shop, shop) });
     expect(row).toMatchObject({ status: "installed", uninstalledAt: null, purchasesCoveredSince: null });
     const settings = await db.query.settings.findFirst({ where: eq(schema.settings.shop, shop) });
-    expect(settings).toMatchObject({ openDays: 120, version: 4, mode: "approval", reactivationEnabled: false });
+    expect(settings).toMatchObject({ openDays: 200, version: 4, mode: "approval" });
   });
 });
 

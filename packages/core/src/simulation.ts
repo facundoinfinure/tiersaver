@@ -29,6 +29,7 @@ export interface SimulationResult {
   summary: SimulationSummary;
   /** Klaviyo profile ids that would be suppressed, with the reason. */
   candidates: { id: string; reason: CandidateReason }[];
+  /** Informational only: which Klaviyo list-price plan size the remaining count corresponds to. Never used for the fee. */
   savings: SavingsEstimate;
   charge: ChargeQuote;
 }
@@ -90,7 +91,8 @@ export function simulate(input: SimulationInput): SimulationResult {
   });
 
   const charge = quoteCharge({
-    monthlySavingsCents: savings.monthlySavingsCents,
+    activeProfiles: input.activeProfiles,
+    profilesSuppressed: summary.candidates,
     chargedInWindowCents: input.chargedInWindowCents,
     lastChargeAt: input.lastChargeAt,
     now: input.now,
@@ -124,33 +126,24 @@ export function whyNotExecutable(sim: SimulationState, now: Date): NotExecutable
 }
 
 /**
- * After a run, recompute the fee on what was actually suppressed. If fewer
- * profiles were suppressed than simulated, the fee can only go down.
+ * After a run, the fee is quoted on what was actually suppressed: a run that
+ * suppressed nobody is not charged. The list size is the one the merchant saw
+ * in the simulation, so the price never differs from what was approved.
  */
 export function finalChargeForRun(args: {
   simulated: SimulationResult;
   actuallySuppressed: number;
-  activeProfiles: number;
-  table: PriceTable;
-  onFreePlan?: boolean;
   now: Date;
   feePolicy?: FeePolicy;
   chargedInWindowCents?: number;
   lastChargeAt?: Date | null;
-}): { savings: SavingsEstimate; charge: ChargeQuote } {
-  const removed = Math.min(args.actuallySuppressed, args.simulated.summary.candidates);
-  const savings = estimateSavings({
-    profilesBefore: args.activeProfiles,
-    profilesRemoved: removed,
-    table: args.table,
-    onFreePlan: args.onFreePlan,
-  });
-  const charge = quoteCharge({
-    monthlySavingsCents: Math.min(savings.monthlySavingsCents, args.simulated.savings.monthlySavingsCents),
+}): ChargeQuote {
+  return quoteCharge({
+    activeProfiles: args.simulated.charge.activeProfiles,
+    profilesSuppressed: Math.max(0, Math.min(args.actuallySuppressed, args.simulated.summary.candidates)),
     chargedInWindowCents: args.chargedInWindowCents,
     lastChargeAt: args.lastChargeAt,
     now: args.now,
     policy: args.feePolicy,
   });
-  return { savings, charge };
 }

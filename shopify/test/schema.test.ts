@@ -63,7 +63,7 @@ describe("migrations match the Drizzle schema", () => {
 });
 
 describe("defaults and constraints", () => {
-  it("settings defaults equal the conservative defaults in core", async () => {
+  it("settings defaults equal the defaults in core (Klaviyo's criteria)", async () => {
     const shop = uniqueShop();
     await db.insert(schema.shops).values({ shop });
     await db.insert(schema.settings).values({ shop });
@@ -72,24 +72,26 @@ describe("defaults and constraints", () => {
       purchaseDays: row.purchaseDays,
       clickDays: row.clickDays,
       openDays: row.openDays,
-      newProfileDays: row.newProfileDays,
       siteActivityDays: row.siteActivityDays,
+      newProfileDays: row.newProfileDays,
+      minEmailsReceived: row.minEmailsReceived,
       reactivationLockDays: row.reactivationLockDays,
       countMachineOpens: row.countMachineOpens,
     }).toEqual({ ...DEFAULT_RULE_SETTINGS });
     expect(row.leadDays).toBe(DEFAULT_SCHEDULE.leadDays);
     expect(row.mode).toBe("approval");
-    expect(row.reactivationEnabled).toBe(false);
     expect(row.protectedGroupIds).toEqual([]);
+    expect("reactivationEnabled" in row).toBe(false);
   });
 
-  it("refuses rule thresholds below the limits in core", async () => {
+  it("refuses rule thresholds below the floors in core", async () => {
     const columns = {
       purchaseDays: "purchase_days",
       clickDays: "click_days",
       openDays: "open_days",
-      newProfileDays: "new_profile_days",
       siteActivityDays: "site_activity_days",
+      newProfileDays: "new_profile_days",
+      minEmailsReceived: "min_emails_received",
       reactivationLockDays: "reactivation_lock_days",
     } as const;
     const shop = uniqueShop();
@@ -127,26 +129,17 @@ describe("defaults and constraints", () => {
     ).rejects.toThrow();
   });
 
-  it("no fee without savings, and one charge per Klaviyo cycle", async () => {
+  it("no fee without a cleanup, and one charge per run", async () => {
     const { shop, simulationId } = await seedSimulation({ candidates: 1 });
     const runId = crypto.randomUUID();
     await db.insert(schema.runs).values({ id: runId, shop, simulationId, createdBy: "user:1" });
-    const charge = {
-      shop,
-      runId,
-      klaviyoPeriodStart: new Date("2026-12-01T00:00:00Z"),
-      tierMaxBefore: 12500,
-      tierMaxAfter: 10000,
-      priceTableId: "test-table",
-      estimatedSavingsCents: 12500,
-      verifiedSavingsCents: 12500,
-    };
+    const charge = { shop, runId, activeProfiles: 12_400, priceTierMax: 25_000 };
     await expect(
-      db.insert(schema.usageCharges).values({ ...charge, id: "c0", idempotencyKey: "k0", billableSavingsCents: 0, feeCents: 2500 }),
+      db.insert(schema.usageCharges).values({ ...charge, id: "c0", idempotencyKey: "k0", profilesSuppressed: 0, feeCents: 2900 }),
     ).rejects.toThrow();
-    await db.insert(schema.usageCharges).values({ ...charge, id: "c1", idempotencyKey: `k1-${runId}`, billableSavingsCents: 12500, feeCents: 2500 });
+    await db.insert(schema.usageCharges).values({ ...charge, id: `c1-${runId}`, idempotencyKey: `k1-${runId}`, profilesSuppressed: 300, feeCents: 2900 });
     await expect(
-      db.insert(schema.usageCharges).values({ ...charge, id: "c2", idempotencyKey: `k2-${runId}`, billableSavingsCents: 12500, feeCents: 2500 }),
+      db.insert(schema.usageCharges).values({ ...charge, id: `c2-${runId}`, idempotencyKey: `k2-${runId}`, profilesSuppressed: 300, feeCents: 2900 }),
     ).rejects.toThrow();
   });
 });

@@ -94,7 +94,8 @@ export const KLAVIYO_PLANS = ["email", "marketing"] as const;
 
 /**
  * Per-shop settings. Rule defaults mirror DEFAULT_RULE_SETTINGS in
- * @tiersaver/core (conservative); `test/schema.test.ts` keeps them in sync.
+ * @tiersaver/core, which are Klaviyo's own published criteria;
+ * `test/schema.test.ts` keeps them in sync. A NULL window means "at any time".
  */
 export const settings = sqliteTable("settings", {
   shop: text("shop")
@@ -102,28 +103,26 @@ export const settings = sqliteTable("settings", {
     .references(() => shops.shop, { onDelete: "cascade" }),
   /** Bumped on every change to rules or protected groups; supersedes open simulations. */
   version: integer("version").notNull().default(1),
-  purchaseDays: integer("purchase_days").notNull().default(365),
-  clickDays: integer("click_days").notNull().default(180),
-  openDays: integer("open_days").notNull().default(90),
-  newProfileDays: integer("new_profile_days").notNull().default(90),
-  siteActivityDays: integer("site_activity_days").notNull().default(180),
-  reactivationLockDays: integer("reactivation_lock_days").notNull().default(90),
+  /** Protect buyers of the last N days. NULL: anyone who ever purchased. */
+  purchaseDays: integer("purchase_days"),
+  clickDays: integer("click_days"),
+  openDays: integer("open_days"),
+  siteActivityDays: integer("site_activity_days"),
+  newProfileDays: integer("new_profile_days").notNull().default(365),
+  /** Minimum emails received in ~72 weeks before a profile can be called inactive. */
+  minEmailsReceived: integer("min_emails_received").notNull().default(5),
+  /** A restored (unsuppressed) profile is not a candidate again for this many days. */
+  reactivationLockDays: integer("reactivation_lock_days").notNull().default(365),
   countMachineOpens: integer("count_machine_opens", { mode: "boolean" }).notNull().default(true),
   /** Klaviyo list / segment ids the merchant marked as protected (VIP). */
   protectedGroupIds: text("protected_group_ids", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
-  /** Day of month the Klaviyo billing cycle renews (1–31). */
+  /** Day of month the Klaviyo plan renews (1–31), so a monthly cleanup finishes before Klaviyo counts profiles. */
   billingDay: integer("billing_day"),
   billingDaySource: text("billing_day_source", { enum: BILLING_DAY_SOURCES }),
   leadDays: integer("lead_days").notNull().default(5),
   /** "approval" = every scheduled run waits for the merchant. "automatic" is an explicit opt-in. */
   mode: text("mode", { enum: RUN_MODES }).notNull().default("approval"),
-  /** Unsuppress a profile TierSaver suppressed when it buys again. Opt-in. */
-  reactivationEnabled: integer("reactivation_enabled", { mode: "boolean" }).notNull().default(false),
   klaviyoPlan: text("klaviyo_plan", { enum: KLAVIYO_PLANS }),
-  /** When the merchant confirmed Klaviyo auto-downgrade (or a manual downgrade commitment). */
-  autoDowngradeAckAt: timestamp("auto_downgrade_ack_at"),
-  /** Merchant-reported current Klaviyo price, for discounted legacy accounts. */
-  reportedCurrentPriceCents: integer("reported_current_price_cents"),
   updatedAt: timestamp("updated_at").notNull().default(now),
 });
 
@@ -296,7 +295,7 @@ export const runProfiles = sqliteTable(
     /** Klaviyo bulk job that carried this profile. */
     klaviyoJobId: text("klaviyo_job_id"),
     errorCode: text("error_code"),
-    /** Set when the profile was unsuppressed again (undo or reactivation on purchase). */
+    /** Set when the profile was unsuppressed again by undoing the run. */
     reactivatedAt: timestamp("reactivated_at"),
     updatedAt: timestamp("updated_at").notNull().default(now),
   },
@@ -330,8 +329,10 @@ export const purchaseHashes = sqliteTable(
 export const USAGE_CHARGE_STATUSES = ["pending", "charged", "not_charged", "failed"] as const;
 
 /**
- * TierSaver's fee for one Klaviyo billing cycle. Created only after the
- * Billing Usage API confirms a lower tier; at most one per shop per cycle.
+ * TierSaver's fee for one cleanup: a flat price by list size, created only
+ * when the run suppressed profiles. It never depends on the merchant's
+ * Klaviyo invoice. One per run; the one-per-cycle rule (28 days) is enforced
+ * by `quoteCharge` in @tiersaver/core.
  */
 export const usageCharges = sqliteTable(
   "usage_charges",
@@ -343,17 +344,14 @@ export const usageCharges = sqliteTable(
     runId: text("run_id")
       .notNull()
       .references(() => runs.id, { onDelete: "cascade" }),
-    /** Start of the Klaviyo billing period in which the lower tier was confirmed. */
-    klaviyoPeriodStart: timestamp("klaviyo_period_start").notNull(),
-    tierMaxBefore: integer("tier_max_before").notNull(),
-    tierMaxAfter: integer("tier_max_after").notNull(),
-    priceTableId: text("price_table_id").notNull(),
-    estimatedSavingsCents: integer("estimated_savings_cents").notNull(),
-    verifiedSavingsCents: integer("verified_savings_cents").notNull(),
-    billableSavingsCents: integer("billable_savings_cents").notNull(),
+    /** List size the price is based on (active profiles in the approved simulation). */
+    activeProfiles: integer("active_profiles").notNull(),
+    /** Upper bound of the price tier applied; NULL above the public tiers. */
+    priceTierMax: integer("price_tier_max"),
+    profilesSuppressed: integer("profiles_suppressed").notNull(),
     feeCents: integer("fee_cents").notNull(),
     capApplied: integer("cap_applied", { mode: "boolean" }).notNull().default(false),
-    /** NoChargeReason or VerifiedSavingsUnavailableReason when nothing was charged. */
+    /** NoChargeReason from @tiersaver/core when nothing was charged. */
     noChargeReason: text("no_charge_reason"),
     status: text("status", { enum: USAGE_CHARGE_STATUSES }).notNull().default("pending"),
     /** `chargeIdempotencyKey(shop, runId)`; also sent to Shopify. */
@@ -364,7 +362,8 @@ export const usageCharges = sqliteTable(
   },
   (t) => [
     uniqueIndex("usage_charges_idempotency_unique").on(t.idempotencyKey),
-    uniqueIndex("usage_charges_shop_period_unique").on(t.shop, t.klaviyoPeriodStart),
+    uniqueIndex("usage_charges_run_unique").on(t.runId),
+    index("usage_charges_shop_created_idx").on(t.shop, t.createdAt),
   ],
 );
 

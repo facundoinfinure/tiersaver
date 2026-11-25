@@ -1,34 +1,64 @@
 /**
- * TierSaver's own fee: a share of the estimated monthly savings, capped per
- * billing window, and nothing when there are no savings.
+ * TierSaver's own fee: a flat monthly price by list size, charged only for a
+ * billing cycle in which a cleanup actually suppressed profiles.
+ *
+ * The fee never depends on the merchant's Klaviyo invoice or on any saving
+ * (decided on 2026-11-25; see docs/12-CUMPLIMIENTO-KLAVIYO.md).
  *
  * All money in integer US cents.
  */
 
+export interface FlatPriceTier {
+  /** Largest active-profile count this tier covers. */
+  maxProfiles: number;
+  monthlyCents: number;
+}
+
+/**
+ * PROVISIONAL list-size boundaries, pending the owner's confirmation.
+ * Prices (US$ 29 / 79 / 149) are decided; the profile limits are a proposal.
+ * Above the last tier there is no public price.
+ */
+export const FLAT_PRICE_TIERS: readonly FlatPriceTier[] = Object.freeze([
+  { maxProfiles: 25_000, monthlyCents: 2_900 },
+  { maxProfiles: 75_000, monthlyCents: 7_900 },
+  { maxProfiles: 150_000, monthlyCents: 14_900 },
+]);
+
 export interface FeePolicy {
-  /** Share of savings, in basis points. 2000 = 20%. */
-  rateBps: number;
-  /** Maximum TierSaver charges in one Shopify 30-day billing window. */
+  tiers: readonly FlatPriceTier[];
+  /** Maximum TierSaver charges in one Shopify 30-day billing window (the subscription's capped amount). */
   windowCapCents: number;
-  /** Minimum days between two cleanup charges (one charge per Klaviyo billing cycle). */
+  /** Minimum days between two charges: at most one per Klaviyo billing cycle. */
   minDaysBetweenCharges: number;
 }
 
 export const DEFAULT_FEE_POLICY: FeePolicy = Object.freeze({
-  rateBps: 2000,
+  tiers: FLAT_PRICE_TIERS,
   windowCapCents: 14_900,
   minDaysBetweenCharges: 28,
 });
 
+/** The price tier for a list size, or null when the list is larger than every tier. */
+export function flatTierFor(activeProfiles: number, tiers: readonly FlatPriceTier[] = FLAT_PRICE_TIERS): FlatPriceTier | null {
+  const n = Math.max(0, Math.ceil(activeProfiles));
+  return tiers.find((t) => n <= t.maxProfiles) ?? null;
+}
+
 export type NoChargeReason =
-  | "no_savings"
+  /** No cleanup ran, or it suppressed nobody: nothing is charged for that cycle. */
+  | "no_cleanup"
+  | "already_charged_this_cycle"
   | "cap_reached"
-  | "already_charged_this_cycle";
+  /** List larger than the public tiers: priced by agreement, never charged automatically. */
+  | "above_price_tiers";
 
 export interface ChargeQuote {
-  savingsCents: number;
-  /** Fee before applying the cap. */
-  uncappedFeeCents: number;
+  /** List size the price is based on. */
+  activeProfiles: number;
+  tier: FlatPriceTier | null;
+  /** The tier's price, before the "no cleanup", one-per-cycle and cap rules. */
+  listFeeCents: number;
   /** What we would actually charge. */
   feeCents: number;
   capApplied: boolean;
@@ -36,10 +66,13 @@ export interface ChargeQuote {
 }
 
 export interface ChargeInput {
-  monthlySavingsCents: number;
+  /** Active profiles before the cleanup (from the audit behind the simulation). */
+  activeProfiles: number;
+  /** Profiles the cleanup suppressed (or, for a quote shown before approval, would suppress). */
+  profilesSuppressed: number;
   /** Sum of TierSaver usage charges already created in the current Shopify window. */
   chargedInWindowCents?: number;
-  /** When the last cleanup charge was created, if any. */
+  /** When the last charge was created, if any. */
   lastChargeAt?: Date | null;
   now?: Date;
   policy?: FeePolicy;
@@ -49,32 +82,33 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function quoteCharge(input: ChargeInput): ChargeQuote {
   const policy = input.policy ?? DEFAULT_FEE_POLICY;
-  const savingsCents = Math.max(0, Math.floor(input.monthlySavingsCents));
-  const uncappedFeeCents = Math.round((savingsCents * policy.rateBps) / 10_000);
+  const activeProfiles = Math.max(0, Math.ceil(input.activeProfiles));
+  const tier = flatTierFor(activeProfiles, policy.tiers);
+  const listFeeCents = tier?.monthlyCents ?? 0;
 
   const result = (feeCents: number, capApplied: boolean, noChargeReason: NoChargeReason | null): ChargeQuote => ({
-    savingsCents,
-    uncappedFeeCents,
+    activeProfiles,
+    tier,
+    listFeeCents,
     feeCents,
     capApplied,
     noChargeReason,
   });
 
-  if (savingsCents === 0 || uncappedFeeCents === 0) return result(0, false, "no_savings");
+  if (!(input.profilesSuppressed > 0)) return result(0, false, "no_cleanup");
+  if (!tier) return result(0, false, "above_price_tiers");
 
   if (input.lastChargeAt) {
     const now = input.now ?? new Date();
     const elapsedDays = (now.getTime() - input.lastChargeAt.getTime()) / DAY_MS;
-    if (elapsedDays < policy.minDaysBetweenCharges) {
-      return result(0, false, "already_charged_this_cycle");
-    }
+    if (elapsedDays < policy.minDaysBetweenCharges) return result(0, false, "already_charged_this_cycle");
   }
 
   const remaining = Math.max(0, policy.windowCapCents - Math.max(0, input.chargedInWindowCents ?? 0));
   if (remaining === 0) return result(0, true, "cap_reached");
 
-  const feeCents = Math.min(uncappedFeeCents, remaining);
-  return result(feeCents, feeCents < uncappedFeeCents, null);
+  const feeCents = Math.min(listFeeCents, remaining);
+  return result(feeCents, feeCents < listFeeCents, null);
 }
 
 /** "$1,234.50" style formatting for cents. */

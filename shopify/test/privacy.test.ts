@@ -39,14 +39,10 @@ async function seedEverything() {
     id: crypto.randomUUID(),
     shop,
     runId: created.runId,
-    klaviyoPeriodStart: new Date(),
-    tierMaxBefore: 12500,
-    tierMaxAfter: 10000,
-    priceTableId: "t",
-    estimatedSavingsCents: 12500,
-    verifiedSavingsCents: 12500,
-    billableSavingsCents: 12500,
-    feeCents: 2500,
+    activeProfiles: 12_400,
+    priceTierMax: 25_000,
+    profilesSuppressed: 3,
+    feeCents: 2900,
     idempotencyKey: `k-${created.runId}`,
   });
   return { ...seeded, runId: created.runId };
