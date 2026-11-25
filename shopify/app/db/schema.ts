@@ -9,7 +9,7 @@ import { blob, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from
  * - Money is integer US cents.
  * - Every merchant-owned table references `shops.shop` with ON DELETE CASCADE,
  *   so deleting the shop row removes all of its data (shop/redact).
- * - No customer emails in clear: purchase matching and reactivation use the
+ * - No customer emails in clear: purchase matching and run-time email checks use the
  *   SHA-256 of the normalized email (`hashEmail` in @tiersaver/core). Profiles
  *   are identified by their Klaviyo profile id.
  *
@@ -206,7 +206,7 @@ export const simulationCandidates = sqliteTable(
     profileId: text("profile_id").notNull(),
     /** CandidateReason: never_engaged | lapsed. */
     reason: text("reason").notNull(),
-    /** SHA-256 of the normalized email, for reactivation matching. */
+    /** SHA-256 of the normalized email, to confirm at run time that the email is the one that was simulated. */
     emailHash: text("email_hash"),
   },
   (t) => [primaryKey({ columns: [t.simulationId, t.profileId] })],
