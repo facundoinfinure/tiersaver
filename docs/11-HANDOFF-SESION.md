@@ -6,7 +6,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 - Rama: `claude/lucid-brahmagupta-ss214o` (todo empujado; parte de `main`). Cada sesión solo puede empujar a su propia rama.
 - Entorno de Claude Code: **"tiersaver"**. Variables: `CLOUDFLARE_API_TOKEN`, `SHOPIFY_API_SECRET`, `SHOPIFY_SERVICE_ACCOUNT_TOKEN`, `KLAVIYO_TEST_PRIVATE_KEY`. Red: se agregaron `destinations.shopifysvc.com` y `app.shopify.com` (los usa el CLI de Shopify).
-- Fase 0: lista salvo la instalación en la tienda, que hace Facundo. Fase 2: cerrada. Fase 3: en curso. Fase 4: sitio construido, sin publicar, **sin scripts de build en el repo**. Fases 1 y 5 sin empezar.
+- Fase 0: cerrada (app instalada en `tiersaver.myshopify.com` el 2026-11-25). Fase 2: cerrada. Fase 3: en curso. Fase 4: sitio construido, sin publicar, **sin scripts de build en el repo**. Fases 1 y 5 sin empezar.
 
 ## Qué hay desplegado
 
@@ -45,7 +45,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 ## Pendiente de Facundo
 
-1. Instalar la app en `tiersaver.myshopify.com` (Dev Dashboard → app → Home → Installs → Install app).
+1. (Hecho) Instalar la app en `tiersaver.myshopify.com`.
 2. Crear otra clave privada en la cuenta de Klaviyo de prueba con los scopes de B2 (suma `metrics:read`, `segments:read`, `segments:write`) y reemplazar `KLAVIYO_TEST_PRIVATE_KEY`.
 3. Crear la app OAuth de Klaviyo (B5) y cargar `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` en el entorno.
 4. Decidir y pedir en Shopify (A4): distribución pública (no se puede cambiar después), datos protegidos de clientes (solo Email) y `read_all_orders`.

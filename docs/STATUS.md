@@ -6,7 +6,7 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 | Fase | Estado | Fecha |
 | --- | --- | --- |
-| 0 · Base | Desplegada en Cloudflare, configuración de Shopify publicada y cuenta de Klaviyo de prueba sembrada. Falta que Facundo instale la app en `tiersaver.myshopify.com` | 2026-11-25 |
+| 0 · Base | **Cerrada**: app desplegada en Cloudflare, instalada en `tiersaver.myshopify.com` y cuenta de Klaviyo de prueba sembrada | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
 | 2 · Marca | Cerrada: logo B aplicado, mensajes aprobados, descriptor del nombre decidido. Queda la versión corta del nombre para la ficha | 2026-11-25 |
 | 3 · Construcción | En curso: capa de Klaviyo (perfiles, uso y supresión verificados contra la API real), ingesta de pedidos, motor de corridas, gateway y rutas de OAuth de Klaviyo hechos y probados. Faltan orquestación de auditoría y simulación, el resto de la interfaz, programación, deshacer y cobro | 2026-11-25 |
@@ -283,3 +283,8 @@ Sigue abierto, además: nombre real de la propiedad de apertura automática y qu
 - Instalación en `tiersaver.myshopify.com`, hook de instalación y backfill de pedidos contra una tienda real.
 - Acceso a datos protegidos de clientes y `read_all_orders` (A4): sin eso, con las reglas por defecto un merchant real no tiene candidatos. **Aun con `read_all_orders`, la app lee 1.095 días de pedidos, y la regla "nunca compró" exige cobertura desde antes de la creación de cada perfil: los perfiles de más de tres años quedan protegidos.** Hay que decidir si el backfill lee todo el historial de la tienda o si alcanza con la métrica "Placed Order" de Klaviyo para los más viejos.
 - Fase 3, lo que falta: pantalla de simulación con aprobación y avisos, CSV de candidatos, arranque de la corrida desde la interfaz, consulta de jobs, deshacer, reglas y grupos protegidos editables, programación mensual (Cron), cobro en Shopify, mails, y los guardarraíles 5, 6 y 9 de `12-CUMPLIMIENTO-KLAVIYO.md` 3.1.
+
+**Instalación en la tienda de desarrollo (hecha por Facundo, verificada; cierra la Fase 0)**
+- Facundo instaló la app en `tiersaver.myshopify.com` el 2026-11-25 17:43 UTC. La app embebida carga y muestra la pantalla de conexión con "Connecting to Klaviyo is not available yet" (lo esperado: falta la app OAuth de Klaviyo).
+- En la D1: fila en `shops` (`installed`) y sesión offline con scope `read_orders`, token cifrado.
+- **Bug encontrado y corregido**: el backfill de pedidos no arrancó al instalar. El id de la instancia del Workflow llevaba el dominio de la tienda, y los ids de Workflows no admiten puntos; el error quedaba tragado por el `catch`. Ahora los puntos se reemplazan y el fallo se registra. El backfill arranca en la próxima autenticación; igual no va a traer mails hasta que la app tenga acceso a datos protegidos de clientes.
