@@ -53,7 +53,7 @@ Una cuenta de prueba es una cuenta común en plan gratis con una etiqueta; no es
 ### B2. Clave privada
 
 1. **Settings** → **API keys** → **Create Private API Key** → **Custom Key**.
-2. Marcar: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`, `usage:read`. Las claves no se pueden editar después.
+2. Marcar: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`, `usage:read`, `metrics:read`, `segments:read`, `segments:write`. Las claves no se pueden editar después. (Los tres últimos se agregaron el 2026-11-25: sin ellos no se pueden verificar las métricas ni el segmento que crea la app. La primera clave no los tenía; hay que crear otra.)
 3. **Create** y copiar la clave (`pk_...`; se muestra una sola vez).
 4. Cargarla como variable `KLAVIYO_TEST_PRIVATE_KEY` del entorno "tiersaver" y abrir una sesión nueva. Pasarle a la sesión por chat el ID de la cuenta (6 caracteres, en Settings) o el nombre de la organización.
 
