@@ -322,6 +322,8 @@ export function createKlaviyoClient(
     getAccessToken: accessTokenProvider(deps, shop),
     fetch: deps.fetch,
     sleep: deps.sleep,
+    // Pacing uses the same clock as the caller, so a test that controls time controls the rate limiter too.
+    now: deps.now ? () => deps.now!().getTime() : undefined,
     subrequestBudget: options.subrequestBudget,
   });
 }

@@ -136,6 +136,8 @@ export const audits = sqliteTable(
       .references(() => shops.shop, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().default(now),
     activeProfiles: integer("active_profiles").notNull(),
+    /** Where `activeProfiles` came from: "klaviyo_usage" (Billing Usage API) or "counted" (by TierSaver). */
+    activeProfilesSource: text("active_profiles_source"),
     /** Candidates under the rules in effect when the audit ran. */
     inactiveProfiles: integer("inactive_profiles").notNull(),
     suppressedProfiles: integer("suppressed_profiles"),
@@ -181,6 +183,7 @@ export const simulations = sqliteTable(
     protectedCount: integer("protected_count").notNull(),
     skippedCount: integer("skipped_count").notNull(),
     activeProfiles: integer("active_profiles").notNull(),
+    activeProfilesSource: text("active_profiles_source"),
     tierBeforeMax: integer("tier_before_max"),
     tierAfterMax: integer("tier_after_max"),
     estimatedMonthlySavingsCents: integer("estimated_monthly_savings_cents").notNull().default(0),
@@ -210,6 +213,67 @@ export const simulationCandidates = sqliteTable(
     emailHash: text("email_hash"),
   },
   (t) => [primaryKey({ columns: [t.simulationId, t.profileId] })],
+);
+
+export const SCAN_STATUSES = ["queued", "running", "completed", "failed"] as const;
+
+/**
+ * One audit + simulation scan (app/scans/engine.ts), executed as a resumable
+ * Workflow. When it completes it has produced one `audits` row and one
+ * `simulations` row; until then neither exists.
+ */
+export const scans = sqliteTable(
+  "scans",
+  {
+    id: text("id").primaryKey(),
+    shop: text("shop")
+      .notNull()
+      .references(() => shops.shop, { onDelete: "cascade" }),
+    origin: text("origin", { enum: RUN_ORIGINS }).notNull().default("manual"),
+    status: text("status", { enum: SCAN_STATUSES }).notNull().default("queued"),
+    /** "user:<shopify user id>", or "schedule". */
+    createdBy: text("created_by").notNull(),
+    workflowInstanceId: text("workflow_instance_id"),
+    /** Members of the candidate segment read so far. */
+    memberCount: integer("member_count").notNull().default(0),
+    simulationId: text("simulation_id"),
+    auditId: text("audit_id"),
+    /** Short machine-readable error; never contains personal data. */
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at").notNull().default(now),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+  },
+  (t) => [index("scans_shop_created_idx").on(t.shop, t.createdAt)],
+);
+
+/**
+ * Working data of a running scan: the members of the candidate segment as
+ * facts without emails. Deleted when the scan finishes or fails.
+ */
+export const scanProfiles = sqliteTable(
+  "scan_profiles",
+  {
+    scanId: text("scan_id")
+      .notNull()
+      .references(() => scans.id, { onDelete: "cascade" }),
+    /** Klaviyo profile id. */
+    profileId: text("profile_id").notNull(),
+    shop: text("shop")
+      .notNull()
+      .references(() => shops.shop, { onDelete: "cascade" }),
+    /** 0-based page of the segment read this profile came in. */
+    page: integer("page").notNull(),
+    emailHash: text("email_hash"),
+    /** The profile as read from Klaviyo (KlaviyoProfileRecord): dates, consent and suppression state. No email. */
+    facts: text("facts", { mode: "json" }).notNull(),
+    /** true = member of a protected group, false = not, NULL = could not be determined (protects). */
+    inProtectedGroup: integer("in_protected_group", { mode: "boolean" }).default(false),
+    decision: text("decision", { enum: ["candidate", "protected", "skipped"] }),
+    /** CandidateReason, the protection reasons joined by "+", or the SkipReason. */
+    reason: text("reason"),
+  },
+  (t) => [primaryKey({ columns: [t.scanId, t.profileId] }), index("scan_profiles_page_idx").on(t.scanId, t.page)],
 );
 
 export const RUN_KINDS = ["suppress", "undo"] as const;

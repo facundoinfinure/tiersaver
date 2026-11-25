@@ -26,10 +26,12 @@ api_version = "2026-10"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
-  # Keeps buyer protection current. Needs protected customer data access (email).
-  [[webhooks.subscriptions]]
-  topics = ["orders/create"]
-  uri = "/webhooks/orders/create"
+  # Keeps buyer protection current. Disabled until protected customer data access
+  # (email) is granted in the Dev Dashboard (docs/13-INSTRUCTIVO-CUENTAS.md, A4):
+  # Shopify rejects the whole app version while the app is not approved for it.
+  # [[webhooks.subscriptions]]
+  # topics = ["orders/create"]
+  # uri = "/webhooks/orders/create"
 
   # Mandatory compliance topics for App Store apps.
   [[webhooks.subscriptions]]

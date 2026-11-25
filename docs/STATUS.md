@@ -6,10 +6,10 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 | Fase | Estado | Fecha |
 | --- | --- | --- |
-| 0 · Base | Desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo; pasos en `13-INSTRUCTIVO-CUENTAS.md`) | 2026-11-25 |
+| 0 · Base | **Cerrada**: app desplegada en Cloudflare, instalada en `tiersaver.myshopify.com` y cuenta de Klaviyo de prueba sembrada | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
 | 2 · Marca | Cerrada: logo B aplicado, mensajes aprobados, descriptor del nombre decidido. Queda la versión corta del nombre para la ficha | 2026-11-25 |
-| 3 · Construcción | En curso: capa de Klaviyo, ingesta de pedidos, motor de corridas y gateway hechos y probados offline. Faltan rutas de OAuth, orquestación de auditoría y simulación, interfaz, programación, deshacer y cobro | 2026-11-25 |
+| 3 · Construcción | En curso: capa de Klaviyo (perfiles, uso y supresión verificados contra la API real), ingesta de pedidos, motor de corridas, gateway y rutas de OAuth de Klaviyo hechos y probados. Faltan orquestación de auditoría y simulación, el resto de la interfaz, programación, deshacer y cobro | 2026-11-25 |
 | 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
 | 5 · Lanzamiento | No iniciada | |
 
@@ -215,3 +215,76 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - App creada por Facundo en el Dev Dashboard. Client ID cargado en `shopify/shopify.app.toml` y como `SHOPIFY_API_KEY` del Worker. `SHOPIFY_API_SECRET` del Worker sigue provisorio: la app todavía no puede autenticar contra Shopify. Faltan el Client secret y el token de service account como variables del entorno "tiersaver" (`SHOPIFY_API_SECRET`, `SHOPIFY_SERVICE_ACCOUNT_TOKEN`); después, `shopify app deploy` y la instalación en `tiersaver.myshopify.com`.
 - Mails del sitio: contacto `hello@tiersaver.com`, soporte `support@tiersaver.com` (aplicados en `site/`). **Las casillas todavía no existen**: el dominio sigue en la otra cuenta de Cloudflare; hay que crearlas (o reenviarlas) antes de publicar el sitio. Placeholders que quedan: fecha de vigencia, ley aplicable y jurisdicción, y un punto de la política de privacidad sobre mails de notificación.
 - Facundo cargó `SHOPIFY_API_SECRET` y `SHOPIFY_SERVICE_ACCOUNT_TOKEN` en el entorno "tiersaver". No llegan a esta sesión (solo a sesiones nuevas): el deploy de la configuración de Shopify y la carga del secret real quedan para la sesión siguiente.
+
+### 2026-11-25 (tercera sesión, rama `claude/lucid-brahmagupta-ss214o`)
+
+Las tres variables llegaron a la sesión (`SHOPIFY_API_SECRET`, `SHOPIFY_SERVICE_ACCOUNT_TOKEN`, `KLAVIYO_TEST_PRIVATE_KEY`), verificadas sin imprimirlas.
+
+**Shopify (hecho y verificado)**
+- `SHOPIFY_API_SECRET` real cargado en el Worker con `wrangler secret bulk` por stdin. Worker redesplegado desde `main` (versión `30f06afe`). Smoke test con el secret real: 8 de 8.
+- `shopify app deploy` con el token de service account: versión **`tiersaver-for-klaviyo-2`** publicada (URL de la app, redirect, scope `read_orders`, webhooks de desinstalación, scopes y cumplimiento).
+- **La suscripción al webhook `orders/create` quedó comentada en `shopify.app.toml`.** Shopify rechaza la versión entera mientras la app no tenga aprobado el acceso a datos protegidos de clientes ("This app is not approved to subscribe to webhook topics containing protected customer data"). Se vuelve a activar cuando Facundo pida ese acceso (`13-INSTRUCTIVO-CUENTAS.md`, A4). Mientras tanto no se guardan compradores y la regla de compras protege a todos.
+- Para que el CLI de Shopify funcione desde la sesión: `NODE_USE_ENV_PROXY=1` y `SHOPIFY_HTTP_PROXY` / `SHOPIFY_HTTPS_PROXY` con el proxy de la sesión, y los hosts `destinations.shopifysvc.com` y `app.shopify.com` en la red del entorno "tiersaver" (agregados con aprobación de Facundo). El CLI no está en `package.json`: se usa `npx shopify` (paquete oficial `shopify` 5.1.0).
+- Pendiente: que Facundo instale la app en `tiersaver.myshopify.com` (Dev Dashboard → app → Home → Installs → Install app). Con eso cierra la Fase 0.
+
+**Seed de Klaviyo (corrido y verificado sobre la cuenta de prueba SGKvLG)**
+- Antes de escribir: `GET /api/accounts` devolvió `id: SGKvLG`, organización "TierSaver", `test_account: true`.
+- Plan mostrado y después ejecutado con `--email-domain seed.tiersaver.com`: 3.000 perfiles, 21.526 eventos, 150 supresiones, 30 des-supresiones. 65 requests, unos 70 segundos de envío.
+- El import de perfiles por encima de 250 no fue frenado (duda 7 del instructivo). `billing-usage` sigue en plan gratis: `active_profiles` con `usage_max` 250.
+- **El consentimiento SMS fue rechazado** (400: "Phone number is valid but is not in a supported region for this account. Please configure a sending number for this region"). La cohorte `sms_consented` (120 perfiles) quedó sin consentimiento SMS: en esta cuenta evalúa como candidata, no como protegida. Para probar esa regla contra Klaviyo real hace falta configurar SMS en la cuenta de prueba (puede tener costo: no se hizo).
+- **Los eventos con fecha antigua tardan.** Los eventos con fecha del día aparecieron en uno o dos minutos; los históricos empezaron a verse recién a los 12 minutos, a los 18 faltaba menos del 1% (seguían entrando, en tandas de perfiles contiguos) y a los 30 estaban los 21.526. El primer `--verify`, a los 3 minutos, dio 38 de 39 perfiles sin eventos: no era descarte, era demora. El último, a los 30 minutos: **39 de 39 perfiles de muestra coinciden** y la comparación por `$event_id` contra el dataset no encontró ningún evento faltante. Esperar 30 minutos antes de `--verify` y antes de leer segmentos.
+- `seed.tiersaver.com` no entra en los dominios que Klaviyo descarta: perfiles y eventos se guardaron.
+
+**Capa de Klaviyo contra la API real** (`shopify/scripts/klaviyo-live-check.ts`, que corre el código de `app/klaviyo/api.ts` con la clave privada de prueba; solo lectura salvo `--write-segment`)
+
+| Punto abierto | Resultado | Cambio en código |
+| --- | --- | --- |
+| ¿Viene `subscriptions.sms` en perfiles sin teléfono? | **Sí.** Los 3.004 perfiles traen `subscriptions.sms.marketing` con `can_receive_sms_marketing: false` y `consent: "NEVER_SUBSCRIBED"`. Nadie queda protegido por falta de dato | Ninguno |
+| Lectura de perfiles (`fields[profile]` con subcampos de `subscriptions`, `additional-fields`, `sort=created`, 100 por página) | Funciona tal cual: 3.004 perfiles en 31 páginas, sin repetidos. Suprimidos: `can_receive_email_marketing: false` con `suppression: [{reason: "USER_SUPPRESSED", timestamp}]` (120). Des-suprimidos: `suppression: []`, sin ninguna marca. Sin consentimiento explícito: `consent: "NEVER_SUBSCRIBED"` con `can_receive_email_marketing: true` | Ninguno |
+| `any(id,[...])` con 50 ids | Funciona; un id inexistente simplemente no vuelve | Ninguno |
+| Billing usage | `active_profiles` existe también en plan gratis (unidad `profiles`, `usage_max` 250, período mensual). Otros ids vistos: `email_sends`, `sms_credits` (unidad USD), `ai_credits`, `reviews_orders`. `usage_used` seguía en 0 veinte minutos después del import (se refresca un par de veces por día) | Ninguno |
+| Estado de un job de supresión | `status`, `total_count`, `completed_count`, `skipped_count`, `completed_at` como en el spec. El `POST` responde `total_count: 0` y `skipped_count: null`; los valores reales aparecen al completar (15 s para 1 perfil, 25 s para 100) | Ninguno |
+| Volver a suprimir dentro de los 90 días (duda 7) | **La API no aplica el bloqueo.** Un perfil suprimido y des-suprimido por API minutos antes se volvió a suprimir sin problema (`completed_count: 1`, `skipped_count: 0`). El bloqueo de 365 días de TierSaver es entonces la única barrera contra la puerta giratoria: no se puede contar con que Klaviyo saltee a nadie. (Probado con un solo perfil de la cohorte `restored`, que se volvió a des-suprimir) | Ninguno; corrige el supuesto anotado en la duda 7 |
+| Nombres aceptados para eventos por API | "Received Email", "Opened Email", "Clicked Email", "Placed Order", "Active on Site" y "Started Checkout" fueron aceptados y quedaron en seis métricas propias | Ninguno |
+| Valor booleano `false` en una propiedad de evento | Se guarda (`"Machine Open": false`) | Ninguno |
+| `GET /api/events` filtrando por `metric_id` de una métrica creada por API | Funciona | Ninguno |
+| `last_event_date` del perfil | **Queda en `null`** después de eventos creados por API, con y sin `backfill` (mirado a los 20 minutos). La app no lo usa para decidir; no usarlo como señal | Ninguno |
+| Listas | La cuenta nueva trae tres: "Email List", "Text Messaging List", "Preview List". Además de los 3.000 sembrados hay 4 perfiles propios de la cuenta | Ninguno |
+| **Cuerpo que acepta la creación de segmentos** | **Sin verificar: la clave no tiene `segments:read` ni `segments:write`** (403 `permission_denied`) | Pendiente |
+| **Nombres e integraciones de las métricas** | **Sin verificar: la clave no tiene `metrics:read`** (403). `13-INSTRUCTIVO-CUENTAS.md` B2 no pedía esos tres scopes; corregido | Pendiente |
+
+Sigue abierto, además: nombre real de la propiedad de apertura automática y qué cuenta la métrica nativa "Received Email" (hacen falta eventos nativos); rotación del refresh token y todo el flujo OAuth real (hace falta la app OAuth de Klaviyo).
+
+**Fase 3: rutas de OAuth de Klaviyo (hechas, probadas con el Klaviyo falso; sin probar contra Klaviyo real porque no existe la app OAuth)**
+- Tres pasos (`shopify/app/klaviyo/flow.server.ts`): `/klaviyo/oauth/start` (navegación de nivel superior, con un ticket firmado de 10 minutos que arma la página embebida; pone la cookie de vínculo `__Host-ts_klaviyo_oauth`), `/klaviyo/oauth/callback` (verifica `state` contra la cookie y reenvía `code` y `state` a la app embebida, sin canjear ni guardar nada) y `/app/klaviyo/finish` (autenticado por Shopify; canjea el código y guarda la conexión solo si el `state` fue emitido para esa misma tienda).
+- Motivo del tercer paso: la app corre en un iframe de terceros, donde nuestra cookie no viaja, y un enlace de inicio se le puede mandar a cualquiera. Sin ese paso, alguien engañado para abrir el enlace de otro y aprobar en Klaviyo conectaría su cuenta a la tienda ajena.
+- Pantalla de inicio: conectar, estado de la conexión, aviso de reconexión y **desconectar** (requisito de revisión de Klaviyo, guardarraíl 12). Conectar, fallar y desconectar quedan en `events_log` con el usuario de Shopify (`sub` del session token).
+- URL de redirección a cargar en la app OAuth de Klaviyo: `https://tiersaver-app.tiersaver.workers.dev/klaviyo/oauth/callback`.
+- 206 tests en `shopify/` (10 nuevos en `test/klaviyo-flow.test.ts`).
+
+**Fase 3: auditoría y simulación como pasos reanudables (hecho, probado con el Klaviyo falso y desplegado; sin correr contra Klaviyo real)**
+- Un solo recorrido, el "scan" (`shopify/app/scans/engine.ts`, Workflow `tiersaver-scan`, migración `0003_scans.sql` aplicada en la D1 remota). Pasos: cargar reglas → confirmar que el token sigue siendo de la cuenta conectada → asegurar el segmento administrado → esperar a que Klaviyo lo procese → leer miembros de a 100 → marcar los que están en grupos protegidos → pasar cada miembro por las reglas de `core` (antigüedad, SMS, compras de Shopify por hash, bloqueo de 365 días tras restaurar) → volver a comprobar que el segmento no cambió → contar perfiles activos → cierre en una sola transacción.
+- El cierre escribe la auditoría, la simulación **sin aprobar** y sus candidatos, reemplaza cualquier simulación abierta anterior y borra los datos de trabajo. Si algo falla, no queda ninguna simulación. No se guarda ningún mail (solo IDs y hashes).
+- Todo dato desconocido protege: grupo protegido ilegible → todos protegidos; sin historial completo de pedidos de Shopify → nadie es candidato con las reglas por defecto; cuenta sin métricas nativas → nadie evaluado; acceso revocado → falla sin reintentar y la conexión queda en `needs_reauth`.
+- **Perfiles activos**: se usa el conteo de facturación de Klaviyo (`usage_used`) si la conexión tiene `usage:read` y el dato no está atrasado; si no, la app cuenta los perfiles con mail y sin supresión. La pantalla dice cuál de los dos es.
+- **Modo cuenta sembrada**: solo si la cuenta conectada es exactamente `KLAVIYO_SEEDED_ACCOUNT_ID` (`SGKvLG`, variable en `wrangler.jsonc`) **y** Klaviyo la marca como test account, el scan usa las métricas de la integración API, la antigüedad de `ts_seed_created_at` y no exige historial de pedidos. Sin las dos condiciones se comporta como con cualquier merchant.
+- Límites para Workers Free (1.024 pasos por instancia): hasta 500 páginas de miembros (50.000 candidatos) por scan; más que eso falla con un mensaje claro en lugar de quedarse sin pasos.
+- Pantalla de inicio: botón "Run the free audit", progreso y resultado (perfiles activos, cuántos cumplen los criterios de Klaviyo, cuántos quedan activos y por qué, cuántos suprimiría una limpieza, precio de TierSaver para ese tamaño). Textos según `12-CUMPLIMIENTO-KLAVIYO.md` 3.2. **No hay todavía aprobación ni ejecución desde la interfaz.**
+- Se dejó fuera de la pantalla la estimación de plan de Klaviyo (se calcula y se guarda; sigue pendiente decidir si se muestra).
+- 230 tests en `shopify/` (20 nuevos en `test/scan.test.ts`). Arreglada una prueba intermitente de OAuth (cambiaba el último carácter de la firma, que a veces decodifica a los mismos bytes).
+
+**Encontrado en el camino**
+- **Los scripts de build del sitio no están en el repo.** `site/package.json` llama a `site/build/build.mjs` (y `images.mjs`, `serve.mjs`, `check-links.mjs`), pero la regla `build/` del `.gitignore` raíz los dejó afuera y la sesión que los escribió ya no existe. Las páginas generadas y `site/src` sí están. Efecto: no se puede regenerar el sitio y `site/test/site.test.ts` no corre (el otro archivo de tests del sitio pasa: 273). Queda una tarea sugerida para reconstruirlos.
+- El supuesto de `02-ARQUITECTURA.md` / duda 7 de que Klaviyo saltea a quien no se puede volver a suprimir no vale por API (ver tabla).
+
+**Abierto / no verificado al cierre de esta sesión**
+- Cuerpo de creación de segmentos y nombres de métricas contra la API real (falta una clave con `metrics:read`, `segments:read`, `segments:write`). Hasta entonces el scan no está probado contra Klaviyo real.
+- Flujo OAuth real de Klaviyo (falta la app OAuth: `13-INSTRUCTIVO-CUENTAS.md` B5).
+- Instalación en `tiersaver.myshopify.com`, hook de instalación y backfill de pedidos contra una tienda real.
+- Acceso a datos protegidos de clientes y `read_all_orders` (A4): sin eso, con las reglas por defecto un merchant real no tiene candidatos. **Aun con `read_all_orders`, la app lee 1.095 días de pedidos, y la regla "nunca compró" exige cobertura desde antes de la creación de cada perfil: los perfiles de más de tres años quedan protegidos.** Hay que decidir si el backfill lee todo el historial de la tienda o si alcanza con la métrica "Placed Order" de Klaviyo para los más viejos.
+- Fase 3, lo que falta: pantalla de simulación con aprobación y avisos, CSV de candidatos, arranque de la corrida desde la interfaz, consulta de jobs, deshacer, reglas y grupos protegidos editables, programación mensual (Cron), cobro en Shopify, mails, y los guardarraíles 5, 6 y 9 de `12-CUMPLIMIENTO-KLAVIYO.md` 3.1.
+
+**Instalación en la tienda de desarrollo (hecha por Facundo, verificada; cierra la Fase 0)**
+- Facundo instaló la app en `tiersaver.myshopify.com` el 2026-11-25 17:43 UTC. La app embebida carga y muestra la pantalla de conexión con "Connecting to Klaviyo is not available yet" (lo esperado: falta la app OAuth de Klaviyo).
+- En la D1: fila en `shops` (`installed`) y sesión offline con scope `read_orders`, token cifrado.
+- **Bug encontrado y corregido**: el backfill de pedidos no arrancó al instalar. El id de la instancia del Workflow llevaba el dominio de la tienda, y los ids de Workflows no admiten puntos; el error quedaba tragado por el `catch`. Ahora los puntos se reemplazan y el fallo se registra. El backfill arranca en la próxima autenticación; igual no va a traer mails hasta que la app tenga acceso a datos protegidos de clientes.

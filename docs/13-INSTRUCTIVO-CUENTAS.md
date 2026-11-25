@@ -53,7 +53,7 @@ Una cuenta de prueba es una cuenta común en plan gratis con una etiqueta; no es
 ### B2. Clave privada
 
 1. **Settings** → **API keys** → **Create Private API Key** → **Custom Key**.
-2. Marcar: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`, `usage:read`. Las claves no se pueden editar después.
+2. Marcar: `accounts:read`, `profiles:read`, `profiles:write`, `lists:read`, `lists:write`, `events:read`, `events:write`, `subscriptions:read`, `subscriptions:write`, `usage:read`, `metrics:read`, `segments:read`, `segments:write`. Las claves no se pueden editar después. (Los tres últimos se agregaron el 2026-11-25: sin ellos no se pueden verificar las métricas ni el segmento que crea la app. La primera clave no los tenía; hay que crear otra.)
 3. **Create** y copiar la clave (`pk_...`; se muestra una sola vez).
 4. Cargarla como variable `KLAVIYO_TEST_PRIVATE_KEY` del entorno "tiersaver" y abrir una sesión nueva. Pasarle a la sesión por chat el ID de la cuenta (6 caracteres, en Settings) o el nombre de la organización.
 
@@ -70,6 +70,22 @@ Klaviyo descarta en silencio eventos (y, según su FAQ, también perfiles) con d
 Decidido por Facundo el 2026-11-25: `seed.tiersaver.com`. No hace falta crear ningún registro DNS: alcanza con que **no exista** ningún registro `seed` (A, AAAA, CNAME, MX) ni un comodín `*` en la zona de tiersaver.com, y con no activar Email Routing para ese subdominio. Como la zona se muda de cuenta el 2026-12-05, hay que volver a mirarlo después de la mudanza.
 
 El seed se corre con `--email-domain seed.tiersaver.com`.
+
+### B5. App OAuth de Klaviyo (para que la app de Shopify se conecte a Klaviyo)
+
+La clave privada sirve solo para el seed y las pruebas. La app de Shopify se conecta a la cuenta de cada merchant por OAuth, y para eso hace falta registrar una app OAuth en Klaviyo. Pasos según developers.klaviyo.com/en/docs/create_a_public_oauth_app (leída el 2026-11-25); la crea un usuario Owner, Admin o Manager.
+
+1. Entrar a https://www.klaviyo.com/manage-apps con la cuenta de TierSaver → **Create app**.
+2. Nombre: `TierSaver`. La pantalla pide además dos opciones que no se pueden cambiar después (vistas el 2026-11-25; la guía de Klaviyo de 2025 no las menciona). **App distribution**: `Publish to the marketplace`; no publica ni manda a revisión, deja la app en estado *Draft*, instalable por cualquier cuenta con el enlace de autorización (`Keep it unpublished` es solo para la cuenta propia o cuentas elegidas). **App management**: `Account-managed` (la app actúa por la cuenta, una conexión por tienda). Copiar **Client ID** y **Client secret** (el secret se muestra una sola vez; se puede generar otro después) → **Create** → **Continue**.
+3. **Scopes**, en una sola línea separados por espacios (son exactamente los que pide el código, `shopify/app/klaviyo/config.ts`):
+   `accounts:read profiles:read profiles:write subscriptions:write subscriptions:read lists:read segments:read segments:write metrics:read usage:read`
+4. **Redirect URLs**: `https://tiersaver-app.tiersaver.workers.dev/klaviyo/oauth/callback` (cuando la app pase a `app.tiersaver.com` se agrega la nueva).
+5. **Save**.
+6. Cargar en el entorno "tiersaver" las variables `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` y abrir una sesión nueva. La sesión las sube al Worker como secretos.
+
+Hecho por Facundo el 2026-11-25: app `TierSaver` en estado *Draft* en la cuenta de prueba, con los 10 scopes y la URL de redirección cargados (verificado por captura). Klaviyo avisa en esa pantalla que las revisiones de apps están en pausa y que las cuentas pueden instalar igual con el enlace. **No apretar "Review submission"**: es enviar a revisión, decisión de Facundo.
+
+Crear la app no la publica ni la manda a revisión: una app OAuth sin listar se instala con el enlace de autorización directo. Listarla en el marketplace de Klaviyo es otro trámite (pide 5 instalaciones activas) y es decisión de Facundo.
 
 ## No confirmado
 

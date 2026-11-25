@@ -30,10 +30,13 @@ const shopify = shopifyApp({
       try {
         // One backfill per shop per day; a repeated id is rejected by Workflows.
         const day = new Date().toISOString().slice(0, 10);
-        await env.ORDERS_BACKFILL.create({ id: `orders-${session.shop}-${day}`, params: { shop: session.shop } });
-      } catch {
+        // Workflow instance ids only allow letters, digits, "-" and "_": the dots of the shop domain are replaced.
+        const id = `orders-${session.shop.replace(/[^A-Za-z0-9_-]/g, "-")}-${day}`.slice(0, 100);
+        await env.ORDERS_BACKFILL.create({ id, params: { shop: session.shop } });
+      } catch (error) {
         // Already started today, or Workflows is unavailable: installing must not fail.
         // Until a backfill completes, the purchase rule protects every profile.
+        console.warn(`orders backfill not started: ${error instanceof Error ? error.name : "error"}`);
       }
     },
   },

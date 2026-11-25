@@ -100,7 +100,7 @@ async function sha256Base64Url(value: string): Promise<string> {
  * so the state signature, the PKCE verifier and token encryption never share
  * a key even though they start from the same secret.
  */
-async function deriveKey(secret: string, purpose: "state" | "pkce"): Promise<CryptoKey> {
+async function deriveKey(secret: string, purpose: "state" | "pkce" | "start"): Promise<CryptoKey> {
   if (typeof secret !== "string" || secret.length < 32) {
     throw new KlaviyoOAuthError("klaviyo_oauth_state_secret_too_short");
   }
@@ -173,24 +173,17 @@ export async function createAuthorizationRequest(args: {
   return { url: url.toString(), state, browserBinding, expiresAt };
 }
 
-/**
- * Validates the `state` Klaviyo sent back and returns the shop it was issued
- * for plus the PKCE verifier to use in the code exchange.
- *
- * Throws KlaviyoOAuthError: `klaviyo_oauth_state_invalid` (malformed, wrong
- * signature, tampered), `klaviyo_oauth_state_expired`, or
- * `klaviyo_oauth_state_binding_mismatch` (callback reached a browser that did
- * not start this flow).
- */
-export async function verifyAuthorizationState(args: {
-  state: string | null | undefined;
-  /** Value of the browser-binding cookie on the callback request. */
-  browserBinding: string | null | undefined;
-  stateSecret: string;
-  now?: Date;
-}): Promise<{ shop: string; codeVerifier: string }> {
+interface VerifiedState {
+  shop: string;
+  /** SHA-256 of the browser binding the state was issued with, base64url. */
+  bindingHash: string;
+  signedPart: string;
+}
+
+/** Signature, shape and expiry of a state. Says nothing yet about who is presenting it. */
+async function readState(state: string | null | undefined, stateSecret: string, now: Date): Promise<VerifiedState> {
   const invalid = () => new KlaviyoOAuthError("klaviyo_oauth_state_invalid");
-  const parts = typeof args.state === "string" ? args.state.split(".") : [];
+  const parts = typeof state === "string" ? state.split(".") : [];
   if (parts.length !== 3 || parts[0] !== STATE_VERSION) throw invalid();
   const signedPart = `${parts[0]}.${parts[1]}`;
 
@@ -202,7 +195,7 @@ export async function verifyAuthorizationState(args: {
   } catch {
     throw invalid();
   }
-  const key = await deriveKey(args.stateSecret, "state");
+  const key = await deriveKey(stateSecret, "state");
   // `verify` compares in constant time.
   const ok = await crypto.subtle.verify("HMAC", key, signature, encoder.encode(signedPart));
   if (!ok) throw invalid();
@@ -221,17 +214,101 @@ export async function verifyAuthorizationState(args: {
   ) {
     throw invalid();
   }
-
-  const now = args.now ?? new Date();
   if (now.getTime() >= payload.e) throw new KlaviyoOAuthError("klaviyo_oauth_state_expired");
+  return { shop: payload.s, bindingHash: payload.b, signedPart };
+}
+
+/**
+ * Validates the `state` Klaviyo sent back and returns the shop it was issued
+ * for plus the PKCE verifier to use in the code exchange.
+ *
+ * Throws KlaviyoOAuthError: `klaviyo_oauth_state_invalid` (malformed, wrong
+ * signature, tampered), `klaviyo_oauth_state_expired`, or
+ * `klaviyo_oauth_state_binding_mismatch` (callback reached a browser that did
+ * not start this flow).
+ */
+export async function verifyAuthorizationState(args: {
+  state: string | null | undefined;
+  /** Value of the browser-binding cookie on the callback request. */
+  browserBinding: string | null | undefined;
+  stateSecret: string;
+  now?: Date;
+}): Promise<{ shop: string; codeVerifier: string }> {
+  const verified = await readState(args.state, args.stateSecret, args.now ?? new Date());
 
   const binding = typeof args.browserBinding === "string" ? args.browserBinding : "";
   // Both sides are SHA-256 digests of high-entropy values, so comparing them directly leaks nothing useful.
-  if (!binding || (await sha256Base64Url(binding)) !== payload.b) {
+  if (!binding || (await sha256Base64Url(binding)) !== verified.bindingHash) {
     throw new KlaviyoOAuthError("klaviyo_oauth_state_binding_mismatch");
   }
 
-  return { shop: payload.s, codeVerifier: await deriveVerifier(args.stateSecret, signedPart) };
+  return { shop: verified.shop, codeVerifier: await deriveVerifier(args.stateSecret, verified.signedPart) };
+}
+
+/**
+ * Validates a `state` for a request that is already authenticated as `shop`
+ * by Shopify (the embedded "finish" step, where our cookie is not available
+ * because the app runs in a third-party iframe). The Shopify session takes the
+ * place of the browser binding: the state must have been issued for exactly
+ * the shop whose admin is presenting it, otherwise
+ * `klaviyo_oauth_state_shop_mismatch`.
+ */
+export async function verifyAuthorizationStateForShop(args: {
+  state: string | null | undefined;
+  /** Shop of the authenticated Shopify session. */
+  shop: string;
+  stateSecret: string;
+  now?: Date;
+}): Promise<{ shop: string; codeVerifier: string }> {
+  const verified = await readState(args.state, args.stateSecret, args.now ?? new Date());
+  if (verified.shop !== args.shop) throw new KlaviyoOAuthError("klaviyo_oauth_state_shop_mismatch");
+  return { shop: verified.shop, codeVerifier: await deriveVerifier(args.stateSecret, verified.signedPart) };
+}
+
+/** How long a start ticket is valid: long enough to read the page and click, no longer. */
+export const START_TICKET_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * A signed, short-lived permission to start the Klaviyo flow for one shop.
+ *
+ * The app is embedded in the Shopify admin (a third-party iframe), so the
+ * request that starts the flow has to be a top-level navigation, which carries
+ * no Shopify session token. The embedded page, which IS authenticated, puts
+ * this ticket in the link instead. It grants nothing by itself: the connection
+ * is only stored by the embedded finish step, authenticated as the same shop.
+ */
+export async function createStartTicket(args: { shop: string; stateSecret: string; now?: Date }): Promise<string> {
+  if (!SHOP_PATTERN.test(args.shop)) throw new KlaviyoOAuthError("klaviyo_oauth_invalid_shop");
+  const expires = (args.now ?? new Date()).getTime() + START_TICKET_TTL_MS;
+  const signedPart = `${STATE_VERSION}.${toBase64Url(encoder.encode(JSON.stringify({ s: args.shop, e: expires })))}`;
+  const key = await deriveKey(args.stateSecret, "start");
+  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(signedPart)));
+  return `${signedPart}.${toBase64Url(signature)}`;
+}
+
+/** Returns the shop a start ticket was issued for. Throws `klaviyo_oauth_ticket_invalid` or `klaviyo_oauth_ticket_expired`. */
+export async function verifyStartTicket(args: {
+  ticket: string | null | undefined;
+  stateSecret: string;
+  now?: Date;
+}): Promise<{ shop: string }> {
+  const invalid = () => new KlaviyoOAuthError("klaviyo_oauth_ticket_invalid");
+  const parts = typeof args.ticket === "string" ? args.ticket.split(".") : [];
+  if (parts.length !== 3 || parts[0] !== STATE_VERSION) throw invalid();
+  const signedPart = `${parts[0]}.${parts[1]}`;
+  let payload: { s?: unknown; e?: unknown };
+  try {
+    const key = await deriveKey(args.stateSecret, "start");
+    const ok = await crypto.subtle.verify("HMAC", key, fromBase64Url(parts[2]!), encoder.encode(signedPart));
+    if (!ok) throw invalid();
+    payload = JSON.parse(new TextDecoder().decode(fromBase64Url(parts[1]!))) as { s?: unknown; e?: unknown };
+  } catch (err) {
+    if (err instanceof KlaviyoOAuthError && err.code !== "klaviyo_oauth_ticket_invalid") throw err;
+    throw invalid();
+  }
+  if (typeof payload.s !== "string" || !SHOP_PATTERN.test(payload.s) || typeof payload.e !== "number") throw invalid();
+  if ((args.now ?? new Date()).getTime() >= payload.e) throw new KlaviyoOAuthError("klaviyo_oauth_ticket_expired");
+  return { shop: payload.s };
 }
 
 function basicAuth(credentials: OAuthClientCredentials): string {
