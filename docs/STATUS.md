@@ -132,6 +132,18 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - `site/`: estilos base, fuentes Inter Tight e IBM Plex Mono auto-hospedadas (licencia OFL incluida) y `styleguide.html`.
 - Ningún logo está aplicado. Sin verificar: búsqueda de marcas parecidas, reglas vigentes de ícono del App Store, contraste formal.
 
+**`scripts/seed-klaviyo` (escrito y probado offline; nunca corrió contra Klaviyo)**
+- 3.000 perfiles por defecto (2.000 a 5.000), deterministas, en 26 cohortes que cubren cada regla y sus bordes (89/91, 179/181, 364/366 días). Un test pasa los datos generados por `evaluateProfile` de core y exige que coincidan con la decisión esperada. 123 tests con un Klaviyo falso.
+- Por defecto solo imprime el plan (sin red). La corrida real exige `--execute`, clave solo por `KLAVIYO_TEST_PRIVATE_KEY`, que la cuenta coincida con `--account-id` / `--expect-account-name` y que Klaviyo la marque `test_account: true`.
+- Verificado en el spec OpenAPI `2026-10-15` y la ayuda de Klaviyo (detalle y URLs en `scripts/seed-klaviyo/README.md`): import masivo de 10.000 perfiles por request; eventos masivos de 1.000 por request con `time` retroactivo y `backfill: true` (no dispara flows); suscripción masiva de hasta 1.000 perfiles, que además **quita `USER_SUPPRESSED`**.
+
+Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
+1. **La fecha de creación de un perfil no se puede retroceder por API.** Durante 90 días todo perfil sembrado es `new_profile` y no hay candidatos. El seed guarda la antigüedad pretendida en la propiedad `ts_seed_created_at`; las pruebas de integración necesitan leerla (solo en modo prueba) o esperar 90 días.
+2. **Los eventos creados por API son métricas distintas de las nativas** ("Opened Email" de la integración API ≠ la de Klaviyo). La app tiene que resolver métricas por nombre e integración, y ese mapeo tiene que ser configurable para la cuenta de prueba.
+3. **Klaviyo descarta en silencio eventos de direcciones `@example.com`, `@test.com` "o similares"** (responde 202 igual). La corrida real necesita un dominio propio que no reciba correo (`--email-domain`).
+4. **Una cuenta de prueba es una cuenta común en plan gratis (250 perfiles activos).** Sembrar 3.000 la deja 12 veces por encima. La ayuda dice que eso bloquea envíos; no se encontró nada que diga que cobra ni que no. Posible gasto: confirmar antes de la primera corrida. `usage_max` ahí va a ser 250, que no es un tramo de la tabla.
+5. Sigue abierto el nombre de la propiedad de aperturas automáticas: nuestras notas dicen "Machine Open", la ayuda actual dice "Apple Privacy Open".
+
 **Pendiente / no verificado**
 - Instalación real en la tienda de desarrollo (falta cuenta de Shopify).
 - `npm run lint -w @tiersaver/shopify` falla desde antes de esta sesión (apunta a un `.gitignore` que no existe en `shopify/`). Sin arreglar.

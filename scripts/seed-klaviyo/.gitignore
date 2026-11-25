@@ -1,0 +1,2 @@
+# Local progress/state of seed runs (job ids, step status). Never commit.
+.state/

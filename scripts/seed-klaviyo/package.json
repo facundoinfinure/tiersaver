@@ -1,0 +1,17 @@
+{
+  "name": "@tiersaver/seed-klaviyo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Seeds a TEST Klaviyo account with fictitious profiles that exercise every TierSaver rule.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "seed": "node --experimental-transform-types --disable-warning=ExperimentalWarning --import ./register.mjs src/cli.ts"
+  },
+  "devDependencies": {
+    "@tiersaver/core": "*",
+    "@types/node": "^25.5.2",
+    "typescript": "^5.9.3"
+  }
+}
