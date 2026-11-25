@@ -20,6 +20,8 @@ export interface AuditView {
     /** TierSaver's monthly price for this list size, e.g. "$15". Null above the public tiers. */
     price: string | null;
     seededTestAccount: boolean;
+    /** Cycle detector: profiles a cleanup suppressed that are active again without a TierSaver restore. */
+    resurfaced: number;
   } | null;
 }
 
@@ -76,6 +78,7 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
           : null,
       price: tier ? formatUsd(tier.monthlyCents) : null,
       seededTestAccount: summary.seededTestAccount === true,
+      resurfaced: summary.resurfaced ?? 0,
     };
   }
 

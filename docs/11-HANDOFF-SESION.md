@@ -12,9 +12,9 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 - Worker `tiersaver-app`: https://tiersaver-app.tiersaver.workers.dev, con `SHOPIFY_API_KEY` y `SHOPIFY_API_SECRET` **reales**. Smoke 8 de 8.
 - Configuración de Shopify publicada: versión `tiersaver-for-klaviyo-2`. La suscripción a `orders/create` está comentada en `shopify.app.toml` hasta que la app tenga acceso a datos protegidos de clientes.
-- D1 `tiersaver` con migraciones `0000` a `0004`. Cron Trigger horario (`17 * * * *`): programación mensual y reintento de cargos.
+- D1 `tiersaver` con migraciones `0000` a `0005`. Cron Trigger horario (`17 * * * *`): programación mensual y reintento de cargos.
 - Workflows `tiersaver-suppression-run`, `tiersaver-orders-backfill` y `tiersaver-scan`.
-- **`SUPPRESSION_ENABLED=true` y `SUPPRESSION_ALLOWED_ACCOUNT_ID=SGKvLG` están cargados como secretos del Worker** para la limpieza real que Facundo autorizó sobre la cuenta de prueba (2026-11-25). Borrarlos al terminar: `npx wrangler secret delete SUPPRESSION_ENABLED` y lo mismo con el otro, desde `shopify/`. Fuera de esa prueba, solo Facundo lo enciende.
+- `SUPPRESSION_ENABLED` no está definido: ninguna corrida puede suprimir. Se encendió (con candado `SUPPRESSION_ALLOWED_ACCOUNT_ID=SGKvLG`) solo para la limpieza real autorizada del 2026-11-25 y se borró al terminar. Solo Facundo lo enciende.
 - Secretos `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` cargados (Klaviyo los acepta). La app muestra "Connect Klaviyo". Al cierre de este handoff la tienda todavía no había conectado.
 - Segmento administrado creado en SGKvLG por la verificación: `WRvyjd` (984 miembros, correcto).
 - Variable `KLAVIYO_SEEDED_ACCOUNT_ID = SGKvLG` (modo cuenta sembrada; ver `STATUS.md`).
@@ -38,6 +38,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 ## Próximos pasos
 
+0. Hecho en la cuarta sesión: limpieza real de punta a punta sobre SGKvLG con el código de la app y la clave privada (`test/live-klaviyo.test.ts` + `scripts/klaviyo-relay.mjs`): 984 / 696, 7 jobs, deshacer, cuenta restaurada. El primer "Connect Klaviyo" real falló (Shopify cancela la primera carga del paso final) y está corregido; **falta que Facundo reintente**. La sesión no puede usar el navegador de Facundo.
 1. **Cuando Facundo conecte Klaviyo desde la tienda**: revisar `klaviyo_connections` y `events_log` en la D1, correr "Run the free audit" y comparar con lo esperado (984 / 696). Mirar si `/app/klaviyo/finish` abrió dentro del admin y si el refresh rota el refresh token (comparar `refresh_token_enc` antes y después de un refresh; el access token dura ~1 h).
 2. **Recorrer las pantallas nuevas dentro del admin** (nadie las vio todavía): "Review cleanup" (descarga del CSV, aprobación), "History", detalle de corrida, "Settings". Con `SUPPRESSION_ENABLED` ausente el botón de arranque queda deshabilitado.
 3. **Con autorización expresa de Facundo y solo sobre SGKvLG**: encender `SUPPRESSION_ENABLED`, correr una limpieza real, consultar jobs, deshacer y volver a apagar.

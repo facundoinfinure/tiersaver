@@ -115,6 +115,8 @@ export const DEFAULT_SCAN_LIMITS: ScanLimits = {
 };
 
 const MEMBERS_PER_EVALUATE_STEP_PAGES = 5;
+/** Klaviyo can take a while to apply a cleanup; a profile is not "active again" before this much time has passed. */
+const RESURFACE_GRACE_MS = 72 * 60 * 60 * 1000;
 /** D1 allows at most 100 bound parameters per statement. */
 const ID_CHUNK = 90;
 
@@ -135,6 +137,13 @@ export interface ScanSummary extends SimulationSummary {
   protectedGroupsUnknown?: boolean;
   /** True when the scan read the seeded test account (see ScanDeps.seededAccountId). */
   seededTestAccount?: boolean;
+  /**
+   * Cycle detector (docs/12-CUMPLIMIENTO-KLAVIYO.md 3.1, guardrail 6): profiles
+   * a TierSaver cleanup suppressed that are active again without TierSaver
+   * having restored them. They were kept active, are locked out of cleanups
+   * like any restored profile, and the monthly schedule was paused.
+   */
+  resurfaced?: number;
 }
 
 interface PageCounts {
@@ -144,6 +153,8 @@ interface PageCounts {
   candidateCount: number;
   protectedCount: number;
   skippedCount: number;
+  /** Profiles a TierSaver cleanup suppressed that are active again without TierSaver restoring them (guardrail 6). */
+  resurfaced: number;
 }
 
 function parseGroupRef(ref: string): { kind: GroupKind | null; id: string } {
@@ -271,7 +282,7 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
     let memberPages = 0;
     let memberCount = 0;
     let protectedGroupsUnknown = false;
-    const totals: PageCounts = { candidates: {}, protectedBy: {}, skippedBy: {}, candidateCount: 0, protectedCount: 0, skippedCount: 0 };
+    const totals: PageCounts = { candidates: {}, protectedBy: {}, skippedBy: {}, candidateCount: 0, protectedCount: 0, skippedCount: 0, resurfaced: 0 };
 
     if (segment.ok) {
       const definition = segment.definition as SegmentDefinition;
@@ -457,6 +468,7 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
         ...(segment.ok ? {} : { note: segment.note }),
         ...(protectedGroupsUnknown ? { protectedGroupsUnknown: true } : {}),
         ...(account.seeded ? { seededTestAccount: true } : {}),
+        ...(totals.resurfaced > 0 ? { resurfaced: totals.resurfaced } : {}),
       };
       const coverageStored = {
         engagementSince: segment.ok ? new Date(0).toISOString() : null,
@@ -529,6 +541,21 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
             .from(schema.scanProfiles)
             .where(and(eq(schema.scanProfiles.scanId, scanId), eq(schema.scanProfiles.decision, "candidate"))),
         ),
+        // Cycle detected: stop scheduling cleanups until the merchant has looked (no version bump: rules did not change).
+        ...(totals.resurfaced > 0
+          ? [
+              db.update(schema.settings).set({ scheduleEnabled: false, mode: "approval", updatedAt: finishedAt }).where(eq(schema.settings.shop, plan.shop)),
+              db.insert(schema.eventsLog).values({
+                id: crypto.randomUUID(),
+                shop: plan.shop,
+                at: finishedAt,
+                actor: "system",
+                action: "schedule.paused_cycle_detected",
+                simulationId,
+                detail: { scanId, resurfaced: totals.resurfaced },
+              }),
+            ]
+          : []),
         db.delete(schema.scanProfiles).where(eq(schema.scanProfiles.scanId, scanId)),
         db
           .update(schema.scans)
@@ -574,6 +601,7 @@ function addCounts(total: PageCounts, page: PageCounts): void {
   total.candidateCount += page.candidateCount;
   total.protectedCount += page.protectedCount;
   total.skippedCount += page.skippedCount;
+  total.resurfaced += page.resurfaced;
   for (const [k, n] of Object.entries(page.candidates)) total.candidates[k as CandidateReason] = (total.candidates[k as CandidateReason] ?? 0) + n;
   for (const [k, n] of Object.entries(page.protectedBy)) total.protectedBy[k as ProtectionReason] = (total.protectedBy[k as ProtectionReason] ?? 0) + n;
   for (const [k, n] of Object.entries(page.skippedBy)) total.skippedBy[k as SkipReason] = (total.skippedBy[k as SkipReason] ?? 0) + n;
@@ -661,10 +689,26 @@ async function evaluatePages(
   endPage: number,
   ctx: { rules: RuleSettings; coverage: ReturnType<typeof candidateSegmentCoverage>; at: Date; minEmailsReceived: number; seeded: boolean },
 ): Promise<PageCounts> {
-  const counts: PageCounts = { candidates: {}, protectedBy: {}, skippedBy: {}, candidateCount: 0, protectedCount: 0, skippedCount: 0 };
+  const counts: PageCounts = { candidates: {}, protectedBy: {}, skippedBy: {}, candidateCount: 0, protectedCount: 0, skippedCount: 0, resurfaced: 0 };
   const update = db.$client.prepare("UPDATE scan_profiles SET decision = ?, reason = ? WHERE scan_id = ? AND profile_id = ?");
 
+  const atMs = ctx.at.getTime();
   for (let page = firstPage; page < endPage; page++) {
+    // Cycle detector. A member of the segment is not suppressed. If our own history says a cleanup suppressed
+    // this email and we never restored it, someone unsuppressed it outside TierSaver. Stamp it as restored now:
+    // from here on it is locked out of every cleanup like any restored profile. The grace period covers Klaviyo
+    // still processing a recent cleanup's jobs. The stamp is the scan's own instant, so a retried step finds
+    // (and counts) the same rows again.
+    await db.$client
+      .prepare(
+        `UPDATE run_profiles SET reactivated_at = ?1
+         WHERE shop = ?2 AND status = 'submitted' AND reactivated_at IS NULL AND updated_at < ?3
+           AND run_id IN (SELECT id FROM runs WHERE shop = ?2 AND kind = 'suppress')
+           AND email_hash IN (SELECT email_hash FROM scan_profiles WHERE scan_id = ?4 AND page = ?5 AND email_hash IS NOT NULL)`,
+      )
+      .bind(atMs, shop, atMs - RESURFACE_GRACE_MS, scanId, page)
+      .run();
+
     // Shopify buyers are matched by email hash; a restore is found in our own run history, also by hash.
     const { results } = await db.$client
       .prepare(
@@ -687,6 +731,7 @@ async function evaluatePages(
         reactivatedAt: row.reactivated_at !== null ? new Date(row.reactivated_at) : null,
         useTestCreatedAt: ctx.seeded,
       });
+      if (row.reactivated_at === atMs) counts.resurfaced++;
       const decision = evaluateProfile(signals, ctx.rules, ctx.coverage, ctx.at);
       if (decision.kind === "candidate") {
         counts.candidateCount++;

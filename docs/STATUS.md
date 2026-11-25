@@ -349,3 +349,38 @@ Worker versión `97e0c4e5`, migración `0004_schedule.sql` aplicada en la D1 rem
 - Para la cuenta sembrada, la suscripción de Shopify no bloquea el arranque (así se puede probar antes de resolver el cobro); para cualquier otra cuenta sigue siendo obligatoria.
 
 Worker versión `7c98e25e`. 260 tests.
+
+**Limpieza real de punta a punta sobre SGKvLG (autorizada por Facundo; hecha el 2026-11-25 18:42 UTC, 99 segundos)**
+
+Facundo dejó una ventana de Chrome abierta, pero la sesión corre en la nube y no tiene forma de usar un navegador suyo. La prueba se hizo entonces con el código de la app (los mismos motores de scan, aprobación, corrida, gateway, confirmación de jobs y deshacer) contra la API real, con la clave privada de prueba: `test/live-klaviyo.test.ts` más `scripts/klaviyo-relay.mjs` (un relay local que tiene la clave, solo arranca si la cuenta es la esperada y Klaviyo la marca como test account). El test se saltea salvo que se le pase `LIVE_KLAVIYO_RELAY`. **No pasó por la app desplegada ni por el OAuth.**
+
+| Paso | Resultado |
+| --- | --- |
+| Auditoría + simulación (modo cuenta sembrada, reglas por defecto, sin grupo protegido) | **984 miembros, 696 candidatos**: exactamente lo esperado |
+| CSV de candidatos | Primera parte con un mail por fila, leído de Klaviyo en el momento |
+| Aprobación y corrida | 696 perfiles en 7 lotes; `completed`, 0 fallados, 0 sin tocar |
+| Jobs de supresión en Klaviyo | 7 jobs, todos `complete`: 100, 100, 100, 100, 100, 100 y 96; `completed_count` = `total_count`, `skipped_count` 0. Completos en menos de un minuto |
+| Estado real de los perfiles | Suprimidos antes: 120. Después de la corrida: 816 (120 + 696) |
+| Cargo | Estimado al terminar; con los jobs confirmados queda listo para Shopify (sin Shopify en la prueba, queda abierto, que es lo correcto) |
+| Deshacer | Corrida `undo` de 696; 7 jobs de des-supresión `complete` (696 procesados, 0 salteados) |
+| Estado final | **120 suprimidos, como al empezar**; el segmento volvió a 984 miembros. La cuenta quedó como estaba |
+
+Qué responde de lo que estaba abierto: `completed_count` cuenta los perfiles procesados por el job y coincide con lo enviado (con `skipped_count` 0 en perfiles que existen y no estaban suprimidos); `any(id,[...])` con 50 ids funciona en volumen; el gateway real suprime y des-suprime por mail tal como lo tiene Klaviyo. Sigue sin verse qué pone Klaviyo en `skipped_count` (no hubo ningún salteado).
+
+**Interruptor**: `SUPPRESSION_ENABLED` y `SUPPRESSION_ALLOWED_ACCOUNT_ID` **borrados** del Worker después de la prueba (quedan 5 secretos: los dos de Shopify, los dos de Klaviyo y la clave de cifrado). Ninguna corrida puede suprimir.
+
+**Detector de ciclos (guardarraíl 6; hecho, probado con el falso, desplegado)**
+- Durante el scan, si un miembro del segmento (o sea, no suprimido) figura en el historial propio como suprimido por una limpieza de TierSaver hace más de 72 horas y nunca restaurado por TierSaver, alguien lo des-suprimió por fuera. La app lo deja activo, le pone la marca de restaurado (queda fuera de toda limpieza por 365 días, igual que un deshacer), **apaga la programación mensual y el modo automático**, lo registra en `events_log` (`schedule.paused_cycle_detected`) y lo muestra en la pantalla de inicio. Las 72 horas evitan confundir una limpieza que Klaviyo todavía está aplicando.
+
+Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado por defecto).
+
+**Qué falta para producción, y por qué no lo puede cerrar la sesión sola**
+1. **Conectar Klaviyo desde la tienda y recorrer las pantallas** (Facundo; la sesión no puede manejar su navegador). Único camino para verificar el OAuth real ya corregido, la rotación del refresh token, la descarga del CSV dentro del admin y los formularios.
+2. **Cobro contra Shopify real**: aceptar la suscripción de prueba. Puede exigir elegir la distribución pública (A4), que no se puede cambiar después: decisión de Facundo.
+3. **Datos protegidos de clientes y `read_all_orders`** (A4): los pide Facundo en el Dev Dashboard. Sin eso un merchant real no tiene candidatos con las reglas por defecto, y `orders/create` sigue comentado.
+4. **Encender la supresión para todos**: solo Facundo.
+5. **Mails** (simulación programada lista, resultado de corrida): necesitan el dominio en la cuenta TierSaver (desde el 2026-12-05) y definir el servicio de envío. Sin mails, la programación en modo aprobación solo sirve si el merchant abre la app dentro de las 24 h.
+6. **Sitio**: scripts de build perdidos (tarea aparte), placeholders legales, dominio (2026-12-05). Publicar es un freno.
+7. **Workers Paid** (US$ 5/mes, decidido "recién al desplegar la beta"): con Workers Free una corrida admite ~100.000 perfiles y un scan 50.000 miembros. Es un gasto: freno.
+8. **Ficha y envío a revisión de Shopify**, y la revisión de la app OAuth en Klaviyo: frenos.
+9. Reporte mensual, y decidir si se muestra la estimación de plan de Klaviyo.

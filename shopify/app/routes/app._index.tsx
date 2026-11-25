@@ -120,6 +120,13 @@ function Audit({ audit, busy }: { audit: NonNullable<ReturnType<typeof useLoader
               <s-banner tone="info">Test account: this audit reads seeded sample data.</s-banner>
             ) : null}
             {result.note ? <s-banner tone="info">{result.note}</s-banner> : null}
+            {result.resurfaced > 0 ? (
+              <s-banner tone="warning" heading="Profiles from an earlier cleanup are active again">
+                {number(result.resurfaced)} profiles that a TierSaver cleanup suppressed have been unsuppressed in Klaviyo
+                outside TierSaver. They were kept active and TierSaver will not suppress them again for 365 days. Your
+                monthly schedule was paused; turn it back on in Settings once you have checked what happened.
+              </s-banner>
+            ) : null}
             <s-table>
               <s-table-header-row>
                 <s-table-header>As of {new Date(result.finishedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</s-table-header>

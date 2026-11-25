@@ -413,3 +413,59 @@ describe("scan: seeded test account", () => {
     expect(r.summary).toMatchObject({ protectedByReason: { new_profile: 20 } });
   });
 });
+
+describe("scan: cycle detector (guardrail 6)", () => {
+  /** A finished cleanup of this shop that suppressed the given profiles `daysAgo` days ago. */
+  async function earlierCleanup(w: World, profileNumbers: number[], daysAgo: number) {
+    const simulationId = crypto.randomUUID();
+    const at = new Date(T0 - daysAgo * DAY);
+    await db.insert(schema.simulations).values({ id: simulationId, shop: w.shop, createdAt: at, settingsVersion: 1, ruleSettings: {}, coverage: {}, summary: {}, evaluatedCount: 1, candidateCount: 1, protectedCount: 0, skippedCount: 0, activeProfiles: 1, priceTableId: "t", approvedAt: at, approvedBy: "user:7", executedAt: at });
+    const runId = crypto.randomUUID();
+    await db.insert(schema.runs).values({ id: runId, shop: w.shop, kind: "suppress", simulationId, status: "completed", createdBy: "user:7", createdAt: at, finishedAt: at });
+    for (const n of profileNumbers) {
+      await db.insert(schema.runProfiles).values({ runId, profileId: `P${String(n).padStart(5, "0")}`, shop: w.shop, batchIndex: 0, reason: "never_engaged", emailHash: await hashEmail(`p${n}@shop.test`), status: "submitted", updatedAt: at });
+    }
+    return runId;
+  }
+
+  it("keeps active, locks and reports profiles a cleanup suppressed that are active again, and pauses the schedule", async () => {
+    const w = await world({ profiles: fakeProfiles(20) });
+    await db.update(schema.settings).set({ scheduleEnabled: true, mode: "automatic" }).where(eq(schema.settings.shop, w.shop));
+    // P1 and P2 were suppressed 10 days ago and are members of the segment again: someone unsuppressed them.
+    const runId = await earlierCleanup(w, [1, 2], 10);
+
+    expect((await w.run()).status).toBe("completed");
+    const r = await results(w);
+    expect(r.summary?.resurfaced).toBe(2);
+    expect(r.simulation?.candidateCount).toBe(18);
+    expect(r.candidates.map((c) => c.profileId)).not.toContain("P00001");
+    expect(r.summary?.protectedByReason.recently_reactivated).toBe(2);
+
+    const settings = await db.query.settings.findFirst({ where: eq(schema.settings.shop, w.shop) });
+    expect(settings).toMatchObject({ scheduleEnabled: false, mode: "approval", version: 1 });
+    const log = await db.query.eventsLog.findMany({ where: eq(schema.eventsLog.shop, w.shop) });
+    expect(log.some((l) => l.action === "schedule.paused_cycle_detected")).toBe(true);
+
+    // The lock is permanent history, not a one-off: the rows now carry a restore stamp.
+    const rows = await db.query.runProfiles.findMany({ where: eq(schema.runProfiles.runId, runId) });
+    expect(rows.every((p) => p.reactivatedAt?.getTime() === T0)).toBe(true);
+  });
+
+  it("does not mistake a cleanup Klaviyo is still applying for a cycle", async () => {
+    const w = await world({ profiles: fakeProfiles(20) });
+    await db.update(schema.settings).set({ scheduleEnabled: true }).where(eq(schema.settings.shop, w.shop));
+    await earlierCleanup(w, [1, 2], 1); // yesterday: inside the 72 h grace period
+    await w.run();
+    const r = await results(w);
+    expect(r.summary?.resurfaced).toBeUndefined();
+    expect((await db.query.settings.findFirst({ where: eq(schema.settings.shop, w.shop) }))?.scheduleEnabled).toBe(true);
+  });
+
+  it("another shop's cleanup history never affects this shop", async () => {
+    const other = await world({ profiles: fakeProfiles(5) });
+    await earlierCleanup(other, [1, 2], 10);
+    const w = await world({ profiles: fakeProfiles(20) });
+    await w.run();
+    expect((await results(w)).simulation?.candidateCount).toBe(20);
+  });
+});

@@ -10,7 +10,8 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: "./test/wrangler.jsonc" },
-        miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
+        // LIVE_KLAVIYO_RELAY is only set for the live integration test (see test/live-klaviyo.test.ts); empty skips it.
+        miniflare: { bindings: { TEST_MIGRATIONS: migrations, LIVE_KLAVIYO_RELAY: process.env.LIVE_KLAVIYO_RELAY ?? "" } },
       }),
     ],
     test: {
