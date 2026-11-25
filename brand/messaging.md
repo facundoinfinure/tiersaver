@@ -55,8 +55,7 @@ Profiles with SMS consent, profiles in the lists and segments you mark as protec
 
 Prices belong in the pricing section of the listing and on the pricing part of the site, nowhere else in the listing.
 
-- A flat monthly price by list size: $29 up to 25,000 active profiles, $79 up to 75,000, $149 up to 150,000. Larger lists: by agreement.
-- **The list-size limits are provisional, pending the owner's confirmation.** Do not publish them as final until confirmed.
+- A flat monthly price by list size: $15 up to 10,000 active profiles, $29 up to 25,000, $79 up to 75,000, $149 up to 150,000. Larger lists: by agreement. Confirmed by the owner on 2026-11-25.
 - A billing cycle with no cleanup is not charged. The audit is free. Billing goes through the merchant's Shopify invoice.
 - The price never depends on the merchant's Klaviyo invoice.
 
@@ -114,4 +113,4 @@ A flat monthly price based on the size of your list, billed through Shopify. A m
 - No promise built on billing timing, and no promise that pairs suppressing with reactivating?
 - Does it say "suppress", not "delete"?
 - No exclamation marks, no urgency, none of the words above?
-- Are the list-size limits still marked provisional, or confirmed by the owner?
+- Do the prices match `FLAT_PRICE_TIERS` in `packages/core/src/charge.ts`?

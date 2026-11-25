@@ -207,3 +207,8 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - Entidad legal para el sitio y los legales: Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131. Facundo escribió "153 e Flaggler st, Miami 33131"; la sesión normalizó la calle a "Flagler" y agregó "FL": **a confirmar por Facundo**, junto con si lleva número de suite.
 - Cortes de precio: siguen sin confirmar. Facundo preguntó si están bien; la sesión le pasó la comparación con el precio de lista de Klaviyo por tamaño.
 - Siguen como placeholders en el sitio: mail de contacto, mail de soporte, fecha de vigencia y URL de la ficha.
+
+### 2026-11-25 (quinta tanda)
+
+- **Precios confirmados por Facundo**, con un tramo de entrada nuevo: US$ 15 hasta 10.000 perfiles activos, US$ 29 hasta 25.000, US$ 79 hasta 75.000, US$ 149 hasta 150.000; por encima, por acuerdo. En `packages/core/src/charge.ts` (`FLAT_PRICE_TIERS`); el sitio los lee de ahí.
+- Tienda de desarrollo creada por Facundo: `tiersaver.myshopify.com`. La organización de Partner se llama TierSaver. Falta crear la app en el Dev Dashboard (enlace "Crear app"; **no** correr `npm init @shopify/app@latest`, que crea un proyecto nuevo) y entregar Client ID, Client secret y token de service account.

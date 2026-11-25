@@ -8,12 +8,13 @@ Precio fijo mensual según el tamaño de la lista:
 
 | Perfiles activos en Klaviyo | Precio por mes |
 | --- | --- |
+| Hasta 10.000 | US$ 15 |
 | Hasta 25.000 | US$ 29 |
 | Hasta 75.000 | US$ 79 |
 | Hasta 150.000 | US$ 149 |
 | Más de 150.000 | Por acuerdo. Nunca se cobra automáticamente |
 
-**Los límites de tamaño de lista (25.000, 75.000 y 150.000) son provisionales y están pendientes de confirmación de Facundo.** Los precios (US$ 29, 79 y 149) están decididos. Mientras no se confirmen, cualquier texto que muestre los límites lo dice.
+Precios y límites confirmados por Facundo el 2026-11-25. El tramo de entrada (hasta 10.000 perfiles, US$ 15) se agregó ese día porque US$ 29 equivalía al 19% a 29% de lo que una lista de 5.000 a 10.000 perfiles paga a Klaviyo a precio de lista, contra 7% a 11% en los demás tramos.
 
 Reglas:
 
@@ -64,11 +65,11 @@ Son estimaciones propias, sin datos de clientes. No hay todavía ninguna cuenta 
 - Infraestructura: US$ 60 a 150 por mes con clientes. Es la estimación anterior al cambio a Cloudflare; rehacerla con uso real.
 - Cuentas necesarias, como aritmética sobre los precios fijos. Cada fila supone que todas las cuentas están en un mismo tramo y que todas tienen una limpieza con supresiones ese mes:
 
-| Ingreso mensual | Todas a US$ 29 | Todas a US$ 79 | Todas a US$ 149 |
-| --- | --- | --- | --- |
-| US$ 1.000 | 35 cuentas | 13 cuentas | 7 cuentas |
-| US$ 5.000 | 173 cuentas | 64 cuentas | 34 cuentas |
-| US$ 10.000 | 345 cuentas | 127 cuentas | 68 cuentas |
+| Ingreso mensual | Todas a US$ 15 | Todas a US$ 29 | Todas a US$ 79 | Todas a US$ 149 |
+| --- | --- | --- | --- | --- |
+| US$ 1.000 | 67 cuentas | 35 cuentas | 13 cuentas | 7 cuentas |
+| US$ 5.000 | 334 cuentas | 173 cuentas | 64 cuentas | 34 cuentas |
+| US$ 10.000 | 667 cuentas | 345 cuentas | 127 cuentas | 68 cuentas |
 
 - La mezcla real entre tramos no se conoce: no se supone un ticket promedio. El ticket de US$ 49 del modelo anterior ya no vale.
 - Margen, como aritmética sobre esas mismas estimaciones (ingreso menos 2,9% y menos infraestructura): entre 82% y 91% con US$ 1.000 por mes; entre 94% y 96% con US$ 5.000.

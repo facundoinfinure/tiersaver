@@ -118,7 +118,7 @@ Quitada el 2026-11-25. Ver "Fuera del MVP". La app no le quita la supresión a n
 - Klaviyo desconectado, token vencido o acceso revocado (`invalid_grant`): frenar corridas, avisar y no reintentar.
 - Cuenta en plan gratis de Klaviyo: la auditoría funciona igual; no se muestra estimación de plan.
 - Lista ya limpia: "Your list is already clean. No profiles match the cleanup criteria, so there is nothing to suppress and nothing to charge."
-- Lista por encima del último tramo de precio (150.000 perfiles activos, límite provisional): precio por acuerdo; no se cobra automáticamente.
+- Lista por encima del último tramo de precio (150.000 perfiles activos): precio por acuerdo; no se cobra automáticamente.
 - Falta cobertura de datos (por ejemplo, pedidos de Shopify de menos tiempo que la ventana): todos quedan protegidos y la app lo explica.
 - Límite de API alcanzado: reintento automático con mensaje claro.
 - Ejecución parcial.

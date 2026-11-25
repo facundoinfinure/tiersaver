@@ -15,11 +15,11 @@ export interface FlatPriceTier {
 }
 
 /**
- * PROVISIONAL list-size boundaries, pending the owner's confirmation.
- * Prices (US$ 29 / 79 / 149) are decided; the profile limits are a proposal.
+ * Prices and list-size boundaries, confirmed by the owner on 2026-11-25.
  * Above the last tier there is no public price.
  */
 export const FLAT_PRICE_TIERS: readonly FlatPriceTier[] = Object.freeze([
+  { maxProfiles: 10_000, monthlyCents: 1_500 },
   { maxProfiles: 25_000, monthlyCents: 2_900 },
   { maxProfiles: 75_000, monthlyCents: 7_900 },
   { maxProfiles: 150_000, monthlyCents: 14_900 },

@@ -112,16 +112,19 @@ describe("profilesToDropOneTier", () => {
 
 describe("quoteCharge (flat price by list size)", () => {
   it("prices by list size at the tier boundaries", () => {
-    expect(flatTierFor(1)?.monthlyCents).toBe(2_900);
+    expect(flatTierFor(1)?.monthlyCents).toBe(1_500);
+    expect(flatTierFor(10_000)?.monthlyCents).toBe(1_500);
+    expect(flatTierFor(10_001)?.monthlyCents).toBe(2_900);
     expect(flatTierFor(25_000)?.monthlyCents).toBe(2_900);
     expect(flatTierFor(25_001)?.monthlyCents).toBe(7_900);
     expect(flatTierFor(75_000)?.monthlyCents).toBe(7_900);
     expect(flatTierFor(75_001)?.monthlyCents).toBe(14_900);
     expect(flatTierFor(150_000)?.monthlyCents).toBe(14_900);
     expect(flatTierFor(150_001)).toBeNull();
-    expect(FLAT_PRICE_TIERS.map((t) => t.monthlyCents)).toEqual([2_900, 7_900, 14_900]);
+    expect(FLAT_PRICE_TIERS.map((t) => t.monthlyCents)).toEqual([1_500, 2_900, 7_900, 14_900]);
   });
   it("charges the tier price when a cleanup suppressed profiles", () => {
+    expect(quoteCharge({ activeProfiles: 8_000, profilesSuppressed: 200 }).feeCents).toBe(1_500);
     const q = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 3_500 });
     expect(q).toMatchObject({ feeCents: 2_900, listFeeCents: 2_900, capApplied: false, noChargeReason: null });
   });

@@ -28,7 +28,7 @@ El corte de Fase 0 sobre el precio como porcentaje quedó sin efecto: el precio 
 | El App Store no trae instalaciones | Alta | Agencias y chequeo de salud de lista como canales principales |
 | Se suprime a quien no correspondía | Media | Criterios de Klaviyo por defecto, simulación obligatoria, datos incompletos protegen, deshacer, términos con limitación de responsabilidad revisados por abogado |
 | Con los criterios por defecto, después de la primera limpieza quedan pocos candidatos y muchos meses no se cobran | Sin datos | Es consecuencia directa de "si no hay limpieza, no se cobra". Medir en la beta qué fracción de los meses tiene limpieza antes de proyectar ingresos (`04-PRECIO-Y-COBRO.md`) |
-| El precio queda muy por encima de las apps comparables (US$ 7 y US$ 9 por mes, contra US$ 29 a 149) | Sin datos | Medir conversión de auditoría a limpieza paga en la beta; los límites de tamaño de lista siguen provisionales |
+| El precio queda muy por encima de las apps comparables (US$ 7 y US$ 9 por mes, contra US$ 15 a 149) | Sin datos | Medir conversión de auditoría a limpieza paga en la beta; los límites de tamaño de lista siguen provisionales |
 | Clones | Media | Reseñas y relación con agencias antes que funciones |
 | Clientes viejos de Klaviyo con suba limitada al 25% tienen menos urgencia por limpiar la lista | Media | Apuntar a cuentas nuevas y a las que crecen rápido |
 | El nombre "TierSaver" contradice el posicionamiento de higiene y se confunde con apps de descuentos "Tier…" | Media | Subtítulo y titular que dicen qué hace el producto (higiene de lista para Klaviyo). El descriptor del nombre es una decisión abierta de Facundo (tarea 18 de `10-TAREAS-HUMANAS.md`) |

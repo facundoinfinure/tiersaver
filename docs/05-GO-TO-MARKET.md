@@ -73,7 +73,7 @@ Reglas para personalizarlos:
 - Ninguna cifra de dinero, porcentaje ni garantía. Los conteos de perfiles solo salen de una auditoría real.
 - No ofrecer pagarle menos a Klaviyo, ni el momento de la corrida respecto de la facturación, ni suprimir y volver a activar.
 - El efecto en el plan, si se menciona, va como hecho de Klaviyo y en segundo plano.
-- Los límites de tamaño de lista del precio son provisionales: no citarlos por escrito hasta que Facundo los confirme.
+- Precios confirmados el 2026-11-25: US$ 15 / 29 / 79 / 149 según tamaño de lista (hasta 10.000 / 25.000 / 75.000 / 150.000 perfiles activos).
 
 ### 1 · Mail a prioridad A
 

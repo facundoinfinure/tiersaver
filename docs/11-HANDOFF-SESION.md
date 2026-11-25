@@ -18,7 +18,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 ## Decisiones de Facundo del 2026-11-25 (segunda parte)
 
-Logo B; precio fijo por tamaño de lista (cortes sin confirmar); sin reactivación por compra; reglas por defecto = criterios de Klaviyo; rigen las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md` 3.2. Detalle en `STATUS.md`.
+Logo B; precio fijo por tamaño de lista (US$ 15 / 29 / 79 / 149, confirmado); sin reactivación por compra; reglas por defecto = criterios de Klaviyo; rigen las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md` 3.2. Detalle en `STATUS.md`.
 
 ## Qué hay en el repo
 
@@ -44,7 +44,7 @@ Logo B; precio fijo por tamaño de lista (cortes sin confirmar); sin reactivaci�
 
 ## Pendiente de Facundo
 
-Confirmar los cortes de precio; crear cuentas de Shopify y Klaviyo según `13-INSTRUCTIVO-CUENTAS.md`; elegir la versión corta del nombre para la ficha de Shopify y decidir si se contacta a Klaviyo (`10-TAREAS-HUMANAS.md`, tareas 17 a 20); datos legales del sitio; mover el dominio desde el 2026-12-05; restringir y rotar el token de Cloudflare.
+Crear la app en el Dev Dashboard de Shopify (la tienda `tiersaver.myshopify.com` ya existe) y la cuenta de Klaviyo según `13-INSTRUCTIVO-CUENTAS.md`; elegir la versión corta del nombre para la ficha de Shopify y decidir si se contacta a Klaviyo (`10-TAREAS-HUMANAS.md`, tareas 17 a 20); datos legales del sitio; mover el dominio desde el 2026-12-05; restringir y rotar el token de Cloudflare.
 
 ## Cosas a saber del entorno
 

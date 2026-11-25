@@ -60,9 +60,9 @@ Decidido por Facundo el 2026-11-25. El nombre completo del producto es "TierSave
 - Simulation and approval before every cleanup
 - A log of every run, with undo
 
-**Pricing** (solo en la sección de precios de la ficha, requisito 4.2): A flat monthly price by list size: $29 up to 25,000 active profiles, $79 up to 75,000, $149 up to 150,000. Larger lists by agreement. A billing cycle with no cleanup is not charged. The audit is free.
+**Pricing** (solo en la sección de precios de la ficha, requisito 4.2): A flat monthly price by list size: $15 up to 10,000 active profiles, $29 up to 25,000, $79 up to 75,000, $149 up to 150,000. Larger lists by agreement. A billing cycle with no cleanup is not charged. The audit is free.
 
-Los límites de tamaño de lista son provisionales, pendientes de confirmación de Facundo: no enviar la ficha con esos números sin confirmarlos.
+Precios y límites confirmados por Facundo el 2026-11-25.
 
 **Palabras clave**: Klaviyo list cleaning, list hygiene, suppress inactive profiles, unengaged profiles, sunset flow.
 
