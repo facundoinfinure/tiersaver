@@ -410,7 +410,7 @@ export class FakeKlaviyo {
     const segment = this.segments.find((g) => g.id === id)!;
     const all: Record<string, unknown> = {
       name: segment.name,
-      definition: segment.definition ?? { condition_groups: [] },
+      definition: echoDefinition(segment.definition ?? { condition_groups: [] }),
       is_processing: segment.isProcessing ?? false,
       is_active: segment.isActive ?? true,
     };
@@ -561,4 +561,22 @@ export class FakeKlaviyo {
     this.jobs.push(job);
     return json(202, { data: this.jobResource(job, "queued") });
   }
+}
+
+/**
+ * The real API echoes a definition with its optional members spelled out as
+ * null (`metric_filters: null`, `consent_status.filters: null`); seen on
+ * account SGKvLG, revision 2026-10-15, on 2026-11-25. The fake does the same so
+ * the comparison in `canonicalDefinition` is exercised the way Klaviyo exercises it.
+ */
+function echoDefinition(definition: unknown): unknown {
+  const d = structuredClone(definition) as { condition_groups?: { conditions?: Record<string, unknown>[] }[] };
+  for (const group of d?.condition_groups ?? []) {
+    for (const condition of group?.conditions ?? []) {
+      if (condition.type === "profile-metric" && !("metric_filters" in condition)) condition.metric_filters = null;
+      const status = (condition.consent as { consent_status?: Record<string, unknown> } | undefined)?.consent_status;
+      if (status && !("filters" in status)) status.filters = null;
+    }
+  }
+  return d;
 }

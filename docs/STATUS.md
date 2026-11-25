@@ -288,3 +288,29 @@ Sigue abierto, además: nombre real de la propiedad de apertura automática y qu
 - Facundo instaló la app en `tiersaver.myshopify.com` el 2026-11-25 17:43 UTC. La app embebida carga y muestra la pantalla de conexión con "Connecting to Klaviyo is not available yet" (lo esperado: falta la app OAuth de Klaviyo).
 - En la D1: fila en `shops` (`installed`) y sesión offline con scope `read_orders`, token cifrado.
 - **Bug encontrado y corregido**: el backfill de pedidos no arrancó al instalar. El id de la instancia del Workflow llevaba el dominio de la tienda, y los ids de Workflows no admiten puntos; el error quedaba tragado por el `catch`. Ahora los puntos se reemplazan y el fallo se registra. El backfill arranca en la próxima autenticación; igual no va a traer mails hasta que la app tenga acceso a datos protegidos de clientes.
+
+### 2026-11-25 (cuarta sesión, rama `claude/hopeful-mayer-5ubt01`)
+
+Llegaron `KLAVIYO_CLIENT_ID`, `KLAVIYO_CLIENT_SECRET` y la `KLAVIYO_TEST_PRIVATE_KEY` nueva, verificadas sin imprimirlas.
+
+**Clave nueva de Klaviyo contra la API real (cuenta de prueba SGKvLG; `klaviyo-live-check.ts`, primero en solo lectura y después con `--write-segment`)**
+
+`GET /api/accounts`: `id: SGKvLG`, organización "TierSaver", `test_account: true`. Las dos pasadas terminaron sin fallas.
+
+| Punto abierto | Resultado | Cambio en código |
+| --- | --- | --- |
+| Nombres e integraciones de las métricas (`metrics:read`) | 28 métricas. Nativas de Klaviyo: integración **"Klaviyo"**, categoría "Internal" ("Received Email", "Opened Email", "Clicked Email", "Bounced Email", "Dropped Email", "Skipped Send", "Marked Email as Spam", "Clicked email to unsubscribe", "Manually Suppressed / Unsuppressed from Email Marketing", "Subscribed to Back in Stock"). De Shopify: integración **"Shopify"**, categoría "eCommerce" ("Placed Order", "Ordered Product", "Checkout Started", "Viewed Product", "Added to Cart", "Fulfilled / Cancelled / Refunded Order"). Las sembradas: integración **"API"**, categoría "API". `DEFAULT_METRIC_SPECS` resuelve las nativas tal cual y `SEEDED_METRIC_SPECS` las sembradas. La cuenta tiene **dos** métricas "Active on Site" de API (el segmento incluye las dos, que es lo que protege) | Ninguno |
+| La cuenta de prueba ahora tiene la integración de Shopify conectada (aparecieron las métricas "Shopify / eCommerce"); en la sesión anterior no estaban | Dato, no problema: no hay eventos de Shopify para los perfiles sembrados | Ninguno |
+| Cuerpo que acepta la creación de segmentos (`segments:write`) | `POST /api/segments` aceptó el cuerpo de `ensureCandidateSegment` sin cambios: 14 grupos de condiciones (consentimiento de email, "Received Email" ≥ 5 en 504 días y "cero veces, siempre" para cada métrica de apertura, clic, pedido, checkout, sitio y producto visto, nativas y de API). Segmento `WRvyjd`, creado | Ninguno |
+| La definición que devuelve Klaviyo coincide con la enviada | **Sí** (`canonicalDefinition`). Klaviyo devuelve los opcionales como `null` (`metric_filters: null`, `consent_status.filters: null`), que es lo que la comparación ya descartaba. Terminó de procesar a los 32 s; `is_active: true` | El Klaviyo falso ahora devuelve la definición con esos `null`, como la API real |
+| Miembros del segmento | **984**, y es lo correcto. Cruzados uno por uno con el dataset del seed (por mail, sin imprimirlos): coinciden exactamente con los perfiles no suprimidos, con 5 o más "Received Email" en la ventana y sin ningún evento de interacción, cohorte por cohorte (0 de más, 0 de menos, 0 ajenos al seed). `profile_count` de Klaviyo también da 984 | Ninguno |
+| ¿Por qué 984 y no ~576? | La cifra "456 + 120" son los **candidatos** después de las reglas de TierSaver, no los miembros del segmento. El segmento solo codifica consentimiento, mails recibidos y "nunca interactuó"; las reglas que no se pueden expresar ahí las aplica la app sobre los miembros: antigüedad (`new_profile` 120, `profile_180_to_364_days` 150, bordes 364/179/180 días: 18), grupo protegido (90), restaurados (30). 984 − 288 de antigüedad = 696; quedan 456 `never_engaged` + 6 + 6 de bordes = **456 candidatos del seed** más los 120 de `sms_consented` (sin consentimiento SMS en esta cuenta), más 90 de `protected_group` si la tienda no tiene cargada esa lista como protegida y 30 de `restored` (la app no tiene registro propio de esa restauración: la hizo el seed). Esperado en la auditoría real: **696** sin grupo protegido configurado, **606** con la lista protegida del seed | Ninguno |
+| Uso de facturación | `active_profiles`: `usage_used` ya refrescó a **2.885** (3.005 perfiles − 120 suprimidos), `usage_max` 250 | Ninguno |
+| Perfiles | 3.005 (3.000 del seed, 4 de la cuenta, 1 de diagnóstico). `subscriptions.sms` sigue viniendo en todos | Ninguno |
+
+Sigue abierto de este bloque: nombre real de la propiedad de apertura automática y qué cuenta la métrica nativa "Received Email" (hacen falta envíos reales).
+
+**OAuth de Klaviyo: secretos en el Worker (hecho)**
+- `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` cargados con `wrangler secret bulk` por stdin. Worker redesplegado (versión `41735da8`). Smoke 8 de 8.
+- Las credenciales son válidas: un canje con un código inventado contra `a.klaviyo.com/oauth/token` devuelve `invalid_grant` (con un secret equivocado devuelve `invalid_client`). No se canjeó ni guardó nada.
+- La app OAuth sigue en *Draft*; no se envió a revisión.
