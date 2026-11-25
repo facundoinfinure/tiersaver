@@ -137,8 +137,9 @@ describe("authorization request (PKCE + signed state)", () => {
     expect(await check(`${version}.${forge({ s: "attacker.myshopify.com" })}.${signature}`)).toBe("klaviyo_oauth_state_invalid");
     // Extend the expiry.
     expect(await check(`${version}.${forge({ e: (decoded.e as number) + 3_600_000 })}.${signature}`)).toBe("klaviyo_oauth_state_invalid");
-    // Flip one character of the signature.
-    const flipped = signature.slice(0, -1) + (signature.endsWith("A") ? "B" : "A");
+    // Flip one character of the signature. Not the last one: it carries only 4 bits of the
+    // signature, so swapping it can decode to the very same bytes.
+    const flipped = (signature.startsWith("A") ? "B" : "A") + signature.slice(1);
     expect(await check(`${version}.${payload}.${flipped}`)).toBe("klaviyo_oauth_state_invalid");
     // Structural garbage.
     for (const bad of ["", "abc", "v1..", `v2.${payload}.${signature}`, `${version}.${payload}`, `${version}.${payload}.!!!`, null, undefined]) {

@@ -18,6 +18,8 @@ describe("migrations match the Drizzle schema", () => {
         "purchase_hashes",
         "run_profiles",
         "runs",
+        "scan_profiles",
+        "scans",
         "session",
         "settings",
         "shops",
