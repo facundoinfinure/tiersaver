@@ -8,6 +8,7 @@ import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
 import { STATUS_LABELS } from "../runs/labels";
+import { confirmRunJobs } from "../runs/confirm";
 import { startUndoRun } from "../runs/start.server";
 import { checkRunJobs, loadRunDetail, type JobsCheck } from "../runs/view.server";
 import { authenticate } from "../shopify.server";
@@ -40,6 +41,23 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   }
 
   if (intent === "undo") {
+    // Klaviyo applies bulk jobs in the background and in no guaranteed order. Restoring while the cleanup's own
+    // jobs are still being applied could leave profiles suppressed after a "successful" restore, so wait for them.
+    // If Klaviyo cannot be asked, the restore is not held back: undo must stay available.
+    try {
+      const connection = await getConnection(db, session.shop);
+      if (connection?.status === "connected") {
+        const client = createKlaviyoClient({ db, env }, session.shop, { subrequestBudget: 40 });
+        const jobs = await confirmRunJobs(db, client, runId, 35);
+        if (jobs && !jobs.done) return { error: "klaviyo_still_processing" };
+        if (!jobs) {
+          const detail = await loadRunDetail(session.shop, runId);
+          if (detail?.run.finishedAt && Date.now() - Date.parse(detail.run.finishedAt) < 10 * 60_000) return { error: "klaviyo_still_processing" };
+        }
+      }
+    } catch {
+      // See above.
+    }
     const result = await startUndoRun({
       shop: session.shop,
       runId,
@@ -56,6 +74,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 const ERRORS: Record<string, string> = {
   klaviyo_not_connected: "Klaviyo is not connected. Reconnect it from the home page.",
   klaviyo_unavailable: "Klaviyo could not be reached. Please try again.",
+  klaviyo_still_processing: "Klaviyo is still applying this cleanup. Try the restore again in a minute or two.",
   nothing_to_restore: "There is nothing left to restore from this cleanup.",
   undo_in_progress: "A restore of this cleanup is already in progress.",
   still_running: "This cleanup is still running. You can restore it once it has finished.",
