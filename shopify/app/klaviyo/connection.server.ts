@@ -5,7 +5,7 @@ import * as schema from "../db/schema";
 import { getAccount, getProfilesUsage } from "./api";
 import { KlaviyoClient, type AccessTokenProvider } from "./client";
 import { KLAVIYO_REQUIRED_SCOPES, KLAVIYO_REVISION } from "./config";
-import { KlaviyoConnectionError, KlaviyoOAuthError } from "./errors";
+import { KlaviyoConnectionError, KlaviyoError, KlaviyoOAuthError } from "./errors";
 import {
   exchangeCode,
   missingScopes,
@@ -164,12 +164,20 @@ export async function completeAuthorization(
     if (missingScopes(tokens.scope, KLAVIYO_REQUIRED_SCOPES).length > 0) {
       throw new KlaviyoOAuthError("klaviyo_oauth_missing_scopes");
     }
-    const client = new KlaviyoClient({
-      getAccessToken: async () => tokens.accessToken,
-      fetch: deps.fetch,
-      sleep: deps.sleep,
-    });
-    const account = await getAccount(client);
+    // Connecting happens while the merchant waits, inside one request: short waits, and a failure that names
+    // what Klaviyo answered. (Seen on 2026-11-25: this first call failed three times in a row with a retryable
+    // error on a fresh token, and the slow retries used up the whole request.)
+    const newClient = () =>
+      new KlaviyoClient({ getAccessToken: async () => tokens.accessToken, fetch: deps.fetch, sleep: deps.sleep, maxWaitMs: 5_000 });
+    const client = newClient();
+    let account;
+    try {
+      account = await getAccount(client);
+    } catch (first) {
+      if (!(first instanceof KlaviyoError) || !first.retryable) throw first;
+      // Second try with the plainest form of the request and a fresh pacing budget.
+      account = await getAccount(newClient(), { allFields: true });
+    }
     // Billing usage is optional information for the audit and the report. A
     // missing `usage:read` scope, a free plan or a failing endpoint must not
     // stop the merchant from connecting.

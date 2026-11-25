@@ -112,6 +112,8 @@ export class KlaviyoClient {
     let waited = 0;
     let refreshed = false;
     let forceRefresh = false;
+    /** The last failure Klaviyo (or the network) gave us; reported instead of a local wait that only followed from it. */
+    let lastFailure: KlaviyoApiError | null = null;
 
     const wait = async (ms: number, onTooLong: () => KlaviyoApiError) => {
       if (waited + ms > this.maxWaitMs) throw onTooLong();
@@ -121,7 +123,7 @@ export class KlaviyoClient {
 
     for (let attempt = 1; ; attempt++) {
       for (let pause = bucket.tryTake(); pause > 0; pause = bucket.tryTake()) {
-        await wait(pause, () => new KlaviyoApiError("klaviyo_rate_limited_locally", { retryable: true, retryAfterMs: pause }));
+        await wait(pause, () => lastFailure ?? new KlaviyoApiError("klaviyo_rate_limited_locally", { retryable: true, retryAfterMs: pause }));
       }
       if (this.sent >= this.budget) {
         throw new KlaviyoApiError("klaviyo_subrequest_budget_exhausted", { retryable: true });
@@ -149,6 +151,7 @@ export class KlaviyoClient {
       } catch {
         // Transport errors can quote the URL (which may hold ids); only a code survives.
         const error = new KlaviyoApiError("klaviyo_network_error", { retryable: true });
+        lastFailure = error;
         if (last) throw error;
         await wait(retryDelayMs(attempt, { baseMs: 500, maxMs: 8000, random: this.random }), () => error);
         continue;
@@ -157,6 +160,7 @@ export class KlaviyoClient {
       if (res.ok) return readJson<T>(res);
 
       const error = await apiError(res);
+      lastFailure = error;
       if (res.status === 401 && !refreshed && !last) {
         // The stored token may have just expired or been replaced: get a fresh one, once.
         refreshed = true;

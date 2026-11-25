@@ -342,6 +342,25 @@ describe("connecting and disconnecting", () => {
     expect(infoB).toMatchObject({ status: "connected", profilesUsageTypeId: null });
   });
 
+  it("when the first account read keeps failing, tries once more in its plainest form; if that fails too, reports Klaviyo's own error", async () => {
+    const flaky = fresh();
+    // The sparse-fieldset form fails; the plain form works.
+    flaky.fake.responders.push((req) => (req.url.pathname === "/api/accounts" && req.url.search.includes("fields") ? new Response(JSON.stringify({ errors: [{ code: "server_error" }] }), { status: 503 }) : null));
+    const shopA = `connect-${crypto.randomUUID().slice(0, 8)}.myshopify.com`;
+    await db.insert(schema.shops).values({ shop: shopA });
+    const a = await consent(flaky.fake, shopA);
+    const info = await completeAuthorization(flaky.deps, { shop: shopA, code: a.code, codeVerifier: a.codeVerifier, redirectUri: REDIRECT });
+    expect(info).toMatchObject({ status: "connected", klaviyoAccountId: "ACC001" });
+
+    const down = fresh();
+    down.fake.responders.push((req) => (req.url.pathname === "/api/accounts" ? new Response(JSON.stringify({ errors: [{ code: "server_error" }] }), { status: 503 }) : null));
+    const shopB = `connect-${crypto.randomUUID().slice(0, 8)}.myshopify.com`;
+    await db.insert(schema.shops).values({ shop: shopB });
+    const b = await consent(down.fake, shopB);
+    await expect(completeAuthorization(down.deps, { shop: shopB, code: b.code, codeVerifier: b.codeVerifier, redirectUri: REDIRECT })).rejects.toMatchObject({ code: "klaviyo_503_server_error" });
+    expect(await getConnection(db, shopB)).toBeNull();
+  });
+
   it("refuses a grant that lacks a required scope, stores nothing and revokes the install", async () => {
     const { fake, deps } = fresh();
     fake.grantedScopes = KLAVIYO_SCOPES.filter((s) => s !== "subscriptions:write").join(" ");

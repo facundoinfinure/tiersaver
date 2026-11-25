@@ -63,7 +63,7 @@ export interface KlaviyoAccount {
 }
 
 /** GET /api/accounts — scope accounts:read. Returns the one account the token belongs to. */
-export async function getAccount(client: KlaviyoClient): Promise<KlaviyoAccount> {
+export async function getAccount(client: KlaviyoClient, opts: { allFields?: boolean } = {}): Promise<KlaviyoAccount> {
   const body = await client.request<
     Collection<{
       test_account?: boolean;
@@ -73,7 +73,8 @@ export async function getAccount(client: KlaviyoClient): Promise<KlaviyoAccount>
   >({
     endpoint: "accounts",
     path: "/api/accounts",
-    query: { "fields[account]": ["test_account", "timezone", "contact_information.organization_name"] },
+    // `allFields` drops the sparse fieldset: the plainest form of the request, used as a fallback when connecting.
+    query: opts.allFields ? {} : { "fields[account]": ["test_account", "timezone", "contact_information.organization_name"] },
   });
   const account = body?.data?.[0];
   if (!account?.id) throw new KlaviyoApiError("klaviyo_account_missing");

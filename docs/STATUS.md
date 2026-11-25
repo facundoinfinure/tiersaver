@@ -384,3 +384,9 @@ Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado 
 7. **Workers Paid** (US$ 5/mes, decidido "recién al desplegar la beta"): con Workers Free una corrida admite ~100.000 perfiles y un scan 50.000 miembros. Es un gasto: freno.
 8. **Ficha y envío a revisión de Shopify**, y la revisión de la app OAuth en Klaviyo: frenos.
 9. Reporte mensual, y decidir si se muestra la estimación de plan de Klaviyo.
+
+**Segundo y tercer intento de "Connect Klaviyo" (Facundo, 18:45 y 18:46 UTC): fallaron de otra forma**
+- La corrección del paso final funcionó: el código se canjeó una sola vez y las recargas esperaron ese resultado (por eso la pantalla quedó en blanco unos 20 segundos).
+- Falló lo siguiente: `klaviyo_rate_limited_locally`. El canje anduvo, pero **la primera llamada a `GET /api/accounts` con el token nuevo falló tres veces seguidas con un error reintentable** (429 sin `Retry-After`, 5xx o error de red; el código guardado era el de la espera local, no el de Klaviyo), y los reintentos espaciados a 8 segundos se comieron el request. Con la clave privada esa misma llamada funciona. **Causa todavía desconocida.**
+- Cambios para el próximo intento: el cliente informa la última falla real de Klaviyo en lugar de la espera local; al conectar, esperas cortas (5 s) y un segundo intento sin `fields[account]`; si igual falla, `events_log` guarda el código real (`klaviyo_<status>_<code>` o `klaviyo_network_error`).
+- No hay conexión guardada. Cada intento fallido revoca en Klaviyo el permiso recién emitido.
