@@ -88,6 +88,23 @@ export const klaviyoConnections = sqliteTable("klaviyo_connections", {
   updatedAt: timestamp("updated_at").notNull().default(now),
 });
 
+export const OAUTH_ATTEMPT_STATUSES = ["pending", "connected", "failed"] as const;
+
+/**
+ * One row per Klaviyo authorization that reached the embedded "finish" step,
+ * keyed by the SHA-256 of its `state`. Makes the single-use code exchange
+ * idempotent across the repeated loads of that step. No code, token or state is stored.
+ */
+export const klaviyoOauthAttempts = sqliteTable("klaviyo_oauth_attempts", {
+  stateHash: text("state_hash").primaryKey(),
+  shop: text("shop")
+    .notNull()
+    .references(() => shops.shop, { onDelete: "cascade" }),
+  status: text("status", { enum: OAUTH_ATTEMPT_STATUSES }).notNull().default("pending"),
+  errorCode: text("error_code"),
+  createdAt: timestamp("created_at").notNull().default(now),
+});
+
 export const RUN_MODES = ["approval", "automatic"] as const;
 export const BILLING_DAY_SOURCES = ["klaviyo_api", "merchant"] as const;
 export const KLAVIYO_PLANS = ["email", "marketing"] as const;

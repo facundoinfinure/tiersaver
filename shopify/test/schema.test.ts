@@ -15,6 +15,7 @@ describe("migrations match the Drizzle schema", () => {
         "audits",
         "events_log",
         "klaviyo_connections",
+        "klaviyo_oauth_attempts",
         "purchase_hashes",
         "run_profiles",
         "runs",

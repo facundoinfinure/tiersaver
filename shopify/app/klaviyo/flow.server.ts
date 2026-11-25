@@ -1,7 +1,7 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import type * as schema from "../db/schema";
 import { KLAVIYO_OAUTH_CALLBACK_PATH } from "./config";
-import { completeAuthorization, type ConnectionInfo, type KlaviyoSecrets } from "./connection.server";
+import { completeAuthorization, getConnection, type ConnectionInfo, type KlaviyoSecrets } from "./connection.server";
 import { KlaviyoError } from "./errors";
 import {
   OAUTH_STATE_TTL_MS,
@@ -152,31 +152,98 @@ export async function handleKlaviyoCallback(request: Request, env: FlowEnv, now 
 
 export type FinishResult = { ok: true; connection: ConnectionInfo } | { ok: false; code: string };
 
+/** How long a later load of the finish step waits for the load that is doing the exchange. */
+const FINISH_WAIT_MS = 12_000;
+const FINISH_POLL_MS = 300;
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /**
  * Step 3. `shop` MUST come from the Shopify session of the request
  * (`authenticate.admin`), never from the URL. The `shops` row must exist.
  * Errors come back as a code (no tokens, no free text) for the page to explain.
+ *
+ * Shopify's admin loads this step more than once and cancels the first load
+ * (seen on 2026-11-25: cancelled 300 ms in, then loaded twice more), while
+ * Klaviyo accepts an authorization code exactly once. So:
+ * - the first request to claim the state does the exchange, inside
+ *   `waitUntil`, so it finishes and is recorded even if its request is cancelled;
+ * - every other request with the same state waits for that result and returns
+ *   it. The code is never sent to Klaviyo twice, and a state is single-use.
+ *
+ * `onSettled` runs once, with the claiming request, when the exchange ends
+ * (for the audit trail).
  */
 export async function finishKlaviyoAuthorization(
-  deps: { db: DrizzleD1Database<typeof schema>; env: FlowEnv; fetch?: typeof fetch; now?: () => Date },
+  deps: {
+    db: DrizzleD1Database<typeof schema>;
+    env: FlowEnv;
+    fetch?: typeof fetch;
+    now?: () => Date;
+    waitUntil?: (work: Promise<unknown>) => void;
+    sleep?: (ms: number) => Promise<void>;
+    onSettled?: (result: FinishResult) => Promise<void>;
+  },
   args: { shop: string; code: string | null; state: string | null },
 ): Promise<FinishResult> {
+  let codeVerifier: string;
   try {
-    const { codeVerifier } = await verifyAuthorizationStateForShop({
+    ({ codeVerifier } = await verifyAuthorizationStateForShop({
       state: args.state,
       shop: args.shop,
       stateSecret: deps.env.TOKEN_ENCRYPTION_KEY,
       now: deps.now?.(),
-    });
-    if (!args.code) return { ok: false, code: "klaviyo_oauth_code_missing" };
-    const connection = await completeAuthorization(deps, {
-      shop: args.shop,
-      code: args.code,
-      codeVerifier,
-      redirectUri: redirectUri(deps.env),
-    });
-    return { ok: true, connection };
+    }));
   } catch (error) {
     return { ok: false, code: error instanceof KlaviyoError ? error.code : "klaviyo_oauth_failed" };
   }
+  if (!args.code) return { ok: false, code: "klaviyo_oauth_code_missing" };
+  const code = args.code;
+
+  const d1 = (deps.db as DrizzleD1Database<typeof schema> & { $client: D1Database }).$client;
+  const stateHash = await sha256Hex(args.state ?? "");
+  const nowMs = (deps.now?.() ?? new Date()).getTime();
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
+  const work = (async (): Promise<FinishResult> => {
+    const [, claim] = await d1.batch([
+      d1.prepare("DELETE FROM klaviyo_oauth_attempts WHERE created_at < ?1").bind(nowMs - 24 * 60 * 60 * 1000),
+      d1.prepare("INSERT INTO klaviyo_oauth_attempts (state_hash, shop, status, created_at) VALUES (?1, ?2, 'pending', ?3) ON CONFLICT (state_hash) DO NOTHING").bind(stateHash, args.shop, nowMs),
+    ]);
+
+    if (claim?.meta.changes === 1) {
+      let result: FinishResult;
+      try {
+        const connection = await completeAuthorization(deps, { shop: args.shop, code, codeVerifier, redirectUri: redirectUri(deps.env) });
+        result = { ok: true, connection };
+      } catch (error) {
+        result = { ok: false, code: error instanceof KlaviyoError ? error.code : "klaviyo_oauth_failed" };
+      }
+      await d1
+        .prepare("UPDATE klaviyo_oauth_attempts SET status = ?1, error_code = ?2 WHERE state_hash = ?3")
+        .bind(result.ok ? "connected" : "failed", result.ok ? null : result.code, stateHash)
+        .run();
+      await deps.onSettled?.(result).catch(() => undefined);
+      return result;
+    }
+
+    // Another load of this step holds the claim: wait for what it decides.
+    for (let waited = 0; ; waited += FINISH_POLL_MS) {
+      const row = await d1.prepare("SELECT shop, status, error_code FROM klaviyo_oauth_attempts WHERE state_hash = ?1").bind(stateHash).first<{ shop: string; status: string; error_code: string | null }>();
+      if (!row || row.shop !== args.shop) return { ok: false, code: "klaviyo_oauth_failed" };
+      if (row.status === "failed") return { ok: false, code: row.error_code ?? "klaviyo_oauth_failed" };
+      if (row.status === "connected") {
+        const connection = await getConnection(deps.db, args.shop);
+        return connection ? { ok: true, connection } : { ok: false, code: "klaviyo_oauth_failed" };
+      }
+      if (waited >= FINISH_WAIT_MS) return { ok: false, code: "klaviyo_oauth_in_progress" };
+      await sleep(FINISH_POLL_MS);
+    }
+  })();
+  // Keeps the exchange alive when the browser drops this request.
+  deps.waitUntil?.(work.catch(() => undefined));
+  return work;
 }

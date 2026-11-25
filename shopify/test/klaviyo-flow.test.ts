@@ -122,10 +122,48 @@ describe("connecting Klaviyo, end to end", () => {
     expect(result).toMatchObject({ ok: true, connection: { shop, status: "connected", klaviyoAccountId: fake.accountId } });
     expect(await getConnection(db, shop)).toMatchObject({ status: "connected" });
 
-    // The code is single use: a reload of the finish URL fails and leaves the connection in place.
+    // The code is single use at Klaviyo. A reload of the finish URL returns the recorded result without a second exchange.
+    const exchanges = () => fake.requests.filter((r) => r.url.pathname === "/oauth/token" && r.body.includes("authorization_code")).length;
+    expect(exchanges()).toBe(1);
     const again = await finishKlaviyoAuthorization({ db, env, fetch: fake.fetch, now: () => T0 }, { shop, code, state });
-    expect(again).toEqual({ ok: false, code: "klaviyo_oauth_invalid_grant" });
+    expect(again).toMatchObject({ ok: true, connection: { shop, status: "connected" } });
+    expect(exchanges()).toBe(1);
     expect(await getConnection(db, shop)).toMatchObject({ status: "connected" });
+  });
+
+  it("finish loaded several times at once (Shopify cancels and reloads it) exchanges the code once and every load gets the result", async () => {
+    const { fake, env } = setup();
+    const shop = await newShop();
+    const { code, state } = await startAndConsent(fake, env, shop);
+    fake.tokenDelayMs = 50;
+    const settled: boolean[] = [];
+    const kept: Promise<unknown>[] = [];
+    const load = () =>
+      finishKlaviyoAuthorization(
+        { db, env, fetch: fake.fetch, now: () => T0, sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 20))), waitUntil: (w) => kept.push(w), onSettled: async (r) => void settled.push(r.ok) },
+        { shop, code, state },
+      );
+    const results = await Promise.all([load(), load(), load()]);
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(fake.requests.filter((r) => r.url.pathname === "/oauth/token" && r.body.includes("authorization_code"))).toHaveLength(1);
+    expect(settled).toEqual([true]); // logged once
+    expect(kept).toHaveLength(3); // each load keeps its work alive past a cancelled request
+    // Nothing secret is kept about the attempt.
+    const rows = JSON.stringify(await db.query.klaviyoOauthAttempts.findMany({ where: (a, { eq }) => eq(a.shop, shop) }));
+    expect(rows).not.toContain(code);
+    expect(rows).not.toContain(state);
+  });
+
+  it("a failed exchange is recorded, and reloads report the same failure without retrying the code", async () => {
+    const { fake, env } = setup();
+    const shop = await newShop();
+    const { state } = await startAndConsent(fake, env, shop);
+    const first = await finishKlaviyoAuthorization({ db, env, fetch: fake.fetch, now: () => T0 }, { shop, code: "not-the-code", state });
+    expect(first).toEqual({ ok: false, code: "klaviyo_oauth_invalid_grant" });
+    const before = fake.requests.length;
+    expect(await finishKlaviyoAuthorization({ db, env, fetch: fake.fetch, now: () => T0 }, { shop, code: "not-the-code", state })).toEqual({ ok: false, code: "klaviyo_oauth_invalid_grant" });
+    expect(fake.requests.length).toBe(before);
+    expect(await getConnection(db, shop)).toBeNull();
   });
 
   it("a state issued for one shop cannot connect another shop (someone else's link)", async () => {
