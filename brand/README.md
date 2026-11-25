@@ -1,6 +1,6 @@
 # brand/ · Marca de TierSaver (Fase 2)
 
-Estado: **Facundo eligió el logo B (Lower Step) el 2026-11-25.** Los mensajes se aprobaron ese día y después se revisaron por el análisis de políticas (`docs/12-CUMPLIMIENTO-KLAVIYO.md`): `messaging.md` espera una nueva aprobación. Los archivos a usar están en `logo/final/` (copia de `option-b/`). Las carpetas `option-a/` y `option-c/` y `options.png` quedan como archivo de la decisión. Pendiente: búsqueda de marcas parecidas y chequeo de las reglas vigentes de ícono del App Store.
+Estado: **Facundo eligió el logo B (Lower Step) el 2026-11-25.** Los mensajes, ya revisados por el análisis de políticas (`docs/12-CUMPLIMIENTO-KLAVIYO.md`), quedaron aprobados ese mismo día. Los archivos a usar están en `logo/final/` (copia de `option-b/`). Las carpetas `option-a/` y `option-c/` y `options.png` quedan como archivo de la decisión. Pendiente: búsqueda de marcas parecidas y chequeo de las reglas vigentes de ícono del App Store.
 
 Fuente de verdad: `docs/03-MARCA.md`. Si algo de acá lo contradice, gana ese documento.
 
@@ -12,7 +12,7 @@ Fuente de verdad: `docs/03-MARCA.md`. Si algo de acá lo contradice, gana ese do
 | `logo/option-a/`, `option-b/`, `option-c/` | Una carpeta por opción, con los mismos archivos en cada una (ver abajo). |
 | `tokens.css` | Tokens de color, tipografía y radios como custom properties de CSS. |
 | `tokens.json` | Los mismos tokens en JSON, con el uso de cada uno. |
-| `messaging.md` | Guía de mensajes en inglés (titular, subtítulo, pruebas, CTA, voz, objeciones, palabras prohibidas). Revisada el 2026-11-25; pendiente de nueva aprobación. |
+| `messaging.md` | Guía de mensajes en inglés (titular, subtítulo, pruebas, CTA, voz, objeciones, palabras prohibidas). Revisada y aprobada el 2026-11-25. |
 
 Archivos dentro de cada `logo/option-*/`:
 

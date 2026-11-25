@@ -8,7 +8,7 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 | --- | --- | --- |
 | 0 · Base | Desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo; pasos en `13-INSTRUCTIVO-CUENTAS.md`) | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
-| 2 · Marca | Logo B elegido y aplicado. Mensajes revisados tras el análisis de políticas: esperan nueva aprobación | 2026-11-25 |
+| 2 · Marca | Cerrada: logo B aplicado, mensajes aprobados, descriptor del nombre decidido. Queda la versión corta del nombre para la ficha | 2026-11-25 |
 | 3 · Construcción | En curso: capa de Klaviyo, ingesta de pedidos, motor de corridas y gateway hechos y probados offline. Faltan rutas de OAuth, orquestación de auditoría y simulación, interfaz, programación, deshacer y cobro | 2026-11-25 |
 | 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
 | 5 · Lanzamiento | No iniciada | |
@@ -193,3 +193,10 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - La auditoría todavía guarda una estimación de plan de Klaviyo (`savings.ts`): falta decidir si la app la muestra.
 - El cobro no está conectado a Shopify.
 - `docs/06-TEARDOWN-REA.md` y `docs/09-FUENTES.md` conservan afirmaciones viejas (competidores gratis, ticket promedio).
+
+### 2026-11-25 (tercera tanda de decisiones de Facundo)
+
+- `brand/messaging.md` (versión revisada tras el análisis de políticas): aprobada.
+- Dominio de los mails ficticios del seed: `seed.tiersaver.com`.
+- Descriptor del nombre: "TierSaver: List Hygiene for Klaviyo". Aplicado en documentos y guía de mensajes. **No entra en el campo de nombre de la ficha de Shopify** (35 caracteres; el límite anotado es 30, dato de extracto a confirmar): `shopify.app.toml` y el borrador de ficha siguen con "TierSaver for Klaviyo" hasta que Facundo elija la versión corta (tarea 18).
+- Siguen abiertos: cortes de precio (25.000 / 75.000 / 150.000), cuentas de Shopify y Klaviyo, datos legales del sitio.

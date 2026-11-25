@@ -1,4 +1,4 @@
-# PRD · TierSaver for Klaviyo (MVP)
+# PRD · TierSaver: List Hygiene for Klaviyo (MVP)
 
 Actualizado el 2026-11-25 con las cuatro decisiones de Facundo posteriores a `12-CUMPLIMIENTO-KLAVIYO.md`: precio fijo, sin reactivación automática, criterios de Klaviyo por defecto y reglas de texto obligatorias. Las reglas de producto de la sección 3.1 de ese documento valen para todo lo que sigue.
 

@@ -27,7 +27,7 @@ Para saber antes de empezar:
 
 ### A3. Crear la app
 
-1. Dev Dashboard → **Apps** → **Create app** → **Start from Dev Dashboard** → nombre `TierSaver for Klaviyo` → **Create**.
+1. Dev Dashboard → **Apps** → **Create app** → **Start from Dev Dashboard** → nombre `TierSaver for Klaviyo` (provisorio; se puede cambiar después, ver `10-TAREAS-HUMANAS.md`, tarea 18) → **Create**.
 2. En la app → **Settings**: copiar **Client ID** y **Client secret**.
 3. En **Settings** → **App CLI automation token** → **Manage** → **Add service account**: nombre `TierSaver deploy`, vencimiento 90 días, permiso **App development** sobre esta app → **Add service account**. Copiar el token (se muestra una sola vez).
 4. Entregar a la sesión: el Client ID y el dominio de la tienda por chat (no son secretos); el Client secret y el token del service account como variables del entorno "tiersaver" (`SHOPIFY_API_SECRET` y `SHOPIFY_SERVICE_ACCOUNT_TOKEN`) y abrir una sesión nueva.
@@ -67,9 +67,9 @@ Entonces sembrar 3.000 perfiles en la cuenta gratis solo bloquea los envíos, qu
 
 Klaviyo descarta en silencio eventos (y, según su FAQ, también perfiles) con direcciones `@example.com`, `@test.com` "o similares". Hace falta un dominio propio que no reciba correo.
 
-Propuesta: `seed.tiersaver.com`. No hace falta crear ningún registro DNS: alcanza con que **no exista** ningún registro `seed` (A, AAAA, CNAME, MX) ni un comodín `*` en la zona de tiersaver.com, y con no activar Email Routing para ese subdominio. Como la zona se muda de cuenta el 2026-12-05, hay que volver a mirarlo después de la mudanza.
+Decidido por Facundo el 2026-11-25: `seed.tiersaver.com`. No hace falta crear ningún registro DNS: alcanza con que **no exista** ningún registro `seed` (A, AAAA, CNAME, MX) ni un comodín `*` en la zona de tiersaver.com, y con no activar Email Routing para ese subdominio. Como la zona se muda de cuenta el 2026-12-05, hay que volver a mirarlo después de la mudanza.
 
-Lo único que necesita la sesión es tu visto bueno para usar `seed.tiersaver.com`.
+El seed se corre con `--email-domain seed.tiersaver.com`.
 
 ## No confirmado
 

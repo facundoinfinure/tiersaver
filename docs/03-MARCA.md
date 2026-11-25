@@ -3,13 +3,13 @@
 ## Nombre
 
 - Marca madre: **TierSaver**.
-- Producto: **TierSaver for Klaviyo**. "for Klaviyo" va al final para no usar la marca de un tercero como nombre propio. Confirmar las reglas de nombres en los requisitos vigentes del App Store y en las pautas de marca de Klaviyo.
+- Producto: **TierSaver: List Hygiene for Klaviyo** (descriptor decidido por Facundo el 2026-11-25; antes "TierSaver for Klaviyo"). "for Klaviyo" va al final para no usar la marca de un tercero como nombre propio. Confirmar las reglas de nombres en los requisitos vigentes del App Store y en las pautas de marca de Klaviyo.
 - Dominio: tiersaver.com.
 - Futuro: otras integraciones con precio por tramos llevan su propio apellido ("TierSaver for …").
 
 Cuidado: en el Shopify App Store "tier" suele leerse como descuento por volumen. El subtítulo de la ficha y el primer titular del sitio tienen que decir sin ambigüedad qué hace el producto: higiene de lista para Klaviyo. No encabezan con la factura de Klaviyo (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2).
 
-**Decisión abierta de Facundo, no aplicada:** el nombre "TierSaver" alude a bajar de tramo y va en sentido contrario al posicionamiento. Las opciones de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3, son: (1) mantener "TierSaver for Klaviyo" y asumirlo; (2) mantener la marca y cambiar el descriptor a "TierSaver: List Hygiene for Klaviyo"; (3) cambiar la marca por una de higiene. Hasta que decida, el nombre sigue siendo "TierSaver for Klaviyo".
+**Decidido el 2026-11-25:** se mantiene la marca TierSaver y el descriptor pasa a "TierSaver: List Hygiene for Klaviyo" (opción 2 de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3). Queda abierto solo el campo de nombre de la ficha de Shopify, que admite 30 caracteres y este nombre tiene 35: ver `10-TAREAS-HUMANAS.md`, tarea 18.
 
 Uso de la marca de Klaviyo: "Klaviyo" solo como texto descriptivo de compatibilidad. Sin su logo, tipografía ni colores, y sin "official", "certified", "recommended by" ni "partner".
 

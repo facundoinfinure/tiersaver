@@ -19,7 +19,7 @@ App de Shopify de higiene de lista para Klaviyo: suprime, con simulación y apro
 
 | Tema | Decisión |
 | --- | --- |
-| Nombre | TierSaver. En la ficha: "TierSaver for Klaviyo". Pensado para sumar otras herramientas con precio por tramos más adelante. El descriptor está abierto (opciones en `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3): hasta que Facundo decida, no se cambia |
+| Nombre | TierSaver. Nombre de producto: "TierSaver: List Hygiene for Klaviyo" (descriptor decidido el 2026-11-25; antes "TierSaver for Klaviyo"). Pensado para sumar otras herramientas más adelante. El campo de nombre de la ficha de Shopify admite 30 caracteres y este tiene 35: la versión corta para ese campo está abierta |
 | Dominio | tiersaver.com, registrado en Cloudflare |
 | Marca | Independiente |
 | Posicionamiento | Higiene de lista automática para Klaviyo. El efecto en el plan de Klaviyo se menciona solo como hecho citado de la ayuda de Klaviyo y en segundo plano; no se venden ahorros, cifras ni garantías, ni el momento de la corrida respecto de la facturación. Las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2, son obligatorias desde el 2026-11-25 |
