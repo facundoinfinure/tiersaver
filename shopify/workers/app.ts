@@ -20,4 +20,33 @@ export default {
   fetch(request, env, ctx) {
     return requestHandler(request, { cloudflare: { env, ctx } });
   },
+  // Hourly Cron Trigger: the monthly schedule and open charges. Never suppresses anything by itself.
+  scheduled(_controller, env, ctx) {
+    ctx.waitUntil(
+      (async () => {
+        const [{ drizzle }, schema, { runScheduleTick }, { startScan }, { runsWithOpenCharges, settleRunCharge }, { offlineAdminGraphql }] = await Promise.all([
+          import("drizzle-orm/d1"),
+          import("../app/db/schema"),
+          import("../app/schedule/schedule"),
+          import("../app/scans/start.server"),
+          import("../app/billing/billing"),
+          import("../app/billing/billing.server"),
+        ]);
+        const db = drizzle(env.DB, { schema });
+        try {
+          const tick = await runScheduleTick({ db, startScan });
+          if (tick.due > 0) console.log(`schedule: ${tick.started.length} of ${tick.due} scans started`);
+        } catch (error) {
+          console.error(`schedule tick failed: ${error instanceof Error ? error.name : "error"}`);
+        }
+        try {
+          for (const open of await runsWithOpenCharges(db)) {
+            await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId);
+          }
+        } catch (error) {
+          console.error(`charge retry failed: ${error instanceof Error ? error.name : "error"}`);
+        }
+      })(),
+    );
+  },
 } satisfies ExportedHandler<Env>;

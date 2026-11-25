@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { db, schema } from "../db.server";
-import { createSuppressionRun, type CreateRunResult } from "./engine";
+import { createSuppressionRun, createUndoRun, type CreateRunResult, type CreateUndoResult } from "./engine";
 
 /**
  * Creates the run for an approved simulation and hands it to the Workflow.
@@ -15,6 +15,21 @@ export async function startSuppressionRun(args: {
   origin?: "manual" | "scheduled";
 }): Promise<CreateRunResult> {
   const created = await createSuppressionRun(db, args);
+  if (!created.ok) return created;
+
+  const instance = await env.SUPPRESSION_RUN.create({ id: created.runId, params: { runId: created.runId } });
+  await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, created.runId));
+  return created;
+}
+
+/** Creates the undo of a cleanup and hands it to the same Workflow. Not gated by SUPPRESSION_ENABLED. */
+export async function startUndoRun(args: {
+  shop: string;
+  runId: string;
+  createdBy: string;
+  confirmAfterRenewal?: boolean;
+}): Promise<CreateUndoResult> {
+  const created = await createUndoRun(db, args);
   if (!created.ok) return created;
 
   const instance = await env.SUPPRESSION_RUN.create({ id: created.runId, params: { runId: created.runId } });

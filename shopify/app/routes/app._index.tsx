@@ -164,6 +164,11 @@ function Audit({ audit, busy }: { audit: NonNullable<ReturnType<typeof useLoader
                 and nothing to charge.
               </s-paragraph>
             ) : null}
+            {result.candidates > 0 ? (
+              <s-button variant="primary" href="/app/simulation">
+                Review the {number(result.candidates)} profiles and approve
+              </s-button>
+            ) : null}
             <s-paragraph>
               {result.price
                 ? `TierSaver costs ${result.price} per month for a list of this size, charged only in a month when a cleanup suppresses profiles. The audit is free.`

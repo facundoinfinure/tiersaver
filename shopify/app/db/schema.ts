@@ -120,6 +120,8 @@ export const settings = sqliteTable("settings", {
   billingDay: integer("billing_day"),
   billingDaySource: text("billing_day_source", { enum: BILLING_DAY_SOURCES }),
   leadDays: integer("lead_days").notNull().default(5),
+  /** Monthly schedule on/off. Off by default: the merchant turns it on after seeing a cleanup work. */
+  scheduleEnabled: integer("schedule_enabled", { mode: "boolean" }).notNull().default(false),
   /** "approval" = every scheduled run waits for the merchant. "automatic" is an explicit opt-in. */
   mode: text("mode", { enum: RUN_MODES }).notNull().default("approval"),
   klaviyoPlan: text("klaviyo_plan", { enum: KLAVIYO_PLANS }),

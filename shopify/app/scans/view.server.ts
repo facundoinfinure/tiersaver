@@ -23,7 +23,7 @@ export interface AuditView {
   } | null;
 }
 
-const KEPT_LABELS: Record<ProtectionReason, string> = {
+export const KEPT_LABELS: Record<ProtectionReason, string> = {
   recent_purchase: "Purchased from your Shopify store",
   recent_click: "Clicked an email",
   recent_open: "Opened an email",

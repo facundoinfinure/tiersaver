@@ -41,6 +41,8 @@
   //   merchant's Klaviyo account is touched. Only the owner turns it on, as a var or with `wrangler secret put`.
   // - Secrets (`wrangler secret put`): SHOPIFY_API_KEY, SHOPIFY_API_SECRET, TOKEN_ENCRYPTION_KEY,
   //   KLAVIYO_CLIENT_ID, KLAVIYO_CLIENT_SECRET. Declared in app/secrets.d.ts.
+  // Hourly: monthly schedule (starts read-only scans) and retry of open charges. See workers/app.ts.
+  "triggers": { "crons": ["17 * * * *"] },
   "vars": {
     "SCOPES": "read_orders",
     // Id of the Klaviyo TEST account filled by scripts/seed-klaviyo. A scan reads seeded data (API-owned

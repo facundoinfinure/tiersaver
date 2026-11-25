@@ -2,6 +2,8 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloud
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../app/db/schema";
 import { executeRun, type RunOutcome, type StepConfig } from "../app/runs/engine";
+import { settleRunCharge } from "../app/billing/billing";
+import { offlineAdminGraphql } from "../app/billing/billing.server";
 import { createSuppressionGateway } from "../app/runs/gateway.server";
 
 /** Only the run id travels in the payload: Workflow payloads are persisted, so no personal data goes in. */
@@ -25,7 +27,7 @@ export class SuppressionRunWorkflow extends WorkflowEntrypoint<Env, SuppressionR
     const run = await db.query.runs.findFirst({ where: (r, { eq }) => eq(r.id, runId), columns: { shop: true } });
     const gateway = createSuppressionGateway(this.env, run?.shop ?? "");
 
-    return executeRun(
+    const outcome = await executeRun(
       {
         db,
         gateway,
@@ -36,5 +38,20 @@ export class SuppressionRunWorkflow extends WorkflowEntrypoint<Env, SuppressionR
       },
       runId,
     );
+
+    // TierSaver's own charge: only for a cleanup that suppressed profiles. A failure here never changes the
+    // outcome of the run; the charge stays open and the hourly cron tries again.
+    if (run?.shop && outcome.submitted > 0 && outcome.status !== "not_found") {
+      const shop = run.shop;
+      try {
+        await step.do("settle charge", { retries: { limit: 2, delay: "30 seconds", backoff: "exponential" }, timeout: "1 minute" }, async () => {
+          const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(shop) }, runId);
+          return result.status;
+        });
+      } catch {
+        // See above.
+      }
+    }
+    return outcome;
   }
 }

@@ -363,6 +363,18 @@ async function finalizeRun(
   else status = "completed";
 
   const error = args.runError ?? run.lastError ?? null;
+  if (run.kind === "undo" && run.undoOfRunId) {
+    // What the undo sent to Klaviyo is now restored: stamp the original rows. The scan reads this stamp
+    // (by email hash) to keep restored profiles out of every cleanup for `reactivationLockDays`.
+    await db.$client
+      .prepare(
+        `UPDATE run_profiles SET reactivated_at = ?1, updated_at = ?1
+         WHERE run_id = ?2 AND reactivated_at IS NULL
+           AND profile_id IN (SELECT profile_id FROM run_profiles WHERE run_id = ?3 AND status = 'submitted')`,
+      )
+      .bind(args.now.getTime(), run.undoOfRunId, runId)
+      .run();
+  }
   await db.batch([
     db
       .update(schema.runs)
@@ -391,4 +403,132 @@ async function finalizeRun(
   ]);
 
   return { runId, status, submitted, skipped, failed, untouched, error };
+}
+
+// ---------------------------------------------------------------------------
+// Undo
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a finished cleanup has already been through a Klaviyo plan renewal.
+ * "unknown" is treated like "yes" by the caller: the merchant is warned.
+ *
+ * Sources, best first: a billing period end reported by Klaviyo (stored with
+ * each audit), the billing day the merchant entered, and finally elapsed time
+ * (a monthly plan renews at least once in 31 days).
+ */
+export function renewalSince(
+  finishedAt: Date,
+  now: Date,
+  known: { periodEnds: readonly Date[]; billingDay: number | null },
+): "yes" | "no" | "unknown" {
+  const after = known.periodEnds.filter((d) => d.getTime() >= finishedAt.getTime()).sort((a, b) => a.getTime() - b.getTime());
+  if (after[0]) return after[0].getTime() <= now.getTime() ? "yes" : "no";
+  if (known.billingDay) {
+    const day = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    // First billing date strictly after the day the run finished.
+    const y = finishedAt.getUTCFullYear();
+    const m = finishedAt.getUTCMonth();
+    const inMonth = (yy: number, mm: number) => Date.UTC(yy, mm, Math.min(known.billingDay!, new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate()));
+    const next = inMonth(y, m) > day(finishedAt) ? inMonth(y, m) : inMonth(y, m + 1);
+    return next <= day(now) ? "yes" : "no";
+  }
+  if (now.getTime() - finishedAt.getTime() >= 31 * DAY_MS) return "yes";
+  return "unknown";
+}
+
+export type CreateUndoResult =
+  | { ok: true; runId: string; totalCount: number; batchCount: number }
+  | {
+      ok: false;
+      reason: "not_found" | "not_a_cleanup" | "still_running" | "nothing_to_restore" | "undo_in_progress" | "needs_renewal_confirmation";
+      renewal?: "yes" | "unknown";
+    };
+
+/**
+ * Creates the run that unsuppresses what a cleanup suppressed. Always
+ * available (product rule 3) and independent of SUPPRESSION_ENABLED.
+ *
+ * Guardrail 5 (docs/12-CUMPLIMIENTO-KLAVIYO.md 3.1): when the cleanup has
+ * already been counted in a plan renewal, or that cannot be ruled out, the
+ * caller must pass `confirmAfterRenewal` after showing the warning. Restored
+ * profiles stay out of every cleanup for `reactivationLockDays` (365).
+ */
+export async function createUndoRun(
+  db: Db,
+  args: { shop: string; runId: string; createdBy: string; confirmAfterRenewal?: boolean; undoRunId?: string; now?: Date },
+): Promise<CreateUndoResult> {
+  const now = args.now ?? new Date();
+  const nowMs = now.getTime();
+  const original = await db.query.runs.findFirst({ where: and(eq(schema.runs.id, args.runId), eq(schema.runs.shop, args.shop)) });
+  if (!original) return { ok: false, reason: "not_found" };
+  if (original.kind !== "suppress") return { ok: false, reason: "not_a_cleanup" };
+  if (!TERMINAL.includes(original.status)) return { ok: false, reason: "still_running" };
+
+  const open = await db.query.runs.findFirst({
+    where: and(eq(schema.runs.undoOfRunId, original.id), inArray(schema.runs.status, ["queued", "running"])),
+    columns: { id: true },
+  });
+  if (open) return { ok: false, reason: "undo_in_progress" };
+
+  const [restorable] = await db
+    .select({ n: sql<number>`COUNT(*)` })
+    .from(schema.runProfiles)
+    .where(and(eq(schema.runProfiles.runId, original.id), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
+  if (!restorable || restorable.n === 0) return { ok: false, reason: "nothing_to_restore" };
+
+  const [settingsRow, audits] = await Promise.all([
+    db.query.settings.findFirst({ where: eq(schema.settings.shop, args.shop), columns: { billingDay: true } }),
+    db.query.audits.findMany({ where: eq(schema.audits.shop, args.shop), columns: { periodEnd: true }, orderBy: (a, { desc }) => desc(a.createdAt), limit: 24 }),
+  ]);
+  const renewal = renewalSince(original.finishedAt ?? original.createdAt, now, {
+    periodEnds: audits.flatMap((a) => (a.periodEnd ? [a.periodEnd] : [])),
+    billingDay: settingsRow?.billingDay ?? null,
+  });
+  if (renewal !== "no" && !args.confirmAfterRenewal) return { ok: false, reason: "needs_renewal_confirmation", renewal };
+
+  const undoRunId = args.undoRunId ?? crypto.randomUUID();
+  const d1 = db.$client;
+  await d1.batch([
+    d1
+      .prepare(
+        `INSERT INTO runs (id, shop, kind, undo_of_run_id, origin, status, created_by, created_at)
+         SELECT ?1, shop, 'undo', id, 'manual', 'queued', ?2, ?3
+         FROM runs
+         WHERE id = ?4 AND shop = ?5 AND kind = 'suppress'
+           AND status IN ('completed', 'completed_with_errors', 'failed', 'cancelled')
+           AND NOT EXISTS (SELECT 1 FROM runs WHERE undo_of_run_id = ?4 AND status IN ('queued', 'running'))`,
+      )
+      .bind(undoRunId, args.createdBy, nowMs, original.id, args.shop),
+    d1
+      .prepare(
+        `INSERT INTO run_profiles (run_id, profile_id, shop, batch_index, reason, email_hash, status, updated_at)
+         SELECT ?1, profile_id, shop, (ROW_NUMBER() OVER (ORDER BY profile_id) - 1) / CAST(?2 AS INTEGER), reason, email_hash, 'pending', ?3
+         FROM run_profiles
+         WHERE run_id = ?4 AND status = 'submitted' AND reactivated_at IS NULL
+           AND EXISTS (SELECT 1 FROM runs WHERE id = ?1)`,
+      )
+      .bind(undoRunId, RUN_BATCH_SIZE, nowMs, original.id),
+    d1
+      .prepare(
+        `UPDATE runs SET
+           total_count = (SELECT COUNT(*) FROM run_profiles WHERE run_id = ?1),
+           batch_count = (SELECT COALESCE(MAX(batch_index) + 1, 0) FROM run_profiles WHERE run_id = ?1)
+         WHERE id = ?1`,
+      )
+      .bind(undoRunId),
+    d1
+      .prepare(
+        `INSERT INTO events_log (id, shop, at, actor, action, run_id, detail)
+         SELECT ?1, ?2, ?3, ?4, 'undo.created', ?5, json_object('undoOfRunId', ?6, 'renewal', ?7, 'confirmedAfterRenewal', json(?8))
+         WHERE EXISTS (SELECT 1 FROM runs WHERE id = ?5)`,
+      )
+      .bind(`run:${undoRunId}:created`, args.shop, nowMs, args.createdBy, undoRunId, original.id, renewal, args.confirmAfterRenewal ? "true" : "false"),
+  ]);
+
+  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, undoRunId) });
+  if (!run) return { ok: false, reason: "undo_in_progress" };
+  return { ok: true, runId: undoRunId, totalCount: run.totalCount, batchCount: run.batchCount };
 }
