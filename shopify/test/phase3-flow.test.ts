@@ -386,6 +386,25 @@ describe("charging a cleanup", () => {
     expect(admin.records).toHaveLength(1);
   });
 
+  it("is not charged when the whole cleanup was undone before the charge went out; an undo after the charge changes nothing", async () => {
+    const early = await finishedCleanup(3);
+    const admin = fakeAdmin();
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, early.runId)).status).toBe("estimated");
+    const undo = await createUndoRun(db, { shop: early.shop, runId: early.runId, createdBy: "user:1", confirmAfterRenewal: true });
+    if (!undo.ok) throw new Error(undo.reason);
+    await executeRun({ db, gateway: new FakeGateway(), step: new FakeSteps() }, undo.runId);
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, early.runId, CONFIRMED)).toEqual({ status: "not_charged", reason: "cleanup_undone" });
+    expect(admin.records).toHaveLength(0);
+
+    const late = await finishedCleanup(3);
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, late.runId, CONFIRMED)).status).toBe("charged");
+    const undoLate = await createUndoRun(db, { shop: late.shop, runId: late.runId, createdBy: "user:1", confirmAfterRenewal: true });
+    if (!undoLate.ok) throw new Error(undoLate.reason);
+    await executeRun({ db, gateway: new FakeGateway(), step: new FakeSteps() }, undoLate.runId);
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, late.runId, CONFIRMED)).status).toBe("charged");
+    expect(admin.records).toHaveLength(1);
+  });
+
   it("stays open and can be retried when Shopify has no subscription or rejects the record", async () => {
     const { runId } = await finishedCleanup(2);
     expect(await settleRunCharge({ db, graphql: fakeAdmin({ subscribed: false }).graphql }, runId, CONFIRMED)).toEqual({ status: "failed", error: "no_active_subscription" });

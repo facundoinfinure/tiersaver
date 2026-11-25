@@ -18,8 +18,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Without the read_all_orders scope Shopify only returns the last 60 days of orders. */
 export const DEFAULT_ORDER_HISTORY_DAYS = 60;
-/** With read_all_orders: enough to cover the largest purchase window a merchant can set (1,095 days). */
-export const FULL_ORDER_HISTORY_DAYS = 1095;
+/**
+ * With read_all_orders: the shop's whole order history (decided 2026-11-25).
+ * The default rule is "never purchased", which needs purchase data from before
+ * each profile was created; a fixed window would leave the oldest profiles,
+ * the most inactive ones, protected forever. Earlier than any Shopify store.
+ */
+export const FULL_ORDER_HISTORY_SINCE = new Date("2004-01-01T00:00:00Z");
 
 /** Orders per page. Shopify's maximum page size is 250. */
 export const ORDERS_PAGE_SIZE = 250;
@@ -121,8 +126,8 @@ export type AdminGraphql = <T>(query: string, variables: Record<string, unknown>
 
 /** How far back the backfill reads, given what Shopify lets the app see. */
 export function backfillSince(readAllOrders: boolean, now = new Date()): Date {
-  const days = readAllOrders ? FULL_ORDER_HISTORY_DAYS : DEFAULT_ORDER_HISTORY_DAYS;
-  return new Date(now.getTime() - days * DAY_MS);
+  if (readAllOrders) return FULL_ORDER_HISTORY_SINCE;
+  return new Date(now.getTime() - DEFAULT_ORDER_HISTORY_DAYS * DAY_MS);
 }
 
 /** Reads one page of orders processed since `since` and stores the hashed buyers. */

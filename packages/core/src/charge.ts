@@ -50,6 +50,8 @@ export type NoChargeReason =
   | "no_cleanup"
   | "already_charged_this_cycle"
   | "cap_reached"
+  /** The whole cleanup was undone before its charge went out: nothing stayed suppressed, nothing is charged. */
+  | "cleanup_undone"
   /** List larger than the public tiers: priced by agreement, never charged automatically. */
   | "above_price_tiers";
 

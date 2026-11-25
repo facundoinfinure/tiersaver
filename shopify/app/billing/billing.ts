@@ -1,5 +1,5 @@
 import { chargeIdempotencyKey, DEFAULT_FEE_POLICY, FLAT_PRICE_TIERS, formatUsd, quoteCharge } from "@tiersaver/core";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
 
@@ -234,6 +234,19 @@ export async function settleRunCharge(
       .set({ status: "not_charged", feeCents: 0, profilesSuppressed: 0, noChargeReason: "no_cleanup" })
       .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
     return { status: "not_charged", reason: "no_cleanup" };
+  }
+  // "No cleanup, no charge" also covers a cleanup that was undone in full before its charge went out
+  // (decided 2026-11-25). An undo after the charge does not refund it.
+  const [remaining] = await db
+    .select({ n: sql<number>`COUNT(*)` })
+    .from(schema.runProfiles)
+    .where(and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
+  if ((remaining?.n ?? 0) === 0) {
+    await db
+      .update(schema.usageCharges)
+      .set({ status: "not_charged", feeCents: 0, noChargeReason: "cleanup_undone" })
+      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
+    return { status: "not_charged", reason: "cleanup_undone" };
   }
   if (confirmed !== charge.profilesSuppressed) {
     await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed }).where(eq(schema.usageCharges.id, charge.id));

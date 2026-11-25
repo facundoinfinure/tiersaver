@@ -95,6 +95,7 @@ const RUN_ERRORS: Record<string, string> = {
 const NO_CHARGE: Record<string, string> = {
   no_cleanup: "Not charged: no profile was suppressed.",
   already_charged_this_cycle: "Not charged: a cleanup was already charged in the last 28 days.",
+  cleanup_undone: "Not charged: this cleanup was undone.",
   cap_reached: "Not charged: the monthly maximum was already reached.",
   above_price_tiers: "Not charged automatically: lists above 150,000 active profiles are priced by agreement.",
 };
