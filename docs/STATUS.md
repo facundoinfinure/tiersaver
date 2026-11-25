@@ -6,10 +6,10 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 | Fase | Estado | Fecha |
 | --- | --- | --- |
-| 0 · Base | En curso, frenada por decisiones (ver abajo) | 2026-11-25 |
+| 0 · Base | En curso: desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo) | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
-| 2 · Marca | No iniciada | |
-| 3 · Construcción | No iniciada (solo lógica de dominio en `packages/core`) | |
+| 2 · Marca | Borrador listo; espera que Facundo elija logo y apruebe mensajes | 2026-11-25 |
+| 3 · Construcción | No iniciada (lógica de dominio en `packages/core`; esquema, motor de corridas y Workflow en `shopify/`) | |
 | 4 · Sitio y soporte | No iniciada | |
 | 5 · Lanzamiento | No iniciada | |
 
@@ -67,7 +67,9 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 8. **Supabase free: 2 proyectos gratis en total** entre todas las organizaciones donde Facundo es Owner/Admin; ya están ocupados por dos proyectos existentes.
 9. **Klaviyo tiene dos planes pagos** (Email y Marketing); el paquete solo contemplaba Email. Los ejemplos del paquete se confirman con precios oficiales: 12.500 → 10.000 ahorra US$ 125; 50.000 → 20.000 ahorra US$ 345.
 10. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
-11. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
+11. Rama de trabajo: cada sesión solo puede empujar a su propia rama (`claude/gallant-knuth-51pv2e`, después `claude/practical-brown-zm2uss`), no a ramas por fase.
+12. **Workflows: el plan gratis admite 1.024 pasos por instancia** (10.000 en Workers Paid, configurable hasta 25.000). Con un paso por lote de 100, una corrida de más de ~100.000 perfiles necesita Workers Paid (developers.cloudflare.com/workflows/reference/limits, leído el 2026-11-25).
+13. **D1 admite 100 parámetros por consulta**: las consultas por lote filtran por `run_id` + `batch_index`, no por lista de IDs.
 
 ## Decisiones de Facundo (2026-11-25)
 
@@ -100,3 +102,37 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - Deploy bloqueado por el entorno: el proxy de la sesión reemplaza el header `Authorization` en todo api.cloudflare.com, y la subida de assets de wrangler usa su propio JWT en ese header (401). Solución: pasar el token de *network secret* a variable de entorno `CLOUDFLARE_API_TOKEN` del entorno "tiersaver".
 - Recordatorio programado para el 2026-12-05 09:00 (Buenos Aires) para mover el dominio.
 
+
+### 2026-11-25 (segunda sesión, rama `claude/practical-brown-zm2uss`)
+
+**Primer deploy (hecho y verificado)**
+- Token de Cloudflare verificado sin imprimirlo (53 caracteres, prefijo `cfut_`, `wrangler whoami` ve la cuenta TierSaver).
+- Worker `tiersaver-app` desplegado en la cuenta TierSaver: https://tiersaver-app.tiersaver.workers.dev
+- Secretos cargados con `wrangler secret bulk` por stdin: `TOKEN_ENCRYPTION_KEY` (32 bytes aleatorios, no guardado en ningún lado), `SHOPIFY_API_KEY` y `SHOPIFY_API_SECRET` **provisorios** (aleatorios; hay que reemplazarlos cuando exista la app de Shopify).
+- Host `tiersaver-app.tiersaver.workers.dev` agregado a la red del entorno "tiersaver".
+- Smoke test contra la URL real: 8 de 8, dos veces (antes y después de sumar el Workflow). Sin errores 1102 de CPU: **el plan Workers Free alcanza por ahora**; no se contrató nada.
+- Para correr el smoke desde la sesión hay que usar `NODE_USE_ENV_PROXY=1` (el `fetch` de Node no usa el proxy por defecto).
+
+**Esquema completo de D1 (hecho y verificado)**
+- `shopify/app/db/schema.ts` y migración `shopify/drizzle/0001_domain.sql`, aplicada en local y en la D1 remota: `shops`, `klaviyo_connections`, `settings`, `audits`, `simulations`, `simulation_candidates`, `runs`, `run_profiles`, `purchase_hashes`, `usage_charges`, `events_log`.
+- Se agregó `simulation_candidates` (no estaba en la lista): guarda el conjunto exacto de perfiles que la simulación suprimiría, para que la corrida ejecute eso y nada más.
+- No se guardan mails: los perfiles se identifican por ID de Klaviyo y el mail se resuelve contra Klaviyo en el momento de cada lote (a implementar en Fase 3). Para reactivación y cruce con pedidos, solo SHA-256.
+- Reglas de producto en la base: una corrida de supresión no puede existir sin simulación (CHECK); una simulación respalda una sola corrida (índice único); aprobación exige aprobador; umbrales por debajo de los mínimos de `RULE_LIMITS` son rechazados; sin ahorro facturable no hay cargo; un cargo por tienda por ciclo de Klaviyo.
+- Todo cuelga de `shops` con borrado en cascada. Webhooks: `shop/redact` borra todo; `customers/redact` borra los hashes del cliente; `app/uninstalled` borra tokens al instante y deja el historial hasta `shop/redact`.
+
+**Esqueleto del Workflow (hecho y verificado, sin Klaviyo real)**
+- `shopify/app/runs/engine.ts`: `createSuppressionRun` (compuerta de simulación en una sola transacción atómica, además del chequeo en memoria) y `executeRun` (un paso por lote de hasta 100, reanudable).
+- `shopify/workers/suppression-run.ts`: `SuppressionRunWorkflow`, desplegado como `tiersaver-suppression-run`. El ID de instancia es el ID de la corrida, así que no puede haber dos ejecuciones de la misma.
+- `shopify/app/runs/gateway.server.ts`: el gateway de Klaviyo es un stub que rechaza todo lote (error no reintentable). Hoy ninguna ruta crea corridas y, si alguna arrancara, termina en `failed` sin tocar a nadie.
+- Política ante fallas: si un lote agota reintentos, la corrida se detiene y el resto queda sin tocar.
+- Pruebas (`npm test -w @tiersaver/shopify`, 57, en `workerd` con D1 local y el motor real de Workflows): esquema = migraciones, compuerta (no aprobada, vencida, reemplazada, otra tienda, concurrencia), corte a mitad de corrida con y sin estado del Workflow, lote que muere después de llegar a Klaviyo, reintentos, cancelación, privacidad.
+
+**Fase 2 · Marca (borrador)**
+- `brand/`: tres opciones de logo (A Step Line, B Lower Step, C Dropped T) con marca, logo claro y oscuro e ícono 1200 × 1200; comparativa en `brand/options.png`; tokens; `messaging.md` (borrador).
+- `site/`: estilos base, fuentes Inter Tight e IBM Plex Mono auto-hospedadas (licencia OFL incluida) y `styleguide.html`.
+- Ningún logo está aplicado. Sin verificar: búsqueda de marcas parecidas, reglas vigentes de ícono del App Store, contraste formal.
+
+**Pendiente / no verificado**
+- Instalación real en la tienda de desarrollo (falta cuenta de Shopify).
+- `npm run lint -w @tiersaver/shopify` falla desde antes de esta sesión (apunta a un `.gitignore` que no existe en `shopify/`). Sin arreglar.
+- No hay Cron Trigger todavía (Fase 3, programación).
