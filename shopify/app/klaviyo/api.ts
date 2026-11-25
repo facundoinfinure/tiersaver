@@ -1,7 +1,8 @@
-import { hashEmail } from "@tiersaver/core";
+import { EMAILS_RECEIVED_WINDOW_DAYS, hashEmail, type RuleSettings, type Window } from "@tiersaver/core";
 import { filterDate, filterString, nextCursor, type JsonApiLinks, type KlaviyoClient } from "./client";
 import {
   BILLING_USAGE,
+  CANDIDATE_SEGMENT_NAME,
   DEFAULT_METRIC_SPECS,
   LIMITS,
   MACHINE_OPEN_PROPERTY_KEYS,
@@ -284,18 +285,28 @@ export async function listProfilesPage(
   client: KlaviyoClient,
   opts: { cursor?: string | null; pageSize?: number; testCreatedAtProperty?: string } = {},
 ): Promise<Page<KlaviyoProfileRecord>> {
+  // Oldest first: profiles created while the scan runs land on later pages.
+  return readProfileRecords(client, "profiles", "/api/profiles", opts, "created");
+}
+
+async function readProfileRecords(
+  client: KlaviyoClient,
+  endpoint: "profiles" | "groupMembers",
+  path: string,
+  opts: { cursor?: string | null; pageSize?: number; testCreatedAtProperty?: string },
+  sort: string | null,
+): Promise<Page<KlaviyoProfileRecord>> {
   const fields: string[] = [...PROFILE_FIELDS];
   if (opts.testCreatedAtProperty) fields.push("properties");
   const body = await client.request<Collection<ProfileAttributes>>({
-    endpoint: "profiles",
-    path: "/api/profiles",
+    endpoint,
+    path,
     query: {
       "fields[profile]": fields,
       "additional-fields[profile]": "subscriptions",
       "page[size]": Math.min(opts.pageSize ?? LIMITS.profilesPageSize, LIMITS.profilesPageSize),
       "page[cursor]": opts.cursor ?? null,
-      // Oldest first: profiles created while the scan runs land on later pages.
-      sort: "created",
+      sort,
     },
   });
   const items: KlaviyoProfileRecord[] = [];
@@ -389,7 +400,7 @@ export function resolveMetrics(
   overrides: Partial<Record<EngagementSignal, MetricSpec>> = {},
 ): ResolvedMetrics {
   const specs = { ...DEFAULT_METRIC_SPECS, ...overrides };
-  const out = { open: [], click: [], purchase: [], checkout: [], activeOnSite: [] } as ResolvedMetrics;
+  const out = { received: [], open: [], click: [], purchase: [], checkout: [], activeOnSite: [], viewedProduct: [] } as ResolvedMetrics;
   for (const signal of Object.keys(out) as EngagementSignal[]) {
     const spec = specs[signal];
     out[signal] = metrics
@@ -433,6 +444,10 @@ export function isMachineOpen(properties: unknown): boolean {
 }
 
 /**
+ * ALTERNATIVE READ PATH, not used by the app today and not covered by the
+ * scopes it requests (needs `events:read`; see config.ts). The candidate
+ * segment below is the source of engagement.
+ *
  * GET /api/events — scope events:read, 350/s, 3,500/m, up to 1,000 events per
  * page. Returns the events of ONE metric since `since`, oldest first, as
  * (profile id, time) pairs. Feed the pages to `foldEngagement`.
@@ -548,6 +563,243 @@ export async function listGroupMemberIdsPage(
   const items: string[] = [];
   for (const item of body?.data ?? []) if (item?.id) items.push(item.id);
   return { items, nextCursor: nextCursor(body?.links) };
+}
+
+// ---------------------------------------------------------------------------
+// Candidate segment: Klaviyo's "long-term inactive" criteria, evaluated by Klaviyo
+// ---------------------------------------------------------------------------
+
+type Timeframe = { type: "date"; operator: "alltime" } | { type: "date"; operator: "in-the-last"; unit: "day"; quantity: number };
+
+export type SegmentCondition =
+  | {
+      type: "profile-metric";
+      metric_id: string;
+      measurement: "count";
+      measurement_filter: { type: "numeric"; operator: "equals" | "greater-than-or-equal"; value: number };
+      timeframe_filter: Timeframe;
+    }
+  | {
+      type: "profile-marketing-consent";
+      consent: { channel: "email"; can_receive_marketing: true; consent_status: { subscription: "any" } };
+    };
+
+/** Groups are ANDed; conditions inside a group are ORed (spec, SegmentDefinition). Every group here has one condition. */
+export interface SegmentDefinition {
+  condition_groups: { conditions: SegmentCondition[] }[];
+}
+
+export type CandidateDefinitionResult =
+  | { ok: true; definition: SegmentDefinition; minEmailsReceived: number }
+  | { ok: false; reason: "received_metric_unresolved" | "open_metric_missing" | "click_metric_missing" };
+
+function timeframe(window: Window): Timeframe {
+  return window === null ? { type: "date", operator: "alltime" } : { type: "date", operator: "in-the-last", unit: "day", quantity: window };
+}
+
+/**
+ * Builds the definition of the candidate segment from the merchant's rules.
+ * With the default rules it is Klaviyo's own suppression-recommendation
+ * criteria (help.klaviyo.com/hc/en-us/articles/24312135764251):
+ *   can receive email marketing
+ *   AND received >= 5 emails in the last 504 days (72 weeks)
+ *   AND opened 0 times, clicked 0 times, ordered 0 times, started 0 checkouts,
+ *       0 site visits, 0 product views — over all time.
+ * A numeric window in the rules ("wider mode") becomes "0 times in the last N days".
+ *
+ * Every choice errs towards a smaller segment, because only members can
+ * become candidates:
+ * - A "zero times" condition is added for EVERY metric with a matching name,
+ *   whatever its integration (native, Shopify, API...). Extra conditions can
+ *   only exclude profiles.
+ * - The "received" condition is the only one that admits profiles, so its
+ *   metric must match by name AND integration (override it for the seeded
+ *   test account). If it cannot be resolved, or the account has no open or
+ *   click metric at all, there is no definition and nobody is a candidate.
+ * - Machine opens count as opens. `countMachineOpens = false` is not applied
+ *   here (the property key is unverified); ignoring it only protects more.
+ *
+ * Not in the segment, checked on our side for each member instead: profile
+ * age, SMS consent, protected groups, Shopify orders, the re-suppression lock.
+ */
+export function buildCandidateSegmentDefinition(
+  metrics: readonly KlaviyoMetric[],
+  settings: Pick<RuleSettings, "openDays" | "clickDays" | "purchaseDays" | "siteActivityDays" | "minEmailsReceived">,
+  overrides: Partial<Record<EngagementSignal, MetricSpec>> = {},
+): CandidateDefinitionResult {
+  const specs = { ...DEFAULT_METRIC_SPECS, ...overrides };
+  const byName = (signal: EngagementSignal) =>
+    metrics.filter((m) => m.name !== null && specs[signal].names.includes(m.name)).map((m) => m.id).sort();
+
+  const received = resolveMetrics(metrics, overrides).received;
+  if (received.length !== 1) return { ok: false, reason: "received_metric_unresolved" };
+  const opens = byName("open");
+  const clicks = byName("click");
+  if (opens.length === 0) return { ok: false, reason: "open_metric_missing" };
+  if (clicks.length === 0) return { ok: false, reason: "click_metric_missing" };
+  if (!Number.isInteger(settings.minEmailsReceived) || settings.minEmailsReceived < 1) {
+    return { ok: false, reason: "received_metric_unresolved" };
+  }
+
+  const zero = (metricId: string, window: Window): SegmentCondition => ({
+    type: "profile-metric",
+    metric_id: metricId,
+    measurement: "count",
+    measurement_filter: { type: "numeric", operator: "equals", value: 0 },
+    timeframe_filter: timeframe(window),
+  });
+  const conditions: SegmentCondition[] = [
+    { type: "profile-marketing-consent", consent: { channel: "email", can_receive_marketing: true, consent_status: { subscription: "any" } } },
+    {
+      type: "profile-metric",
+      metric_id: received[0]!,
+      measurement: "count",
+      measurement_filter: { type: "numeric", operator: "greater-than-or-equal", value: settings.minEmailsReceived },
+      timeframe_filter: { type: "date", operator: "in-the-last", unit: "day", quantity: EMAILS_RECEIVED_WINDOW_DAYS },
+    },
+    ...opens.map((id) => zero(id, settings.openDays)),
+    ...clicks.map((id) => zero(id, settings.clickDays)),
+    ...byName("purchase").map((id) => zero(id, settings.purchaseDays)),
+    ...byName("checkout").map((id) => zero(id, settings.siteActivityDays)),
+    ...byName("activeOnSite").map((id) => zero(id, settings.siteActivityDays)),
+    ...byName("viewedProduct").map((id) => zero(id, settings.siteActivityDays)),
+  ];
+  return {
+    ok: true,
+    definition: { condition_groups: conditions.map((condition) => ({ conditions: [condition] })) },
+    minEmailsReceived: settings.minEmailsReceived,
+  };
+}
+
+/** Canonical text of a definition: keys sorted, null / undefined members dropped (Klaviyo echoes optional fields as null). */
+export function canonicalDefinition(definition: unknown): string {
+  const normalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(normalize);
+    if (value && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+        const v = (value as Record<string, unknown>)[key];
+        if (v !== null && v !== undefined) out[key] = normalize(v);
+      }
+      return out;
+    }
+    return value;
+  };
+  return JSON.stringify(normalize(definition));
+}
+
+export interface CandidateSegment {
+  id: string;
+  /** True while Klaviyo is still computing membership. Members must not be read. */
+  isProcessing: boolean;
+  /** False when the segment was deactivated in Klaviyo: it no longer updates. */
+  isActive: boolean;
+  /** Whether the segment's definition in Klaviyo is exactly the one we expect. */
+  definitionMatches: boolean;
+}
+
+interface SegmentAttributes {
+  name?: string | null;
+  definition?: unknown;
+  is_processing?: boolean;
+  is_active?: boolean;
+}
+
+const SEGMENT_FIELDS = ["name", "definition", "is_processing", "is_active"] as const;
+
+function toCandidateSegment(resource: Resource<SegmentAttributes> | null | undefined, expected: SegmentDefinition): CandidateSegment | null {
+  if (!resource?.id) return null;
+  const a = resource.attributes ?? {};
+  return {
+    id: resource.id,
+    // Anything but an explicit "false" is treated as still processing.
+    isProcessing: a.is_processing !== false,
+    isActive: a.is_active === true,
+    definitionMatches: canonicalDefinition(a.definition) === canonicalDefinition(expected),
+  };
+}
+
+/** GET /api/segments?filter=equals(name,..) — finds TierSaver's segment by its name. One request. */
+export async function findCandidateSegment(client: KlaviyoClient, expected: SegmentDefinition): Promise<CandidateSegment | null> {
+  const body = await client.request<Collection<SegmentAttributes>>({
+    endpoint: "segments",
+    path: "/api/segments",
+    query: { filter: `equals(name,${filterString(CANDIDATE_SEGMENT_NAME)})`, "fields[segment]": [...SEGMENT_FIELDS] },
+  });
+  const matches = (body?.data ?? []).filter((s) => s?.attributes?.name === CANDIDATE_SEGMENT_NAME);
+  // Two segments with our name: we cannot tell which one is ours, so neither is used.
+  if (matches.length > 1) throw new KlaviyoApiError("klaviyo_candidate_segment_ambiguous");
+  return toCandidateSegment(matches[0], expected);
+}
+
+/** GET /api/segments/{id} — current state of the segment, to poll processing and re-check the definition. */
+export async function getCandidateSegment(client: KlaviyoClient, segmentId: string, expected: SegmentDefinition): Promise<CandidateSegment> {
+  const body = await client.request<{ data?: Resource<SegmentAttributes> }>({
+    endpoint: "segments",
+    path: `/api/segments/${pathId(segmentId)}`,
+    query: { "fields[segment]": [...SEGMENT_FIELDS] },
+  });
+  const segment = toCandidateSegment(body?.data, expected);
+  if (!segment) throw new KlaviyoApiError("klaviyo_candidate_segment_missing");
+  return segment;
+}
+
+/**
+ * Makes sure the candidate segment exists with exactly `definition`:
+ * finds it by name, creates it if absent (POST /api/segments), or replaces a
+ * different definition (PATCH /api/segments/{id}). Scope segments:write.
+ * At most 2 requests, and at most ONE write; no write at all when the segment
+ * is already right, which is the normal case. Writes are limited by Klaviyo to
+ * 1/s, 15/m and 100 per day per account: call this when the merchant connects
+ * or changes rules and before an audit, never in a loop.
+ *
+ * After a write Klaviyo recomputes membership: poll `getCandidateSegment`
+ * until `isProcessing` is false before reading members.
+ */
+export async function ensureCandidateSegment(
+  client: KlaviyoClient,
+  definition: SegmentDefinition,
+): Promise<CandidateSegment & { written: "created" | "updated" | null }> {
+  const existing = await findCandidateSegment(client, definition);
+  if (existing?.definitionMatches) return { ...existing, written: null };
+
+  const body = await client.request<{ data?: Resource<SegmentAttributes> }>(
+    existing
+      ? {
+          endpoint: "segmentWrites",
+          method: "PATCH",
+          path: `/api/segments/${pathId(existing.id)}`,
+          body: { data: { type: "segment", id: existing.id, attributes: { definition } } },
+        }
+      : {
+          endpoint: "segmentWrites",
+          method: "POST",
+          path: "/api/segments",
+          body: { data: { type: "segment", attributes: { name: CANDIDATE_SEGMENT_NAME, definition } } },
+        },
+  );
+  const id = body?.data?.id ?? existing?.id;
+  if (!id) throw new KlaviyoApiError("klaviyo_candidate_segment_missing", { retryable: true });
+  // Whatever the response says, a segment that was just written is treated as processing.
+  return { id, isProcessing: true, isActive: true, definitionMatches: true, written: existing ? "updated" : "created" };
+}
+
+/**
+ * GET /api/segments/{id}/profiles — members of the candidate segment with the
+ * same fields as `listProfilesPage`, 100 per page (scopes profiles:read +
+ * segments:read, 75/s, 700/m).
+ *
+ * Only read members of a segment whose last `getCandidateSegment` said: not
+ * processing, active, definition matches. Check again after the last page: if
+ * the definition changed in between (someone edited it in Klaviyo), discard
+ * everything read.
+ */
+export async function listCandidateSegmentProfilesPage(
+  client: KlaviyoClient,
+  segmentId: string,
+  opts: { cursor?: string | null; pageSize?: number; testCreatedAtProperty?: string } = {},
+): Promise<Page<KlaviyoProfileRecord>> {
+  return readProfileRecords(client, "groupMembers", `/api/segments/${pathId(segmentId)}/profiles`, opts, null);
 }
 
 // ---------------------------------------------------------------------------

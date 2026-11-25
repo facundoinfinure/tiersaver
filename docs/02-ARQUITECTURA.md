@@ -41,39 +41,47 @@ Spike del 2026-11-25: la app compila y corre en `workerd`; SSR, login, inicio de
 | # | Duda | Por qué importa | Plan B |
 | --- | --- | --- | --- |
 | 1 | ¿La API de Klaviyo expone la cantidad de perfiles activos facturables y el plan o tramo de la cuenta? | La auditoría necesita el tramo actual | Contar perfiles no suprimidos por API y que el merchant confirme su plan |
-| 2 | ¿Expone la fecha de facturación? | Programar la limpieza | El merchant la carga a mano |
-| 3 | ¿Hay una tabla de precios oficial consumible? | Calcular el ahorro | Tabla propia versionada, tomada del calculador público de Klaviyo, con fecha y rótulo de estimación |
+| 2 | ¿Expone la fecha de renovación del plan? | Programar la limpieza | El merchant la carga a mano |
+| 3 | ¿Hay una tabla de precios oficial consumible? | Informar el plan de Klaviyo estimado (dato secundario) | Tabla propia versionada, con fecha y rótulo de estimación. La actualiza una persona a mano: sin lectura automática de klaviyo.com (`12-CUMPLIMIENTO-KLAVIYO.md`, secciones 1.4 y 3.1, regla 13) |
 | 4 | ¿OAuth de Klaviyo sirve para una app que no está listada en su marketplace? | Método de conexión del MVP | Clave privada de API pegada por el merchant, cifrada en reposo |
-| 5 | ¿Los términos de la API de Klaviyo permiten una app cuyo fin es reducir la factura de Klaviyo? | Riesgo de que revoquen el acceso | Posicionar como higiene de lista; consultar con un abogado |
+| 5 | ¿Los términos de Klaviyo permiten una app que automatiza la supresión de inactivos? | Riesgo de que revoquen el acceso | Analizado en `12-CUMPLIMIENTO-KLAVIYO.md` (2026-11-25): la supresión permanente con los criterios de Klaviyo está del lado permitido; se adoptaron precio fijo, criterios de Klaviyo, ninguna reactivación automática y textos de higiene. Queda el riesgo de revocación discrecional (`08-RIESGOS-Y-METRICAS.md`) |
 | 6 | ¿Cómo distinguir aperturas reales de aperturas automáticas de Apple Mail? | Reglas de inactividad | Dar más peso a clics y compras |
-| 7 | Bloqueo de 90 días tras reactivar: ¿sigue vigente y cómo responde la API? | Reactivación y deshacer | Avisar en la interfaz y registrar el rechazo |
+| 7 | Bloqueo de 90 días para volver a suprimir un perfil al que se le quitó la supresión (se cuenta desde la supresión anterior, según la ayuda de Klaviyo leída el 2026-11-25): ¿cómo responde la API? | Deshacer | Avisar en la interfaz y registrar el rechazo |
 | 8 | Límites de tiempo de ejecución en Vercel para jobs largos (150.000 perfiles ≈ 1.500 requests) | Arquitectura de workers | Worker dedicado fuera de Vercel |
 | 9 | ¿Qué versión de la Admin API de Shopify es la estable vigente y qué scopes mínimos hacen falta para leer pedidos y clientes? | Permisos y revisión | — |
 | 10 | Acceso a datos protegidos de clientes en Shopify (protected customer data): ¿hace falta pedir aprobación para leer mails y pedidos? | Puede demorar la revisión | Pedir el nivel mínimo y justificarlo |
 
 ## Datos de Shopify (decidido el 2026-11-25)
 
-- Scopes: `read_orders` y `read_all_orders` (requiere aprobación de Shopify en el Dev Dashboard) para ver 365 días de pedidos.
+- Scopes: `read_orders` y `read_all_orders` (requiere aprobación de Shopify en el Dev Dashboard) para ver pedidos de más de 60 días. Con la regla por defecto ("nunca compró"), la cobertura de pedidos tiene que llegar hasta antes de la creación del perfil; si no llega, el perfil queda protegido (`covers` en `packages/core/src/rules.ts`).
 - Datos protegidos de clientes: nivel 2, solo el campo email. Se pide con justificación: "match recent buyers to Klaviyo profiles so they are never suppressed".
 - Minimización: el mail de cada pedido se normaliza (minúsculas, sin espacios) y se guarda solo su SHA-256 junto con la fecha del último pedido. El cruce con Klaviyo compara hashes. No se guardan mails en claro.
-- Reactivación: webhook `orders/create`. Si el hash del comprador coincide con un perfil suprimido por TierSaver, se reactiva (si el merchant activó la opción).
+- Webhook `orders/create`: solo mantiene al día los hashes de compradores (`purchase_hashes`), para que la regla de compras proteja a quien compra. No le quita la supresión a nadie: la reactivación automática por compra o checkout se quitó del MVP el 2026-11-25 (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 2.5). Un perfil suprimido que compra sigue suprimido en Klaviyo hasta que vuelve a suscribirse o el merchant quita la supresión a mano.
 - Mientras la aprobación de `read_all_orders` no llegue, la cobertura de pedidos es de 60 días y la regla de compra protege a todos (`insufficient_purchase_history`): la app funciona, pero no suprime.
 
-## Verificación de tramo con Klaviyo
+## Lectura del plan de Klaviyo (solo informativa)
 
-- `GET /api/billing-usage` (scope `usage:read`): `usage_max` del tipo de uso de perfiles activos da el tramo real. Se guarda al conectar, antes de cada corrida y después de cada renovación.
-- Si `usage_max` no coincide con un tramo de la tabla oficial, no se estima ni se cobra ahorro.
+Cambiado el 2026-11-25. Antes esta lectura decidía el cargo; ya no.
+
+- `GET /api/billing-usage` (scope `usage:read`): `usage_used` y `usage_max` del tipo de uso de perfiles activos dan el conteo y el límite del plan según Klaviyo. Alimentan la auditoría y el reporte mensual como dato informativo.
+- `usage:read` es un scope opcional (`KLAVIYO_OPTIONAL_SCOPES` en `shopify/app/klaviyo/config.ts`): una conexión sin él está completa, y ninguna corrida ni ningún cargo depende de él. Se pide solo si el reporte lo necesita (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.1, regla 10).
+- El cargo de TierSaver nunca depende de `usage_max` ni de la factura de Klaviyo: sale del tamaño de lista de la simulación aprobada y de que la limpieza haya suprimido perfiles (`packages/core/src/charge.ts`).
+- Si `usage_max` no coincide con un tramo de la tabla de precios versionada, no se muestra estimación de plan.
+- La app nunca cambia el plan del merchant ni su auto-downgrade.
 
 ## Modelo de datos (borrador)
 
 - `shops`: dominio, token de Shopify cifrado, estado de instalación, zona horaria.
 - `klaviyo_connections`: shop, credenciales cifradas, revisión de API, estado.
-- `settings`: umbrales de reglas, segmentos protegidos, fecha de facturación, modo (aprobación o automático), reactivación on/off.
-- `audits`: fecha, conteos, tramo actual, tramo posible, ahorro estimado, versión de la tabla de precios.
-- `simulations`: reglas usadas, cantidad por regla, vencimiento, aprobada por, aprobada cuándo.
-- `runs`: simulación, origen, estado, contadores, errores.
-- `run_profiles`: run, identificador del perfil (ID de Klaviyo; mail solo si es imprescindible), regla aplicada, estado.
-- `usage_charges`: run, ahorro estimado, monto cobrado, ID del cargo en Shopify, clave de idempotencia.
+Esquema real en `shopify/app/db/schema.ts`; la migración `shopify/drizzle/0002_flat_pricing_and_klaviyo_criteria.sql` aplica las decisiones del 2026-11-25.
+
+- `settings`: ventanas de las reglas (`NULL` = "nunca, en toda la historia del perfil"; los pisos del modo ampliado están como `CHECK`), mínimo de mails recibidos, días sin ser candidato tras ser restaurado (365), listas y segmentos protegidos, día de renovación del plan y margen, modo (aprobación o automático). Ya no hay opción de reactivación.
+- `audits`: fecha, conteos, datos informativos de la Billing Usage API, plan actual y plan estimado, diferencia estimada de precio de lista (dato secundario, siempre rotulado como estimación), versión de la tabla de precios, reglas usadas.
+- `simulations`: reglas usadas, cobertura de datos, cantidad por motivo, tamaño de lista, cargo estimado de TierSaver, vencimiento, aprobada por, aprobada cuándo.
+- `simulation_candidates`: los perfiles exactos que una simulación suprimiría (ID de Klaviyo, motivo `never_engaged` o `lapsed`, hash del mail). Se copian a `run_profiles` cuando arranca la corrida: lo que se aprueba es lo que se suprime.
+- `runs`: simulación, tipo (supresión o deshacer), origen, estado, contadores, errores.
+- `run_profiles`: run, identificador del perfil (ID de Klaviyo; nunca el mail en claro), motivo, estado.
+- `usage_charges`: una fila por corrida, cobrada o no. Guarda el tamaño de lista sobre el que se calculó el precio (`active_profiles`), el tope del tramo de precio aplicado (`price_tier_max`; `NULL` por encima de los tramos públicos), los perfiles suprimidos, el monto, el motivo cuando no se cobra (`no_cleanup`, `already_charged_this_cycle`, `cap_reached`, `above_price_tiers`), el estado, el ID del cargo en Shopify y la clave de idempotencia. Un `CHECK` impide un monto mayor a cero si no se suprimió a nadie. Ya no guarda ningún ahorro.
 - `events_log`: bitácora de auditoría de acciones.
 
 ## Seguridad
@@ -86,7 +94,7 @@ Spike del 2026-11-25: la app compila y corre en `workerd`; SSR, login, inicio de
 
 ## Pruebas
 
-- Unitarias: reglas de inactividad, selección de tramo, cálculo de ahorro y de cargo, idempotencia.
+- Unitarias: reglas de inactividad (criterios por defecto y pisos del modo ampliado), precio por tamaño de lista y reglas de cargo (sin limpieza no se cobra, un cargo cada 28 días, tope), estimación informativa del plan, idempotencia.
 - Integración: contra la cuenta de Klaviyo de prueba, con perfiles sembrados que cubran cada regla.
 - Punta a punta: instalar, auditar, simular, suprimir, deshacer, desinstalar.
 - Prueba de corte: matar el worker a mitad de una ejecución y verificar que reanuda bien.

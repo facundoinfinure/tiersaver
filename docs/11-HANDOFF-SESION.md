@@ -1,4 +1,4 @@
-# Handoff entre sesiones · 2026-11-25 (segunda sesión)
+# Handoff entre sesiones · 2026-11-25 (segunda sesión, cierre)
 
 Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (decisiones vigentes) y `docs/STATUS.md` (bitácora, dudas resueltas y hallazgos).
 
@@ -6,21 +6,28 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 - Rama: `claude/practical-brown-zm2uss` (todo empujado). Incluye lo de `claude/gallant-knuth-51pv2e`. Cada sesión solo puede empujar a su propia rama.
 - Entorno de Claude Code: **"tiersaver"** (red con Klaviyo, Shopify, Cloudflare y `tiersaver-app.tiersaver.workers.dev`; variable `CLOUDFLARE_API_TOKEN`).
-- Fase 0: desplegada; faltan la instalación en la tienda de desarrollo y el seed real (dependen de cuentas de Facundo). Fase 2: borrador a la espera de decisiones. Fases 1, 3, 4 y 5 sin empezar.
+- Fase 0: desplegada; faltan la instalación en la tienda de desarrollo y el seed real (dependen de cuentas de Facundo). Fase 2: logo aplicado, mensajes a re-aprobar. Fase 3: en curso. Fase 4: sitio construido, sin publicar. Fases 1 y 5 sin empezar.
 
 ## Qué hay desplegado
 
 - Worker `tiersaver-app` en la cuenta TierSaver: https://tiersaver-app.tiersaver.workers.dev (plan Workers Free; alcanzó, sin errores de CPU).
-- D1 `tiersaver` con migraciones `0000_session` y `0001_domain`.
-- Workflow `tiersaver-suppression-run`.
+- D1 `tiersaver` con migraciones `0000` a `0002`.
+- Workflows `tiersaver-suppression-run` y `tiersaver-orders-backfill`.
+- `SUPPRESSION_ENABLED` no está definido: ninguna corrida puede suprimir.
 - Secretos: `TOKEN_ENCRYPTION_KEY` real (no está guardado en ningún otro lado: si se pierde, hay que reinstalar las tiendas). `SHOPIFY_API_KEY` y `SHOPIFY_API_SECRET` son **provisorios y aleatorios**; la sesión que los creó ya no los tiene. Para el smoke test hay que volver a cargar un secreto provisorio o usar los reales.
+
+## Decisiones de Facundo del 2026-11-25 (segunda parte)
+
+Logo B; precio fijo por tamaño de lista (cortes sin confirmar); sin reactivación por compra; reglas por defecto = criterios de Klaviyo; rigen las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md` 3.2. Detalle en `STATUS.md`.
 
 ## Qué hay en el repo
 
-- `packages/core/`: lógica pura, 73 tests.
-- `shopify/`: app React Router en Workers. Esquema completo (`app/db/schema.ts`, `drizzle/0001_domain.sql`), privacidad (`app/data/privacy.ts`), motor de corridas (`app/runs/engine.ts`), Workflow (`workers/suppression-run.ts`), gateway de Klaviyo stub (`app/runs/gateway.server.ts`). 57 tests en `workerd` (`npm test -w @tiersaver/shopify`).
-- `scripts/seed-klaviyo/`: seed de la cuenta de prueba, 123 tests offline. Leé su README antes de correrlo.
-- `brand/` y `site/`: borrador de marca. Ningún logo aplicado.
+- `packages/core/`: lógica pura, 83 tests. Cargo fijo en `charge.ts`, reglas en `rules.ts`.
+- `shopify/`: app React Router en Workers, 196 tests en `workerd`. Esquema y migraciones (`drizzle/0000` a `0002`), privacidad, pedidos (`app/orders/`), capa de Klaviyo (`app/klaviyo/`), motor de corridas y gateway (`app/runs/`), Workflows (`workers/`).
+- `scripts/seed-klaviyo/`: seed de la cuenta de prueba, 138 tests offline. Leé su README antes de correrlo.
+- `site/`: sitio público generado desde `site/src` (`npm run build` dentro de `site/`), 291 tests. Sin publicar.
+- `brand/`: logo final en `brand/logo/final/`; `messaging.md` revisada, espera nueva aprobación.
+- `docs/12-CUMPLIMIENTO-KLAVIYO.md` (políticas; secciones 3.1 y 3.2 son obligatorias) y `docs/13-INSTRUCTIVO-CUENTAS.md` (pasos de Shopify y Klaviyo).
 
 ## Comandos
 
@@ -30,14 +37,14 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 ## Próximos pasos
 
-1. Cuando Facundo cree la app de Shopify: cargar `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` reales con `wrangler secret bulk`, completar `shopify.app.toml`, instalar en la tienda de desarrollo. Cierra la Fase 0.
-2. Cuando exista la cuenta de Klaviyo de prueba: resolver antes los hallazgos 1 a 4 del seed en `STATUS.md` (fecha de creación, métricas de API, dominio de mails, límite de 250 perfiles) y recién entonces correr el seed.
-3. Fase 3 en el orden del handover. Lo primero que reemplaza un stub: el cliente de Klaviyo detrás de `SuppressionGateway` (resolver IDs a mails en el momento, suprimir de a 100, consultar jobs) y la creación de corridas de deshacer.
-4. Aplicar el logo elegido y los mensajes aprobados (Fase 2).
+1. Cuando Facundo entregue Client ID, Client secret, token de service account y dominio de la tienda (`13-INSTRUCTIVO-CUENTAS.md` A3): completar `client_id` en `shopify.app.toml`, `shopify app deploy` con `SHOPIFY_SERVICE_ACCOUNT_TOKEN`, cargar las claves reales en el Worker, y pedirle que instale la app. Cierra la Fase 0.
+2. Cuando exista la cuenta de Klaviyo de prueba: correr el seed (necesita el visto bueno para el dominio `seed.tiersaver.com`) y las primeras verificaciones reales de la capa de Klaviyo (lista en `STATUS.md`, "Abierto / no verificado").
+3. Fase 3, lo que falta: rutas de OAuth de Klaviyo (inicio y callback con la cookie de vínculo), orquestación de auditoría y simulación como pasos reanudables, interfaz embebida, programación mensual, creación de corridas de deshacer, consulta de jobs, cobro en Shopify, y los guardarraíles pendientes de `12-CUMPLIMIENTO-KLAVIYO.md` 3.1.
+4. Sitio: completar placeholders y publicar cuando el dominio esté en la cuenta TierSaver (después del 2026-12-05). Publicar es un freno: lo aprueba Facundo.
 
 ## Pendiente de Facundo
 
-Ver el mensaje de cierre de la sesión y `10-TAREAS-HUMANAS.md`. En corto: elegir logo y aprobar mensajes; cuenta de Shopify y tienda de desarrollo; cuenta de Klaviyo de prueba y decisiones del seed; abogado por la AUP; mover el dominio desde el 2026-12-05; restringir y rotar el token de Cloudflare.
+Confirmar los cortes de precio; volver a aprobar `brand/messaging.md`; crear cuentas de Shopify y Klaviyo según `13-INSTRUCTIVO-CUENTAS.md`; decidir el descriptor del nombre y si se contacta a Klaviyo (`10-TAREAS-HUMANAS.md`, tareas 17 a 20); mover el dominio desde el 2026-12-05; restringir y rotar el token de Cloudflare.
 
 ## Cosas a saber del entorno
 

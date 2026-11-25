@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { EngagementEvent, KlaviyoProfileRecord } from "../app/klaviyo/api";
 import {
   buildDataCoverage,
+  candidateSegmentCoverage,
   emptyEngagement,
   foldEngagement,
   toProfileSignals,
@@ -15,8 +16,15 @@ const NOW = new Date("2026-11-25T12:00:00Z");
 const DAY = 86_400_000;
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * DAY);
 
-/** Coverage that reaches far enough back for every rule. */
-const FULL: DataCoverage = { engagementSince: daysAgo(400), purchasesSince: daysAgo(400), siteActivitySince: daysAgo(400) };
+/**
+ * The normal case: the profile came out of the candidate segment, so Klaviyo
+ * vouches for its whole engagement history, and our Shopify order data reaches
+ * back to before the profile existed.
+ */
+const FULL: DataCoverage = candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000) });
+
+/** The opt-in wider mode: dated windows instead of "ever". */
+const WINDOWED = { ...DEFAULT_RULE_SETTINGS, purchaseDays: 365, clickDays: 182, openDays: 182, siteActivityDays: 182 };
 
 /** An old, subscribed, never-engaged profile with complete data: the textbook candidate. */
 function profile(overrides: Partial<KlaviyoProfileRecord> = {}): KlaviyoProfileRecord {
@@ -31,7 +39,8 @@ function profile(overrides: Partial<KlaviyoProfileRecord> = {}): KlaviyoProfileR
   };
 }
 
-const KNOWN: ProfileContext = { inProtectedGroup: false };
+const MEMBER = { minEmailsReceived: 5 };
+const KNOWN: ProfileContext = { inProtectedGroup: false, candidateSegment: MEMBER };
 
 function decide(p: KlaviyoProfileRecord, context: ProfileContext = KNOWN, coverage = FULL, settings = DEFAULT_RULE_SETTINGS): Decision {
   return evaluateProfile(toProfileSignals(p, context).signals, settings, coverage, NOW);
@@ -58,6 +67,7 @@ describe("toProfileSignals: complete data", () => {
       lastClickAt: null,
       lastPurchaseAt: null,
       lastSiteActivityAt: null,
+      emailsReceived: 5,
       smsConsent: false,
       inProtectedGroup: false,
       reactivatedAt: null,
@@ -90,24 +100,83 @@ describe("toProfileSignals: complete data", () => {
     expect(reasons(decide(profile({ sms: { canReceiveMarketing: true, consent: "NEVER_SUBSCRIBED" } })))).toEqual(["sms_consent"]);
     expect(decide(profile({ sms: { canReceiveMarketing: false, consent: "UNSUBSCRIBED" } })).kind).toBe("candidate");
 
-    expect(reasons(decide(profile(), { inProtectedGroup: true }))).toEqual(["protected_group"]);
-    expect(reasons(decide(profile(), { inProtectedGroup: false, reactivatedAt: daysAgo(30) }))).toEqual(["recently_reactivated"]);
-    expect(decide(profile(), { inProtectedGroup: false, reactivatedAt: daysAgo(120) }).kind).toBe("candidate");
+    expect(reasons(decide(profile(), { ...KNOWN, inProtectedGroup: true }))).toEqual(["protected_group"]);
+    // Restored by an undo: out of every run for a year.
+    expect(reasons(decide(profile(), { ...KNOWN, reactivatedAt: daysAgo(300) }))).toEqual(["recently_reactivated"]);
+    expect(decide(profile(), { ...KNOWN, reactivatedAt: daysAgo(400) }).kind).toBe("candidate");
   });
 
   it("merges Shopify and Klaviyo purchases and takes the most recent", () => {
     const engagement: ProfileEngagement = { ...emptyEngagement(), lastOrderAt: daysAgo(500) };
-    const both = toProfileSignals(profile(), { inProtectedGroup: false, engagement, shopifyLastPurchaseAt: daysAgo(100) });
-    expect(both.signals.lastPurchaseAt).toEqual(daysAgo(100));
-    expect(reasons(decide(profile(), { inProtectedGroup: false, engagement, shopifyLastPurchaseAt: daysAgo(100) }))).toEqual(["recent_purchase"]);
-    // Only Klaviyo knows about a recent order: still protected.
-    const klaviyoOnly: ProfileEngagement = { ...emptyEngagement(), lastOrderAt: daysAgo(20) };
-    expect(reasons(decide(profile(), { inProtectedGroup: false, engagement: klaviyoOnly, shopifyLastPurchaseAt: null }))).toEqual(["recent_purchase"]);
-    // Old purchases on both sides: lapsed.
-    expect(decide(profile(), { inProtectedGroup: false, engagement, shopifyLastPurchaseAt: daysAgo(600) })).toEqual({
+    const context: ProfileContext = { ...KNOWN, engagement, shopifyLastPurchaseAt: daysAgo(100) };
+    expect(toProfileSignals(profile(), context).signals.lastPurchaseAt).toEqual(daysAgo(100));
+    // Default rules: anyone who ever bought is protected, however long ago, from either source.
+    expect(reasons(decide(profile(), context))).toEqual(["recent_purchase"]);
+    expect(reasons(decide(profile(), { ...KNOWN, shopifyLastPurchaseAt: daysAgo(2000) }))).toEqual(["recent_purchase"]);
+    expect(reasons(decide(profile(), { ...KNOWN, engagement: { ...emptyEngagement(), lastOrderAt: daysAgo(2000) } }))).toEqual(["recent_purchase"]);
+    // Wider mode with a 365-day purchase window: old purchases on both sides no longer protect.
+    expect(decide(profile(), { ...KNOWN, engagement, shopifyLastPurchaseAt: daysAgo(600) }, FULL, WINDOWED)).toEqual({
       kind: "candidate",
       reason: "lapsed",
     });
+  });
+
+  it("the profile must be at least a year old", () => {
+    expect(reasons(decide(profile({ createdAt: daysAgo(364), email: null as never })))).toContain("new_profile");
+    const young = profile({ createdAt: daysAgo(364), email: { canReceiveMarketing: true, consent: "SUBSCRIBED", consentAt: null, suppressionReasons: [] } });
+    expect(reasons(decide(young))).toEqual(["new_profile"]);
+    const old = profile({ createdAt: daysAgo(366), email: { canReceiveMarketing: true, consent: "SUBSCRIBED", consentAt: null, suppressionReasons: [] } });
+    expect(decide(old).kind).toBe("candidate");
+  });
+});
+
+describe("emails received and the candidate segment", () => {
+  it("a profile that did not come out of the candidate segment is never a candidate", () => {
+    const mapped = toProfileSignals(profile(), { inProtectedGroup: false });
+    expect(mapped.signals.emailsReceived).toBeNull();
+    expect(mapped.gaps).toEqual(["send_history_unknown"]);
+    expect(reasons(evaluateProfile(mapped.signals, DEFAULT_RULE_SETTINGS, FULL, NOW))).toEqual(["unknown_send_history"]);
+    for (const bad of [null, undefined, { minEmailsReceived: 0 }, { minEmailsReceived: Number.NaN }, {} as { minEmailsReceived: number }]) {
+      const m = toProfileSignals(profile(), { inProtectedGroup: false, candidateSegment: bad });
+      expect(m.signals.emailsReceived).toBeNull();
+      expect(evaluateProfile(m.signals, DEFAULT_RULE_SETTINGS, FULL, NOW).kind).toBe("protected");
+    }
+  });
+
+  it("a member carries the minimum Klaviyo vouched for, checked against the current rules", () => {
+    expect(decide(profile(), { inProtectedGroup: false, candidateSegment: { minEmailsReceived: 5 } }).kind).toBe("candidate");
+    // The segment was built for 5 but the merchant now requires 8: not enough is known.
+    const stricter = { ...DEFAULT_RULE_SETTINGS, minEmailsReceived: 8 };
+    expect(reasons(decide(profile(), KNOWN, FULL, stricter))).toEqual(["not_enough_emails_received"]);
+  });
+
+  it("an explicit count is used outside the segment path, and bad counts are unknown", () => {
+    expect(decide(profile(), { inProtectedGroup: false, emailsReceived: 12 }).kind).toBe("candidate");
+    expect(reasons(decide(profile(), { inProtectedGroup: false, emailsReceived: 4 }))).toEqual(["not_enough_emails_received"]);
+    expect(reasons(decide(profile(), { inProtectedGroup: false, emailsReceived: 0 }))).toEqual(["not_enough_emails_received"]);
+    for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(reasons(decide(profile(), { inProtectedGroup: false, emailsReceived: bad }))).toEqual(["unknown_send_history"]);
+    }
+  });
+
+  it("the Events fold never counts received emails (a re-read page would inflate the count)", () => {
+    const state = foldEngagement(new Map(), "received", [event("P1", 10), event("P1", 20), event("P1", 30), event("P1", 40), event("P1", 50)]);
+    const mapped = toProfileSignals(profile(), { inProtectedGroup: false, engagement: state.get("P1") });
+    expect(mapped.signals.emailsReceived).toBeNull();
+  });
+
+  it("segment coverage reaches the beginning of history, but purchases still need Shopify's order data", () => {
+    expect(candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000) })).toEqual({
+      engagementSince: new Date(0),
+      purchasesSince: daysAgo(3000),
+      siteActivitySince: new Date(0),
+    });
+    // Order data missing, or younger than the profile: under the "ever" rule we cannot say "never bought".
+    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: null })))).toEqual(["insufficient_purchase_history"]);
+    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(60) })))).toEqual(["insufficient_purchase_history"]);
+    // The profile's age for the rules is the later of creation (800 days) and consent (790 days).
+    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(789) })))).toEqual(["insufficient_purchase_history"]);
+    expect(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(791) })).kind).toBe("candidate");
   });
 });
 
@@ -133,11 +202,12 @@ describe("toProfileSignals: missing or unknown data always protects", () => {
     ["SMS block missing", profile({ sms: null }), KNOWN, "sms_consent_unknown", "sms_consent"],
     ["SMS flag unreadable", profile({ sms: { canReceiveMarketing: null, consent: "NEVER_SUBSCRIBED" } }), KNOWN, "sms_consent_unknown", "sms_consent"],
     ["SMS consent value missing", profile({ sms: { canReceiveMarketing: false, consent: null } }), KNOWN, "sms_consent_unknown", "sms_consent"],
-    ["group membership unknown", profile(), { inProtectedGroup: null }, "protected_group_membership_unknown", "protected_group"],
+    ["group membership unknown", profile(), { ...KNOWN, inProtectedGroup: null }, "protected_group_membership_unknown", "protected_group"],
+    ["not read from the candidate segment", profile(), { inProtectedGroup: false }, "send_history_unknown", "unknown_send_history"],
     [
       "seeded creation date requested but absent",
       profile({ testCreatedAt: null }),
-      { inProtectedGroup: false, useTestCreatedAt: true },
+      { ...KNOWN, useTestCreatedAt: true },
       "created_unknown",
       "unknown_profile_age",
     ],
@@ -167,7 +237,8 @@ describe("toProfileSignals: missing or unknown data always protects", () => {
   it("a context without membership information is treated as unknown", () => {
     const mapped = toProfileSignals(profile(), {} as ProfileContext);
     expect(mapped.signals.inProtectedGroup).toBe(true);
-    expect(mapped.gaps).toEqual(["protected_group_membership_unknown"]);
+    expect(mapped.signals.emailsReceived).toBeNull();
+    expect(mapped.gaps).toEqual(["send_history_unknown", "protected_group_membership_unknown"]);
   });
 
   it("no combination of gaps can produce a candidate", () => {
@@ -175,24 +246,27 @@ describe("toProfileSignals: missing or unknown data always protects", () => {
     const smses = [profile().sms, null, { canReceiveMarketing: null, consent: null }, { canReceiveMarketing: false, consent: null }];
     const createds = [daysAgo(800), null];
     const memberships: (boolean | null)[] = [false, null];
+    const segments = [MEMBER, null];
     let checked = 0;
-    for (const email of emails)
-      for (const sms of smses)
-        for (const createdAt of createds)
-          for (const inProtectedGroup of memberships) {
-            const mapped = toProfileSignals(profile({ email, sms, createdAt }), { inProtectedGroup });
-            const decision = evaluateProfile(mapped.signals, DEFAULT_RULE_SETTINGS, FULL, NOW);
-            if (mapped.gaps.length === 0) expect(decision.kind).toBe("candidate");
-            else expect(decision.kind).toBe("protected");
-            checked++;
-          }
-    expect(checked).toBe(48);
+    for (const settings of [DEFAULT_RULE_SETTINGS, WINDOWED])
+      for (const email of emails)
+        for (const sms of smses)
+          for (const createdAt of createds)
+            for (const inProtectedGroup of memberships)
+              for (const candidateSegment of segments) {
+                const mapped = toProfileSignals(profile({ email, sms, createdAt }), { inProtectedGroup, candidateSegment });
+                const decision = evaluateProfile(mapped.signals, settings, FULL, NOW);
+                if (mapped.gaps.length === 0) expect(decision.kind).toBe("candidate");
+                else expect(decision.kind).toBe("protected");
+                checked++;
+              }
+    expect(checked).toBe(192);
   });
 
   it("the seeded creation date is used only on request", () => {
     const seeded = profile({ createdAt: daysAgo(1), testCreatedAt: daysAgo(800) });
     expect(reasons(decide(seeded))).toContain("new_profile");
-    expect(decide(seeded, { inProtectedGroup: false, useTestCreatedAt: true }).kind).toBe("candidate");
+    expect(decide(seeded, { ...KNOWN, useTestCreatedAt: true }).kind).toBe("candidate");
   });
 });
 
@@ -205,7 +279,8 @@ describe("foldEngagement", () => {
     foldEngagement(state, "click", [event("A", 300), event("A", 150)]);
     foldEngagement(state, "purchase", [event("A", 400)]);
     foldEngagement(state, "checkout", [event("A", 90)]);
-    foldEngagement(state, "activeOnSite", [event("A", 60), event("A", 120)]);
+    foldEngagement(state, "activeOnSite", [event("A", 70), event("A", 120)]);
+    foldEngagement(state, "viewedProduct", [event("A", 60)]);
     expect(state.get("A")).toEqual({
       lastOpenAt: daysAgo(20),
       lastOpenIsMachine: false,
@@ -230,16 +305,19 @@ describe("foldEngagement", () => {
   });
 });
 
-describe("machine opens end to end (event -> signals -> decision)", () => {
-  const ignoreMachine = { ...DEFAULT_RULE_SETTINGS, countMachineOpens: false };
+describe("machine opens end to end (event -> signals -> decision), events path", () => {
+  const ignoreMachine = { ...WINDOWED, countMachineOpens: false };
   const withOpens = (events: EngagementEvent[]): ProfileContext => ({
     inProtectedGroup: false,
+    emailsReceived: 10,
     engagement: foldEngagement(new Map(), "open", events).get("P1"),
   });
 
-  it("by default every recent open protects, machine or not", () => {
+  it("by default every open protects, machine or not, whenever it happened", () => {
     expect(reasons(decide(profile(), withOpens([event("P1", 10, true)])))).toEqual(["recent_open"]);
+    expect(reasons(decide(profile(), withOpens([event("P1", 700, true)])))).toEqual(["recent_open"]);
     expect(reasons(decide(profile(), withOpens([event("P1", 10, false)])))).toEqual(["recent_open"]);
+    expect(reasons(decide(profile(), withOpens([event("P1", 10, true)]), FULL, WINDOWED))).toEqual(["recent_open"]);
   });
 
   it("when the merchant ignores machine opens, only an open clearly flagged as machine stops protecting", () => {
@@ -254,10 +332,13 @@ describe("machine opens end to end (event -> signals -> decision)", () => {
     // A machine open after an old human open: nothing recent from a person.
     const stale = withOpens([event("P1", 200, false), event("P1", 5, true)]);
     expect(decide(profile(), stale, FULL, ignoreMachine).kind).toBe("candidate");
+    // Under the default "ever" rule the same old human open still protects.
+    expect(reasons(decide(profile(), stale, FULL, { ...DEFAULT_RULE_SETTINGS, countMachineOpens: false }))).toEqual(["recent_open"]);
   });
 });
 
-describe("buildDataCoverage", () => {
+describe("buildDataCoverage (events path)", () => {
+  const COUNTED: ProfileContext = { inProtectedGroup: false, emailsReceived: 10 };
   const scan = (days: number, overrides: Partial<SignalScan> = {}): SignalScan => ({
     metricIds: ["M1"],
     since: daysAgo(days),
@@ -288,7 +369,7 @@ describe("buildDataCoverage", () => {
   ])("engagement coverage is unknown when: %s", (_name, change) => {
     const coverage = buildDataCoverage({ ...full, ...change });
     expect(coverage.engagementSince).toBeNull();
-    const decision = decide(profile(), KNOWN, coverage);
+    const decision = decide(profile(), COUNTED, coverage, WINDOWED);
     expect(decision.kind).toBe("protected");
     expect(reasons(decision)).toContain("insufficient_engagement_history");
   });
@@ -301,16 +382,16 @@ describe("buildDataCoverage", () => {
   ])("purchase coverage is unknown when: %s", (_name, change) => {
     const coverage = buildDataCoverage({ ...full, ...change });
     expect(coverage.purchasesSince).toBeNull();
-    const decision = decide(profile(), KNOWN, coverage);
+    const decision = decide(profile(), COUNTED, coverage, WINDOWED);
     expect(decision.kind).toBe("protected");
     expect(reasons(decision)).toContain("insufficient_purchase_history");
   });
 
   it("windows shorter than the rule protect too (60 days of Shopify orders against a 365-day rule)", () => {
     const coverage = buildDataCoverage({ ...full, shopifyOrdersSince: daysAgo(60) });
-    expect(reasons(decide(profile(), KNOWN, coverage))).toContain("insufficient_purchase_history");
+    expect(reasons(decide(profile(), COUNTED, coverage, WINDOWED))).toContain("insufficient_purchase_history");
     const shortEngagement = buildDataCoverage({ ...full, open: scan(30), click: scan(30) });
-    expect(reasons(decide(profile(), KNOWN, shortEngagement))).toContain("insufficient_engagement_history");
+    expect(reasons(decide(profile(), COUNTED, shortEngagement, WINDOWED))).toContain("insufficient_engagement_history");
   });
 
   it("site activity is 'not tracked' unless both of its scans are complete", () => {
@@ -320,9 +401,12 @@ describe("buildDataCoverage", () => {
     expect(buildDataCoverage(withoutSite).siteActivitySince).toBeNull();
   });
 
-  it("with full coverage and complete data the candidate is still a candidate", () => {
-    expect(decide(profile(), KNOWN, buildDataCoverage({ ...full, open: scan(400), click: scan(400), purchase: scan(400), shopifyOrdersSince: daysAgo(400) })).kind).toBe(
-      "candidate",
-    );
+  it("windowed scans satisfy the wider mode but never the default 'ever' rules", () => {
+    const wide = buildDataCoverage({ ...full, open: scan(400), click: scan(400), purchase: scan(400), shopifyOrdersSince: daysAgo(400) });
+    expect(decide(profile(), COUNTED, wide, WINDOWED).kind).toBe("candidate");
+    // The profile is 800 days old and the scans cover 400: "never opened" cannot be claimed.
+    const strict = decide(profile(), COUNTED, wide);
+    expect(strict.kind).toBe("protected");
+    expect(reasons(strict)).toEqual(expect.arrayContaining(["insufficient_engagement_history", "insufficient_purchase_history"]));
   });
 });

@@ -143,7 +143,7 @@ export async function runCli(argv: readonly string[], deps: CliDeps): Promise<nu
 
     if (parsed.flags.has("verify")) {
       const rows = await verifySeed(config, runDeps);
-      for (const row of rows) out(`${row.ok ? "ok  " : "FAIL"} ${row.cohort.padEnd(38)} ${row.ok ? "" : row.problems.join("; ")}`);
+      for (const row of rows) out(`${row.ok ? "ok  " : "FAIL"} ${row.cohort.padEnd(40)} ${row.ok ? "" : row.problems.join("; ")}`);
       const failed = rows.filter((r) => !r.ok).length;
       out(failed === 0 ? `All ${rows.length} sampled profiles match.` : `${failed} of ${rows.length} sampled profiles do not match.`);
       return failed === 0 ? EXIT.ok : EXIT.warnings;

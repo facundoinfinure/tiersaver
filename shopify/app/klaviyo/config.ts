@@ -63,9 +63,15 @@ export const KLAVIYO_REQUIRED_SCOPES = [
   "segments:write",
   /** GET /api/metrics: resolve "Opened Email" etc. to metric ids by name + integration. */
   "metrics:read",
-  /** GET /api/events: dated engagement for the opt-in windowed rules and for spot checks. */
-  "events:read",
 ] as const;
+
+/*
+ * Deliberately NOT requested: `events:read`. The candidate segment replaced
+ * the Events API as the source of engagement, so the app has no use for it
+ * today. `listEngagementEventsPage` in api.ts stays as a tested alternative
+ * (it gives dated events, e.g. to explain why a profile is protected); using
+ * it means adding `events:read` here first, and merchants reconnecting.
+ */
 
 /**
  * Scopes that only add information. `usage:read` (GET /api/billing-usage)

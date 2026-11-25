@@ -4,7 +4,7 @@ import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
 import { getAccount, getProfilesUsage } from "./api";
 import { KlaviyoClient, type AccessTokenProvider } from "./client";
-import { KLAVIYO_REVISION, KLAVIYO_SCOPES } from "./config";
+import { KLAVIYO_REQUIRED_SCOPES, KLAVIYO_REVISION } from "./config";
 import { KlaviyoConnectionError, KlaviyoOAuthError } from "./errors";
 import {
   exchangeCode,
@@ -145,7 +145,7 @@ export async function saveConnection(
 /**
  * Finishes the OAuth flow for a shop: exchanges the code, checks that every
  * scope the app needs was granted, reads the account id and the billing usage
- * type, and stores the connection. Three Klaviyo requests.
+ * type (optional), and stores the connection. Two or three Klaviyo requests.
  */
 export async function completeAuthorization(
   deps: ConnectionDeps,
@@ -161,7 +161,7 @@ export async function completeAuthorization(
     now: now(),
   });
   try {
-    if (missingScopes(tokens.scope, KLAVIYO_SCOPES).length > 0) {
+    if (missingScopes(tokens.scope, KLAVIYO_REQUIRED_SCOPES).length > 0) {
       throw new KlaviyoOAuthError("klaviyo_oauth_missing_scopes");
     }
     const client = new KlaviyoClient({
@@ -170,14 +170,22 @@ export async function completeAuthorization(
       sleep: deps.sleep,
     });
     const account = await getAccount(client);
-    // Free accounts, or a plan without a profile cap, simply have no row: that is not an error.
-    const usage = await getProfilesUsage(client);
+    // Billing usage is optional information for the audit and the report. A
+    // missing `usage:read` scope, a free plan or a failing endpoint must not
+    // stop the merchant from connecting.
+    let usageTypeId: string | null = null;
+    if (missingScopes(tokens.scope, ["usage:read"]).length === 0) {
+      usageTypeId = await getProfilesUsage(client).then(
+        (found) => found.usage?.usageTypeId ?? null,
+        () => null,
+      );
+    }
 
     await saveConnection(deps, {
       shop: args.shop,
       klaviyoAccountId: account.id,
       tokens,
-      profilesUsageTypeId: usage.usage?.usageTypeId ?? null,
+      profilesUsageTypeId: usageTypeId,
     });
   } catch (err) {
     // Do not leave an install at Klaviyo that we hold no record of.
@@ -319,9 +327,13 @@ export function createKlaviyoClient(
 }
 
 /**
- * Merchant disconnects Klaviyo: revoke the install at Klaviyo, then delete the
- * tokens. The row is deleted even when the revoke call fails, so we never keep
- * credentials the merchant asked us to drop; the result says whether Klaviyo
+ * Disconnect (merchant action, or the Shopify uninstall webhook): revoke the
+ * install at Klaviyo's /oauth/revoke, then delete the stored tokens.
+ *
+ * Safe to call at any time and more than once: with no connection it does
+ * nothing, and when the revoke call fails (Klaviyo down, token already
+ * revoked or the app already removed there) the row is deleted anyway, so we
+ * never keep credentials we were asked to drop. `revoked` says whether Klaviyo
  * confirmed. Profiles stay suppressed: disconnecting never unsuppresses.
  */
 export async function disconnect(deps: ConnectionDeps, shop: string): Promise<{ existed: boolean; revoked: boolean }> {

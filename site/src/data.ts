@@ -8,13 +8,8 @@
  */
 import { CURRENT_PRICE_TABLES, DEFAULT_SCHEDULE, SIMULATION_TTL_MS } from "@tiersaver/core";
 import { check, describe, formatCount, formatUsd, largestPublishedPlan, type CheckInput } from "./check/check.js";
-import {
-  CLEANUP_CRITERIA,
-  KLAVIYO_RESUPPRESS_WAIT_DAYS,
-  KLAVIYO_SOURCES,
-  SOURCES_READ_ON,
-  TIERSAVER_PLANS,
-} from "./site-config.js";
+import { CLEANUP_CRITERIA, KLAVIYO_RESUPPRESS_WAIT_DAYS, TIERSAVER_PLANS } from "./site-config.js";
+import { KLAVIYO_SOURCES, SOURCES_READ_ON } from "./sources.js";
 
 /** The example the hero and the list health check show before anyone types. */
 export const DEFAULT_EXAMPLE = {

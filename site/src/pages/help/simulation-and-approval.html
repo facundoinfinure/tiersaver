@@ -1,9 +1,9 @@
 <!--
 title: Simulation and approval
 nav: Simulation and approval
-description: TierSaver never suppresses a Klaviyo profile without a simulation you approved. What a simulation shows, how long an approval lasts and how scheduled runs are approved.
+description: TierSaver never suppresses a Klaviyo profile without a simulation you approved. What a simulation shows, how long an approval lasts and how monthly runs are approved.
 summary: Nothing is suppressed without a simulation you approved. What it shows and how long it stays valid.
-lead: Nothing is suppressed without a simulation that you approved. There is no way around that step, in the app or behind it.
+lead: Nothing is suppressed without a simulation that you approved. There is no path past that step, in the app or behind it.
 layout: doc
 group: help
 order: 3
@@ -11,33 +11,46 @@ updated: 2026-11-25
 -->
 <h2>What a simulation shows</h2>
 <ul>
-  <li>How many profiles were evaluated, how many would be suppressed, how many are protected and how many were skipped.</li>
-  <li>For the profiles that would be suppressed, the reason: never engaged, or engaged once and lapsed.</li>
-  <li>For protected profiles, which rule protected them. A profile can be covered by several rules.</li>
-  <li>A sample you can download and inspect.</li>
-  <li>The tier your list would fit afterwards, the estimated monthly saving at list price and the estimated fee.</li>
+  <li>How many profiles were evaluated, how many would be suppressed, how many are kept and how many were skipped.</li>
+  <li>For kept profiles, the reason. A profile can be kept for several reasons at once.</li>
+  <li>A sample of the candidates, so you can check them before you approve.</li>
+  <li>How many active profiles you would have afterwards.</li>
 </ul>
 <p>A simulation changes nothing in Klaviyo.</p>
 
 <h2>Approving</h2>
-<p>When you approve a simulation, TierSaver suppresses exactly the profiles in that simulation and no others. Before it sends each batch to Klaviyo it leaves out any profile that can no longer be suppressed.</p>
+<p>When you approve a simulation, TierSaver suppresses exactly the profiles in that simulation and no others. Before it sends each batch to Klaviyo it leaves out any profile that should no longer be suppressed.</p>
 <p>An approval is tied to one simulation:</p>
 <ul>
   <li><strong>It expires after {{sim.ttlHours}} hours.</strong> Lists change. If more time has passed, you get a fresh simulation to review.</li>
   <li><strong>It runs once.</strong> A simulation cannot be used for a second cleanup.</li>
-  <li><strong>Changing your rules replaces it.</strong> If you edit a <a href="/help/protection-rules">protection rule</a> or a protected list, pending simulations are discarded.</li>
+  <li><strong>Changing your criteria replaces it.</strong> If you edit the <a href="/help/cleanup-criteria">cleanup criteria</a> or a protected list, pending simulations are discarded.</li>
 </ul>
+<p>The app records who approved each simulation, when, and under which criteria.</p>
 
 <h2>The first cleanup is always manual</h2>
-<p>You start the first cleanup yourself, after reviewing its simulation. Scheduled cleanups only start after that.</p>
+<p>You start the first cleanup yourself, after reviewing its simulation. Monthly cleanups only start after that.</p>
 
-<h2>Scheduled cleanups</h2>
-<p>Before each scheduled cleanup TierSaver runs a new simulation and emails you a summary. There are two modes:</p>
+<h2>Monthly cleanups</h2>
+<p>Before each monthly cleanup TierSaver runs a new simulation and emails you a summary. There are two modes:</p>
 <ul>
   <li><strong>Approval required</strong> (default). The cleanup waits for you to approve the simulation.</li>
   <li><strong>Automatic.</strong> An explicit opt-in. The cleanup runs on the scheduled day using the new simulation, and you still receive the summary.</li>
 </ul>
-<p>See <a href="/help/billing-date-and-auto-downgrade">billing date scheduling</a> for when cleanups run.</p>
+<p>See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule</a> for when cleanups run.</p>
+
+<h2>What to know before you approve</h2>
+<ul>
+  <li>Suppressed profiles can no longer receive marketing email from you, even if they later buy.</li>
+  <li>If you remove a suppression, Klaviyo does not let that profile be suppressed again for {{klaviyo.resuppressDays}} days from the previous suppression.</li>
+  <li>Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</li>
+</ul>
 
 <h2>While a cleanup runs</h2>
 <p>Profiles are suppressed in batches. The app shows the state of the run: queued, running, completed, or completed with errors. If a run is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If a batch keeps failing, the run stops and the remaining profiles are left untouched.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  {{src.activeProfileManagement}}
+  {{src.bulkSuppress}}
+</ul>

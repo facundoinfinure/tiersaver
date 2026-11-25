@@ -6,11 +6,11 @@ Bitácora viva. La sesión la actualiza al cerrar cada fase.
 
 | Fase | Estado | Fecha |
 | --- | --- | --- |
-| 0 · Base | En curso: desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo) | 2026-11-25 |
+| 0 · Base | Desplegada en Cloudflare; falta instalar en la tienda de desarrollo y sembrar Klaviyo (dependen de cuentas de Facundo; pasos en `13-INSTRUCTIVO-CUENTAS.md`) | 2026-11-25 |
 | 1 · Teardown | No iniciada (depende de Facundo) | |
-| 2 · Marca | Borrador listo; espera que Facundo elija logo y apruebe mensajes | 2026-11-25 |
-| 3 · Construcción | No iniciada (lógica de dominio en `packages/core`; esquema, motor de corridas y Workflow en `shopify/`) | |
-| 4 · Sitio y soporte | No iniciada | |
+| 2 · Marca | Logo B elegido y aplicado. Mensajes revisados tras el análisis de políticas: esperan nueva aprobación | 2026-11-25 |
+| 3 · Construcción | En curso: capa de Klaviyo, ingesta de pedidos, motor de corridas y gateway hechos y probados offline. Faltan rutas de OAuth, orquestación de auditoría y simulación, interfaz, programación, deshacer y cobro | 2026-11-25 |
+| 4 · Sitio y soporte | Sitio construido en `site/`, sin publicar. Faltan datos legales, URL de la ficha y bot de soporte | 2026-11-25 |
 | 5 · Lanzamiento | No iniciada | |
 
 ## Cómo se verificó (importante)
@@ -148,3 +148,48 @@ Hallazgos que cambian el diseño de las pruebas de integración y de la Fase 3:
 - Instalación real en la tienda de desarrollo (falta cuenta de Shopify).
 - `npm run lint -w @tiersaver/shopify` falla desde antes de esta sesión (apunta a un `.gitignore` que no existe en `shopify/`). Sin arreglar.
 - No hay Cron Trigger todavía (Fase 3, programación).
+
+### 2026-11-25 (segunda sesión, segunda parte): decisiones de Facundo y avance de fases
+
+**Decisiones de Facundo (reemplazan la B de más arriba y adelantan parte de la A)**
+
+| Tema | Decisión |
+| --- | --- |
+| Logo | Opción B (Lower Step). Archivos en `brand/logo/final/` |
+| Abogado | En lugar de la consulta, análisis de políticas sobre fuentes primarias: `12-CUMPLIMIENTO-KLAVIYO.md`. No es asesoramiento legal |
+| Precio | Tramos fijos por tamaño de lista (US$ 29 / 79 / 149); el ciclo sin limpieza no se cobra. Reemplaza el 20% del ahorro. **Los cortes 25.000 / 75.000 / 150.000 son una propuesta de la sesión, sin confirmar** |
+| Reactivación por compra | Fuera del MVP. Deshacer queda; un perfil restaurado no vuelve a ser candidato por 365 días |
+| Reglas | Por defecto, los criterios publicados por Klaviyo: creado hace 365 días o más, 5 o más mails recibidos en 504 días, nunca abrió, hizo clic, visitó ni compró. Modo ampliado opcional con pisos fijos (compras 365, clics/aperturas/sitio 182, antigüedad 180) |
+| Mensajes | Rigen las reglas de texto de `12-CUMPLIMIENTO-KLAVIYO.md` sección 3.2 |
+
+**Aplicado en código (probado)**
+- `packages/core`: `charge.ts` (precio fijo, sin cargo sin limpieza, uno por ciclo), `rules.ts` (ventanas `null` = "alguna vez", `emailsReceived`, pisos nuevos, dato desconocido protege también para aperturas automáticas), `simulation.ts`. Se eliminó `billableSavingsCents`. 83 tests.
+- `shopify`: migración `0002_flat_pricing_and_klaviyo_criteria.sql` (reconstruye `settings` y `usage_charges`; quita `reactivation_enabled`).
+- `scripts/seed-klaviyo`: 39 cohortes para las reglas nuevas, con decisión esperada en modo por defecto y ampliado; siembra eventos "Received Email". 138 tests. Sigue sin haber corrido contra Klaviyo.
+- Documentos 00 a 10, `CLAUDE.md` (descripción y regla 6: "si no hay limpieza, no se cobra"), `README.md` y `brand/messaging.md` reescritos según las decisiones.
+
+**Fase 3: capa de Klaviyo (`shopify/app/klaviyo/`, probada offline con un Klaviyo falso; nunca llamó a la API real)**
+- OAuth con PKCE y estado firmado sin tabla; tokens cifrados; refresco serializado por tienda; `invalid_grant` marca `needs_reauth`; `disconnect` revoca en Klaviyo y se llama al desinstalar.
+- Cliente con límite de tasa a la mitad de lo publicado, reintentos con `Retry-After`, errores sin tokens ni mails.
+- **Lectura de inactividad por segmento**: la app crea un segmento en la cuenta del merchant con los criterios de Klaviyo y lee sus miembros (unas 360 requests para 150.000 perfiles; leer eventos serían más de 30.000). Pide el scope `segments:write` y deja un segmento visible en la cuenta. Solo los miembros pueden ser candidatos, así que un segmento roto da menos candidatos, nunca más.
+- Gateway real de supresión: resuelve IDs a mails en el momento, saltea perfiles que ya no existen, sin mail o cuyo mail cambió desde la simulación.
+- **Interruptor `SUPPRESSION_ENABLED`**: ausente por defecto; sin él ninguna corrida suprime. Deshacer no depende del interruptor. Solo Facundo lo enciende.
+- Diferencias con lo anotado antes: el tipo de uso de perfiles activos sí está documentado (`active_profiles`); des-suprimir pide solo `subscriptions:write`; la guía de límites dice 700/min (el spec, 750); la ayuda llama "Apple Privacy Open" a la propiedad de aperturas automáticas; los 90 días para volver a suprimir se cuentan desde la supresión original.
+
+**Fase 3: pedidos de Shopify**
+- `shopify/app/orders/purchases.ts`: guarda por comprador solo el SHA-256 del mail y la fecha del último pedido. Alta de tienda con settings por defecto al instalar, Workflow `tiersaver-orders-backfill` (una página por paso) y webhook `orders/create`.
+- Sin `read_all_orders` la cobertura es de 60 días y, con las reglas nuevas ("nunca compró"), la app no encuentra candidatos: **ese permiso pasa a ser requisito para que el producto haga algo**, salvo que el historial de "Placed Order" de Klaviyo alcance.
+- El Workflow de backfill y el hook de instalación no se pudieron probar contra una tienda real.
+
+**Fase 4: sitio (`site/`, sin publicar)**
+- Landing, chequeo de salud de lista (reemplaza la calculadora de ahorro; usa la tabla de precios de core), precios, 9 artículos de ayuda, 3 guías, privacidad y términos en borrador, CSP estricta, sin requests externas. 291 tests, verificador de enlaces y pasada en Chromium sin errores.
+- Placeholders a completar: URL de la ficha, entidad legal, dirección, mails de contacto y soporte, fecha de vigencia.
+
+**Cuentas**: pasos en `13-INSTRUCTIVO-CUENTAS.md`. Cambios respecto de lo anotado: el CLI de Shopify se autentica con un token de service account (`SHOPIFY_SERVICE_ACCOUNT_TOKEN`); la cuenta gratis de Klaviyo no cobra ni sube de plan por pasarse de 250 perfiles (solo bloquea envíos).
+
+**Abierto / no verificado**
+- Nada de la capa de Klaviyo ni del seed se probó contra una cuenta real. Lo primero a mirar: si `subscriptions.sms` viene en perfiles sin teléfono (si no viene, todo queda protegido y no hay candidatos), el cuerpo exacto que acepta la creación de segmentos y los nombres de las métricas nativas.
+- Guardarraíles de `12-CUMPLIMIENTO-KLAVIYO.md` 3.1 sin implementar: aviso al deshacer una corrida ya contada en una renovación, detector de ciclos, modo automático solo con criterios estrictos.
+- La auditoría todavía guarda una estimación de plan de Klaviyo (`savings.ts`): falta decidir si la app la muestra.
+- El cobro no está conectado a Shopify.
+- `docs/06-TEARDOWN-REA.md` y `docs/09-FUENTES.md` conservan afirmaciones viejas (competidores gratis, ticket promedio).

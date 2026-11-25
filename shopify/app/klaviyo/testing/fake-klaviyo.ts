@@ -91,7 +91,15 @@ export class FakeKlaviyo {
   events: FakeEvent[] = [];
   metrics: { id: string; name: string; integration: { name: string; category: string } }[] = [];
   lists: { id: string; name: string; members: string[] }[] = [];
-  segments: { id: string; name: string; members: string[]; isActive?: boolean }[] = [];
+  segments: {
+    id: string;
+    name: string;
+    members: string[];
+    isActive?: boolean;
+    definition?: unknown;
+    /** While true, GET reports `is_processing: true`. Set after every create / update; the test ends it. */
+    isProcessing?: boolean;
+  }[] = [];
   billingUsage: { id: string; usage_used: number; usage_max: number; unit: string }[] = [];
   suppressed = new Set<string>();
   jobs: FakeJob[] = [];
@@ -257,7 +265,7 @@ export class FakeKlaviyo {
     }
     if (req.headers.get("revision") !== REVISION) return apiError(400, "invalid", "revision header is required");
     if (!(req.headers.get("Accept") ?? "").includes(MEDIA_TYPE)) return apiError(406, "not_acceptable");
-    if (req.method === "POST" && req.headers.get("Content-Type") !== MEDIA_TYPE) {
+    if (req.method !== "GET" && req.headers.get("Content-Type") !== MEDIA_TYPE) {
       return apiError(415, "unsupported_media_type");
     }
 
@@ -311,12 +319,28 @@ export class FakeKlaviyo {
       const size = Number(q.get("page[size]") ?? 10);
       if (!(size >= 1 && size <= 10)) return apiError(400, "invalid", "page size must be between 1 and 10");
       const isList = path === "/api/lists";
-      const items: { id: string; name: string; isActive?: boolean }[] = isList ? this.lists : this.segments;
-      return this.page(req, items, size, 10, (g) => ({
-        type: isList ? "list" : "segment",
-        id: g.id,
-        attributes: isList ? { name: g.name } : { name: g.name, is_active: g.isActive ?? true },
-      }));
+      let items: { id: string; name: string }[] = isList ? this.lists : this.segments;
+      const filter = q.get("filter");
+      if (filter) {
+        const byName = filter.match(/^equals\(name,"((?:[^"\\]|\\.)*)"\)$/);
+        if (!byName) return apiError(400, "invalid", "unsupported filter");
+        items = items.filter((g) => g.name === byName[1]);
+      }
+      return this.page(req, items, size, 10, (g) =>
+        isList ? { type: "list", id: g.id, attributes: { name: g.name } } : this.segmentResource(g.id, q.get("fields[segment]")),
+      );
+    }
+    if (path === "/api/segments" && req.method === "POST") return this.writeSegment(req, null);
+    if ((m = path.match(/^\/api\/segments\/([^/]+)$/))) {
+      const segment = this.segments.find((g) => g.id === m![1]);
+      if (!segment) return apiError(404, "not_found");
+      if (req.method === "PATCH") return this.writeSegment(req, segment.id);
+      if (req.method === "GET") return json(200, { data: this.segmentResource(segment.id, q.get("fields[segment]")) });
+    }
+    if (req.method === "GET" && (m = path.match(/^\/api\/segments\/([^/]+)\/profiles$/))) {
+      const segment = this.segments.find((g) => g.id === m![1]);
+      if (!segment) return apiError(404, "not_found");
+      return this.listProfiles(req, new Set(segment.members));
     }
     if (req.method === "GET" && (m = path.match(/^\/api\/(lists|segments)\/([^/]+)\/relationships\/profiles$/))) {
       const group = (m[1] === "lists" ? this.lists : this.segments).find((g) => g.id === m![2]);
@@ -382,7 +406,70 @@ export class FakeKlaviyo {
     return { type: "profile", id: p.id, attributes, links: { self: `https://a.klaviyo.com/api/profiles/${p.id}/` } };
   }
 
-  private listProfiles(req: FakeRequest): Response {
+  private segmentResource(id: string, fieldsParam: string | null): unknown {
+    const segment = this.segments.find((g) => g.id === id)!;
+    const all: Record<string, unknown> = {
+      name: segment.name,
+      definition: segment.definition ?? { condition_groups: [] },
+      is_processing: segment.isProcessing ?? false,
+      is_active: segment.isActive ?? true,
+    };
+    const fields = fieldsParam ? fieldsParam.split(",") : ["name", "definition", "is_processing", "is_active"];
+    return { type: "segment", id, attributes: Object.fromEntries(fields.filter((f) => f in all).map((f) => [f, all[f]])) };
+  }
+
+  /** POST /api/segments (id null) or PATCH /api/segments/{id}. Validates the definition against the documented shapes. */
+  private writeSegment(req: FakeRequest, id: string | null): Response {
+    let body: { data?: { type?: string; id?: string; attributes?: { name?: unknown; definition?: unknown } } };
+    try {
+      body = JSON.parse(req.body);
+    } catch {
+      return apiError(400, "invalid", "body is not JSON");
+    }
+    if (body.data?.type !== "segment") return apiError(400, "invalid", "wrong resource type");
+    if (id !== null && body.data.id !== id) return apiError(409, "conflict", "id mismatch");
+    const attributes = body.data.attributes ?? {};
+    const problem = FakeKlaviyo.definitionProblem(attributes.definition);
+    if (problem) return apiError(400, "invalid", problem);
+    if (id === null) {
+      if (typeof attributes.name !== "string" || !attributes.name) return apiError(400, "invalid", "name is required");
+      const created = { id: `SEG${String(this.segments.length + 1).padStart(3, "0")}`, name: attributes.name, members: [] as string[], definition: attributes.definition, isProcessing: true };
+      this.segments.push(created);
+      return json(201, { data: this.segmentResource(created.id, null) });
+    }
+    const segment = this.segments.find((g) => g.id === id)!;
+    segment.definition = attributes.definition;
+    segment.isProcessing = true;
+    return json(200, { data: this.segmentResource(segment.id, null) });
+  }
+
+  /** Returns what is wrong with a segment definition, or null. Only the condition types TierSaver uses are accepted. */
+  static definitionProblem(definition: unknown): string | null {
+    const groups = (definition as { condition_groups?: unknown })?.condition_groups;
+    if (!Array.isArray(groups) || groups.length === 0) return "condition_groups is required";
+    for (const group of groups) {
+      const conditions = (group as { conditions?: unknown })?.conditions;
+      if (!Array.isArray(conditions) || conditions.length === 0) return "conditions is required";
+      for (const c of conditions as Record<string, any>[]) {
+        if (c.type === "profile-marketing-consent") {
+          const k = c.consent;
+          if (k?.channel !== "email" || k?.can_receive_marketing !== true || k?.consent_status?.subscription !== "any") return "bad consent condition";
+        } else if (c.type === "profile-metric") {
+          if (typeof c.metric_id !== "string" || !c.metric_id) return "metric_id is required";
+          if (c.measurement !== "count") return "bad measurement";
+          const f = c.measurement_filter;
+          if (f?.type !== "numeric" || !["equals", "greater-than-or-equal"].includes(f?.operator) || !Number.isInteger(f?.value)) return "bad measurement_filter";
+          const t = c.timeframe_filter;
+          const alltime = t?.type === "date" && t?.operator === "alltime";
+          const inTheLast = t?.type === "date" && t?.operator === "in-the-last" && ["day", "hour", "week"].includes(t?.unit) && Number.isInteger(t?.quantity);
+          if (!alltime && !inTheLast) return "bad timeframe_filter";
+        } else return `unsupported condition type ${String(c.type)}`;
+      }
+    }
+    return null;
+  }
+
+  private listProfiles(req: FakeRequest, only?: Set<string>): Response {
     const q = req.url.searchParams;
     const size = Number(q.get("page[size]") ?? 20);
     if (!(size >= 1 && size <= 100)) return apiError(400, "invalid", "page size must be between 1 and 100");
@@ -394,6 +481,7 @@ export class FakeKlaviyo {
       return apiError(400, "invalid", "subscriptions requires additional-fields[profile]=subscriptions");
     }
     let all = [...this.profiles.values()];
+    if (only) all = all.filter((p) => only.has(p.id));
     const filter = q.get("filter");
     if (filter) {
       const m = filter.match(/^any\(id,\[(.*)\]\)$/);

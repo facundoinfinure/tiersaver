@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Public site for TierSaver: landing, estimate calculator, legal drafts and help center. Static HTML generated from src/ by build/build.mjs.",
+  "description": "Public site for TierSaver: landing page, list health check, legal drafts and help center. Static HTML generated from src/ by build/build.mjs.",
   "engines": {
     "node": ">=22.12"
   },

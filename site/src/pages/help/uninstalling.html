@@ -10,9 +10,9 @@ order: 8
 updated: 2026-11-25
 -->
 <h2>Your Klaviyo list</h2>
-<p>Profiles that were suppressed stay suppressed. TierSaver does not reactivate anyone when you uninstall. You can reactivate them from Klaviyo at any time: Klaviyo lets you remove manual suppressions one profile at a time or in bulk for a list or segment.</p>
-<p>If you want a cleanup reversed by TierSaver, <a href="/help/undo-and-the-90-day-rule">undo the run</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its run log is deleted.</p>
-<p>Scheduled cleanups stop. Nothing further is suppressed.</p>
+<p>Profiles that were suppressed stay suppressed. TierSaver does not restore anyone when you uninstall. You can remove suppressions from Klaviyo at any time: Klaviyo lets you do it one profile at a time, or in bulk for a list or segment.</p>
+<p>If a run needs correcting, <a href="/help/undo">undo it</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its run log is deleted.</p>
+<p>Monthly cleanups stop. Nothing further is suppressed.</p>
 
 <h2>Your data</h2>
 <ul>
@@ -22,7 +22,12 @@ updated: 2026-11-25
 <p>What is stored in the first place is listed in <a href="/help/data-and-privacy">data and privacy</a>.</p>
 
 <h2>Billing</h2>
-<p>Charges go through Shopify. After you uninstall, TierSaver creates no further charges. If a cleanup lowered your tier but your Klaviyo billing cycle had not renewed yet when you uninstalled, TierSaver can no longer read your Klaviyo billing data, so it cannot confirm a saving and does not charge for it.</p>
+<p>Charges go through Shopify. After you uninstall, TierSaver creates no further charges.</p>
 
 <h2>If only the Klaviyo connection is lost</h2>
-<p>If TierSaver's access to Klaviyo expires or is withdrawn while the app is still installed, the app shows Klaviyo as disconnected and does nothing until you reconnect. Profiles already suppressed stay as they are.</p>
+<p>If TierSaver's access to Klaviyo expires or is withdrawn while the app is still installed, the app shows Klaviyo as disconnected, stops all cleanups and does nothing until you reconnect. Profiles already suppressed stay as they are.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  {{src.bulkSuppress}}
+</ul>

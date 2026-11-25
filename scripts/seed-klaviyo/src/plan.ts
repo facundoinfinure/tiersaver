@@ -3,8 +3,9 @@
  * batched under the verified limits. Pure: used by --dry-run and by the runner.
  */
 import { chunk } from "@tiersaver/core";
-import { ENDPOINTS, LIMITS, MACHINE_OPEN_PROPERTY, SEED_PROPERTIES, type EndpointName } from "./klaviyo-config.js";
-import { countByCohort, formatDecision, type SeedDataset, type SeedProfile } from "./generate.js";
+import { RULE_MODES, type RuleMode } from "./cohorts.js";
+import { ENDPOINTS, LIMITS, MACHINE_OPEN_PROPERTY, METRICS, SEED_PROPERTIES, type EndpointName, type MetricKey } from "./klaviyo-config.js";
+import { countByCohort, countEmailsReceived, formatDecision, type SeedDataset, type SeedProfile } from "./generate.js";
 
 export type StepKind = "import" | "events" | "suppress" | "unsuppress" | "subscribe_sms";
 
@@ -29,8 +30,12 @@ export interface PlanOptions {
 
 export interface Plan {
   steps: PlanStep[];
-  totals: { profiles: number; events: number; suppressed: number; reactivated: number; sms: number };
-  cohorts: { id: string; count: number }[];
+  totals: { profiles: number; events: number; suppressed: number; restored: number; sms: number };
+  /** Events per Klaviyo metric name, in the order of METRICS. */
+  eventsByMetric: { metric: MetricKey; name: string; count: number }[];
+  cohorts: { id: string; count: number; expected: Record<RuleMode, string> }[];
+  /** Profiles per decision kind in each rule mode, at the dataset's `now` with full coverage. */
+  expectedTotals: Record<RuleMode, { candidate: number; protected: number; skipped: number }>;
   /** POSTs plus the one account check; job polling comes on top. */
   submitRequests: number;
   polledJobs: number;
@@ -84,7 +89,9 @@ function profileResource(profile: SeedProfile, dataset: SeedDataset) {
         [SEED_PROPERTIES.index]: profile.index,
         [SEED_PROPERTIES.now]: dataset.now.toISOString(),
         [SEED_PROPERTIES.createdAt]: profile.createdAt.toISOString(),
-        [SEED_PROPERTIES.expected]: formatDecision(profile.expected),
+        [SEED_PROPERTIES.expected]: formatDecision(profile.expected.default),
+        [SEED_PROPERTIES.expectedWide]: formatDecision(profile.expected.wide),
+        [SEED_PROPERTIES.emailsReceived]: countEmailsReceived(profile, dataset.now),
       },
     },
   };
@@ -162,7 +169,11 @@ function smsBody(profiles: SeedProfile[], dataset: SeedDataset) {
 
 export function buildPlan(dataset: SeedDataset, options: PlanOptions = {}): Plan {
   const steps: PlanStep[] = [];
-  const notes: string[] = [];
+  const notes: string[] = [
+    "Klaviyo sets every profile's `created` to the import time and it cannot be backdated. Read against that date, every seeded " +
+      "profile is `new_profile` for 365 days under the default rules (180 in the wider mode). " +
+      `Integration tests must take the profile age from the ${SEED_PROPERTIES.createdAt} property.`,
+  ];
   const add = (kind: StepKind, endpoint: EndpointName, n: number, body: unknown, items: number, polled: boolean) => {
     const bytes = bytesOf(body);
     if (bytes > LIMITS.maxPayloadBytes) throw new RangeError(`step ${kind}:${n} is larger than Klaviyo's 5 MB payload limit`);
@@ -199,20 +210,20 @@ export function buildPlan(dataset: SeedDataset, options: PlanOptions = {}): Plan
     add("events", "eventBulkCreate", n, body, batch.reduce((sum, e) => sum + e.attributes.events.data.length, 0), false);
   });
 
-  // 3. Suppress the "already_suppressed" and "reactivated" cohorts, then 4. unsuppress the latter.
-  const reactivated = dataset.profiles.filter((p) => p.reactivated).map((p) => p.email);
+  // 3. Suppress the "already_suppressed" and "restored" cohorts, then 4. unsuppress the latter.
+  const restored = dataset.profiles.filter((p) => p.restored).map((p) => p.email);
   const suppressed = dataset.profiles.filter((p) => p.suppressed).map((p) => p.email);
-  chunk([...suppressed, ...reactivated], LIMITS.emailsPerSuppressionRequest).forEach((emails, n) => {
+  chunk([...suppressed, ...restored], LIMITS.emailsPerSuppressionRequest).forEach((emails, n) => {
     add("suppress", "suppress", n, suppressionBody("profile-suppression-bulk-create-job", emails), emails.length, true);
   });
-  chunk(reactivated, LIMITS.emailsPerSuppressionRequest).forEach((emails, n) => {
+  chunk(restored, LIMITS.emailsPerSuppressionRequest).forEach((emails, n) => {
     add("unsuppress", "unsuppress", n, suppressionBody("profile-suppression-bulk-delete-job", emails), emails.length, true);
   });
 
   // 5. SMS consent last: it is the step most likely to be rejected (needs SMS set up in the account).
   const sms = dataset.profiles.filter((p) => p.smsConsent);
   if (options.skipSms) {
-    notes.push('--skip-sms: the "sms_consented" cohort will NOT have SMS consent and will evaluate as a candidate.');
+    notes.push('--skip-sms: the "sms_consented" cohort will NOT have SMS consent and will evaluate as a candidate in both modes.');
   } else {
     chunk(sms, LIMITS.profilesPerSubscribeRequest).forEach((batch, n) => {
       add("subscribe_sms", "subscribe", n, smsBody(batch, dataset), batch.length, false);
@@ -222,16 +233,28 @@ export function buildPlan(dataset: SeedDataset, options: PlanOptions = {}): Plan
   const polledJobs = steps.filter((s) => s.polled).length;
   const imports = steps.filter((s) => s.kind === "import").length;
   const cohortCounts = countByCohort(dataset);
+  const expectedByCohort = new Map<string, Record<RuleMode, string>>();
+  const expectedTotals = { default: { candidate: 0, protected: 0, skipped: 0 }, wide: { candidate: 0, protected: 0, skipped: 0 } };
+  const metricCounts = new Map<MetricKey, number>();
+  for (const p of dataset.profiles) {
+    if (!expectedByCohort.has(p.cohort)) {
+      expectedByCohort.set(p.cohort, { default: formatDecision(p.expected.default), wide: formatDecision(p.expected.wide) });
+    }
+    for (const mode of RULE_MODES) expectedTotals[mode][p.expected[mode].kind] += 1;
+    for (const e of p.events) metricCounts.set(e.metric, (metricCounts.get(e.metric) ?? 0) + 1);
+  }
   return {
     steps,
     totals: {
       profiles: dataset.profiles.length,
       events: dataset.profiles.reduce((sum, p) => sum + p.events.length, 0),
       suppressed: suppressed.length,
-      reactivated: reactivated.length,
+      restored: restored.length,
       sms: sms.length,
     },
-    cohorts: [...cohortCounts].map(([id, count]) => ({ id, count })),
+    eventsByMetric: (Object.keys(METRICS) as MetricKey[]).map((metric) => ({ metric, name: METRICS[metric], count: metricCounts.get(metric) ?? 0 })),
+    cohorts: [...cohortCounts].map(([id, count]) => ({ id, count, expected: expectedByCohort.get(id) as Record<RuleMode, string> })),
+    expectedTotals,
     submitRequests: steps.length + 1,
     polledJobs,
     // ~2 s per request, ~90 s per import job, ~20 s per suppression job. Guesses, not documented figures.
@@ -248,9 +271,20 @@ export function formatPlan(dataset: SeedDataset, plan: Plan): string {
   lines.push(`Email pattern  ${dataset.runTag}-<nnnnn>@${dataset.emailDomain}`);
   lines.push(`Profiles       ${plan.totals.profiles}`);
   lines.push(`Events         ${plan.totals.events}`);
+  for (const m of plan.eventsByMetric) lines.push(`  ${m.name.padEnd(18)} ${String(m.count).padStart(6)}`);
+  lines.push("  (all in metrics owned by the API integration, not Klaviyo's built-in ones)");
   lines.push("");
-  lines.push("Cohorts");
-  for (const cohort of plan.cohorts) lines.push(`  ${cohort.id.padEnd(38)} ${String(cohort.count).padStart(5)}`);
+  lines.push("Cohorts (expected decision under the default rules; under the wider mode at its floors when different)");
+  for (const cohort of plan.cohorts) {
+    const wide = cohort.expected.wide === cohort.expected.default ? "" : `  | wide: ${cohort.expected.wide}`;
+    lines.push(`  ${cohort.id.padEnd(40)} ${String(cohort.count).padStart(5)}  ${cohort.expected.default}${wide}`);
+  }
+  lines.push("");
+  lines.push("Expected totals, evaluated at Now with the intended creation dates (ts_seed_created_at)");
+  for (const mode of RULE_MODES) {
+    const t = plan.expectedTotals[mode];
+    lines.push(`  ${mode.padEnd(8)} ${String(t.candidate).padStart(5)} candidates  ${String(t.protected).padStart(5)} protected  ${String(t.skipped).padStart(5)} skipped`);
+  }
   lines.push("");
   lines.push("Requests");
   lines.push(`  GET  ${ENDPOINTS.accounts.path.padEnd(46)} 1  (account check)`);

@@ -4,13 +4,14 @@
  */
 import {
   DEFAULT_RULE_SETTINGS,
+  EMAILS_RECEIVED_WINDOW_DAYS,
   evaluateProfile,
   type DataCoverage,
   type Decision,
   type ProfileSignals,
   type RuleSettings,
 } from "@tiersaver/core";
-import { COHORTS, allocateCohorts, type CohortDefinition, type ExpectedDecision } from "./cohorts.js";
+import { COHORTS, allocateCohorts, type CohortDefinition, type ExpectedByMode, type ExpectedDecision } from "./cohorts.js";
 import { LIMITS, METRICS, type MetricKey } from "./klaviyo-config.js";
 import { createRng, deriveSeed } from "./prng.js";
 
@@ -59,9 +60,11 @@ export interface SeedProfile {
   smsConsent: boolean;
   suppressed: boolean;
   protectedGroup: boolean;
-  reactivated: boolean;
-  expected: ExpectedDecision;
-  expectedIgnoringMachineOpens: ExpectedDecision;
+  /** Suppressed and then unsuppressed by the seed run. */
+  restored: boolean;
+  /** Expected decision under DEFAULT_RULE_SETTINGS and under WIDE_RULE_SETTINGS. */
+  expected: ExpectedByMode;
+  expectedIgnoringMachineOpens: ExpectedByMode;
 }
 
 export interface SeedDataset {
@@ -85,6 +88,7 @@ const METRIC_CODE: Record<MetricKey, string> = {
   purchase: "order",
   activeOnSite: "site",
   startedCheckout: "checkout",
+  received: "recv",
 };
 
 const RUN_TAG_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -116,16 +120,14 @@ function buildProfile(
   const recipe = cohort.build(rng);
 
   const perMetric = new Map<MetricKey, number>();
+  const makeEvent = (metric: MetricKey, timeMs: number): SeedEvent => {
+    const n = (perMetric.get(metric) ?? 0) + 1;
+    perMetric.set(metric, n);
+    return { metric, metricName: METRICS[metric], time: new Date(timeMs), uniqueId: `${ctx.runTag}-${index}-${METRIC_CODE[metric]}-${n}` };
+  };
   const events: SeedEvent[] = recipe.events.map((e) => {
-    const n = (perMetric.get(e.metric) ?? 0) + 1;
-    perMetric.set(e.metric, n);
     const jitterMs = e.exact ? 0 : rng.int(0, 86_399) * 1000;
-    const event: SeedEvent = {
-      metric: e.metric,
-      metricName: METRICS[e.metric],
-      time: new Date(ctx.nowMs - e.daysAgo * DAY_MS - jitterMs),
-      uniqueId: `${ctx.runTag}-${index}-${METRIC_CODE[e.metric]}-${n}`,
-    };
+    const event = makeEvent(e.metric, ctx.nowMs - e.daysAgo * DAY_MS - jitterMs);
     if (e.metric === "open") event.machineOpen = e.machine === true;
     if (e.metric === "purchase") event.value = rng.int(1500, 25_000) / 100;
     return event;
@@ -139,6 +141,18 @@ function buildProfile(
     createdMs = firstEvent.time.getTime() - rng.int(1, 30) * DAY_MS;
   }
 
+  // "Received Email" events: after the profile was created, and on the declared side of the counting window.
+  const ageSeconds = Math.floor((ctx.nowMs - createdMs) / 1000);
+  const windowSeconds = EMAILS_RECEIVED_WINDOW_DAYS * 86_400;
+  const receivedBetween = (howMany: number, fromSecondsAgo: number, toSecondsAgo: number): void => {
+    if (howMany > 0 && fromSecondsAgo > toSecondsAgo) throw new RangeError(`cohort ${cohort.id}: the profile is too young for its received emails`);
+    for (let i = 0; i < howMany; i += 1) events.push(makeEvent("received", ctx.nowMs - rng.int(fromSecondsAgo, toSecondsAgo) * 1000));
+  };
+  // An hour clear of `now`, of the profile's creation and of the window edge, so no count hinges on a second.
+  receivedBetween(recipe.emailsReceived, 3_600, Math.min(windowSeconds, ageSeconds) - 3_600);
+  receivedBetween(recipe.emailsReceivedBeforeWindow ?? 0, windowSeconds + 3_600, ageSeconds - 3_600);
+  events.sort((a, b) => a.time.getTime() - b.time.getTime() || a.uniqueId.localeCompare(b.uniqueId));
+
   return {
     index,
     email: `${ctx.runTag}-${String(index).padStart(5, "0")}@${ctx.emailDomain}`,
@@ -151,7 +165,7 @@ function buildProfile(
     smsConsent: recipe.smsConsent === true,
     suppressed: recipe.suppressed === true,
     protectedGroup: recipe.protectedGroup === true,
-    reactivated: recipe.reactivated === true,
+    restored: recipe.restored === true,
     expected: structuredClone(cohort.expected),
     expectedIgnoringMachineOpens: structuredClone(cohort.expectedIgnoringMachineOpens ?? cohort.expected),
   };
@@ -191,7 +205,11 @@ export function generateDataset(options: GenerateOptions): SeedDataset {
   return { seed, count, now: new Date(nowMs), emailDomain, runTag, profiles };
 }
 
-/** Coverage that reaches further back than any event the generator produces. */
+/**
+ * Coverage that reaches further back than any event or profile the generator
+ * produces. The default rules look at the whole history ("ever"), and core
+ * then requires the data to start at or before each profile's `createdAt`.
+ */
 export function fullCoverage(now: Date): DataCoverage {
   const since = new Date(now.getTime() - 5000 * DAY_MS);
   return { engagementSince: since, purchasesSince: since, siteActivitySince: since };
@@ -209,8 +227,21 @@ export interface SignalOverrides {
    * (the import time) to predict what the app sees without a test hook.
    */
   createdAt?: Date | null;
-  /** When the seed run unsuppressed the "reactivated" cohort. Defaults to the dataset `now`. */
-  reactivatedAt?: Date;
+  /** When the seed run unsuppressed the "restored" cohort. Defaults to the dataset `now`. */
+  restoredAt?: Date;
+  /**
+   * Replace the count of emails received, e.g. `null` for "the app could not
+   * read the send history". Defaults to counting the seeded "Received Email" events.
+   */
+  emailsReceived?: number | null;
+  /** Instant the emails-received window is counted back from. Defaults to the dataset `now`. */
+  at?: Date;
+}
+
+/** Seeded "Received Email" events inside the last EMAILS_RECEIVED_WINDOW_DAYS days before `at`. */
+export function countEmailsReceived(profile: Pick<SeedProfile, "events">, at: Date): number {
+  const windowMs = EMAILS_RECEIVED_WINDOW_DAYS * DAY_MS;
+  return profile.events.filter((e) => e.metric === "received" && e.time.getTime() <= at.getTime() && at.getTime() - e.time.getTime() < windowMs).length;
 }
 
 /** The signals the app should derive for a seeded profile once it reads it back from Klaviyo. */
@@ -229,9 +260,11 @@ export function toProfileSignals(profile: SeedProfile, dataset: Pick<SeedDataset
     lastClickAt: latest(times(["click"])),
     lastPurchaseAt: latest(times(["purchase"])),
     lastSiteActivityAt: latest(times(["activeOnSite", "startedCheckout"])),
+    emailsReceived: overrides.emailsReceived !== undefined ? overrides.emailsReceived : countEmailsReceived(profile, overrides.at ?? dataset.now),
     smsConsent: profile.smsConsent,
     inProtectedGroup: profile.protectedGroup,
-    reactivatedAt: profile.reactivated ? (overrides.reactivatedAt ?? dataset.now) : null,
+    // Core still calls the restore date `reactivatedAt`; it is the last unsuppression, by anyone.
+    reactivatedAt: profile.restored ? (overrides.restoredAt ?? dataset.now) : null,
   };
 }
 
@@ -239,13 +272,16 @@ export interface ExpectedRow {
   index: number;
   email: string;
   cohort: string;
-  expected: ExpectedDecision;
-  expectedIgnoringMachineOpens: ExpectedDecision;
+  /** `expected.default` under DEFAULT_RULE_SETTINGS, `expected.wide` under WIDE_RULE_SETTINGS. */
+  expected: ExpectedByMode;
+  /** The same two modes with `countMachineOpens: false`. */
+  expectedIgnoringMachineOpens: ExpectedByMode;
 }
 
 /**
- * Expected decision for every generated profile under DEFAULT_RULE_SETTINGS,
- * with full data coverage, evaluated at the dataset's `now`.
+ * Expected decision for every generated profile under both rule modes
+ * (DEFAULT_RULE_SETTINGS and WIDE_RULE_SETTINGS), with full data coverage,
+ * evaluated at the dataset's `now`.
  *
  * This is a declaration (it comes from the cohort catalogue, not from the rule
  * engine); test/generate.test.ts checks it against `evaluateProfile` so the
@@ -261,7 +297,7 @@ export function expectedDecisions(dataset: SeedDataset): ExpectedRow[] {
   }));
 }
 
-/** Compact form stored in the `ts_seed_expected` profile property. */
+/** Compact form stored in the `ts_seed_expected` and `ts_seed_expected_wide` profile properties. */
 export function formatDecision(decision: ExpectedDecision | Decision): string {
   if (decision.kind === "protected") return `protected:${[...decision.reasons].sort().join("+")}`;
   return `${decision.kind}:${decision.reason}`;
@@ -270,6 +306,7 @@ export function formatDecision(decision: ExpectedDecision | Decision): string {
 export interface EvaluateOptions extends SignalOverrides {
   /** Evaluation instant. Defaults to the dataset `now`; pass a later date to see how the dataset has aged. */
   at?: Date;
+  /** Defaults to DEFAULT_RULE_SETTINGS. Pass WIDE_RULE_SETTINGS for the wider mode. */
   settings?: RuleSettings;
   coverage?: DataCoverage;
 }
@@ -282,7 +319,7 @@ export interface EvaluateOptions extends SignalOverrides {
 export function evaluateSeedProfile(profile: SeedProfile, dataset: Pick<SeedDataset, "now">, options: EvaluateOptions = {}): Decision {
   const at = options.at ?? dataset.now;
   return evaluateProfile(
-    toProfileSignals(profile, dataset, options),
+    toProfileSignals(profile, dataset, { ...options, at }),
     options.settings ?? DEFAULT_RULE_SETTINGS,
     options.coverage ?? fullCoverage(at),
     at,

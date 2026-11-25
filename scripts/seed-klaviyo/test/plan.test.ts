@@ -77,10 +77,22 @@ describe("buildPlan: batching under the verified Klaviyo limits", () => {
     expect(first).toMatchObject({ type: "profile", attributes: { email: ds.profiles[0]!.email } });
     expect(first.attributes.properties).toMatchObject({
       [SEED_PROPERTIES.run]: ds.runTag,
-      [SEED_PROPERTIES.cohort]: "recent_purchaser",
+      [SEED_PROPERTIES.cohort]: "never_engaged",
       [SEED_PROPERTIES.now]: "2026-11-25T12:00:00.000Z",
-      [SEED_PROPERTIES.expected]: "protected:recent_purchase",
+      [SEED_PROPERTIES.expected]: "candidate:never_engaged",
+      [SEED_PROPERTIES.expectedWide]: "candidate:never_engaged",
     });
+    expect(first.attributes.properties[SEED_PROPERTIES.emailsReceived]).toBeGreaterThanOrEqual(5);
+    // Both expectations travel with every profile, and they differ where the modes differ.
+    const byCohort = new Map<string, any>(of(plan.steps, "import").flatMap((s) => importProfiles(s)).map((p) => [p.attributes.properties[SEED_PROPERTIES.cohort], p.attributes.properties]));
+    expect(byCohort.get("purchased_long_ago")).toMatchObject({ ts_seed_expected: "protected:recent_purchase", ts_seed_expected_wide: "candidate:lapsed" });
+    expect(byCohort.get("profile_180_to_364_days")).toMatchObject({ ts_seed_expected: "protected:new_profile", ts_seed_expected_wide: "candidate:never_engaged" });
+    expect(byCohort.get("boundary_emails_received_4")).toMatchObject({ ts_seed_expected: "protected:not_enough_emails_received", ts_seed_emails_received: 4 });
+    expect(byCohort.get("no_emails_received")).toMatchObject({ ts_seed_emails_received: 0 });
+    for (const properties of byCohort.values()) {
+      expect(properties.ts_seed_expected).toMatch(/^(candidate|protected|skipped):/);
+      expect(properties.ts_seed_expected_wide).toMatch(/^(candidate|protected|skipped):/);
+    }
     // A phone number Klaviyo dislikes would fail the whole import; it only travels in the SMS step.
     expect(JSON.stringify(importStep.body)).not.toContain("phone_number");
 
@@ -98,6 +110,10 @@ describe("buildPlan: batching under the verified Klaviyo limits", () => {
     const opens = allEvents.filter((e) => e.attributes.metric.data.attributes.name === "Opened Email");
     expect(opens.some((e) => e.attributes.properties[MACHINE_OPEN_PROPERTY] === true)).toBe(true);
     expect(opens.every((e) => typeof e.attributes.properties[MACHINE_OPEN_PROPERTY] === "boolean")).toBe(true);
+    const received = allEvents.filter((e) => e.attributes.metric.data.attributes.name === "Received Email");
+    expect(received.length).toBe(plan.eventsByMetric.find((m) => m.metric === "received")!.count);
+    expect(received.length).toBeGreaterThan(ds.count * 4);
+    expect(received.every((e) => e.attributes.unique_id.includes("-recv-") && e.attributes.value === undefined)).toBe(true);
     const orders = allEvents.filter((e) => e.attributes.metric.data.attributes.name === "Placed Order");
     expect(orders.every((e) => e.attributes.value > 0 && e.attributes.value_currency === "USD")).toBe(true);
 
@@ -116,13 +132,14 @@ describe("buildPlan: batching under the verified Klaviyo limits", () => {
     }
   });
 
-  it("suppresses exactly the suppressed and reactivated cohorts, and unsuppresses only the latter", () => {
+  it("suppresses exactly the suppressed and restored cohorts, and unsuppresses only the latter", () => {
     const ds = generateDataset({ now: NOW });
     const plan = buildPlan(ds);
     const emailsOf = (kind: PlanStep["kind"]) => of(plan.steps, kind).flatMap((s) => importProfiles(s).map((p) => p.attributes.email)).sort();
     const cohort = (id: string) => ds.profiles.filter((p) => p.cohort === id).map((p) => p.email);
-    expect(emailsOf("suppress")).toEqual([...cohort("already_suppressed"), ...cohort("reactivated")].sort());
-    expect(emailsOf("unsuppress")).toEqual(cohort("reactivated").sort());
+    expect(emailsOf("suppress")).toEqual([...cohort("already_suppressed"), ...cohort("restored")].sort());
+    expect(emailsOf("unsuppress")).toEqual(cohort("restored").sort());
+    expect(plan.totals).toMatchObject({ suppressed: 120, restored: 30 });
     // Bulk subscribe lifts USER_SUPPRESSED, so the SMS cohort must not overlap the suppressed one.
     const sms = new Set(ds.profiles.filter((p) => p.smsConsent).map((p) => p.email));
     expect(emailsOf("suppress").some((e) => sms.has(e))).toBe(false);
@@ -154,7 +171,21 @@ describe("buildPlan: batching under the verified Klaviyo limits", () => {
   it("prints counts per cohort, request counts and an estimated duration", () => {
     const ds = generateDataset({ now: NOW });
     const text = formatPlan(ds, buildPlan(ds));
-    expect(text).toMatch(/lapsed\s+378/);
+    expect(text).toMatch(/never_engaged\s+444\s+candidate:never_engaged$/m);
+    expect(text).toMatch(/purchased_long_ago\s+150\s+protected:recent_purchase\s+\| wide: candidate:lapsed$/m);
+    expect(text).toMatch(/Received Email\s+\d{5}/);
+    expect(text).toMatch(/default\s+\d+ candidates\s+\d+ protected\s+120 skipped/);
+    expect(text).toMatch(/wide\s+\d+ candidates\s+\d+ protected\s+120 skipped/);
+    expect(text).toContain("ts_seed_created_at");
+    const plan = buildPlan(ds);
+    expect(plan.eventsByMetric.reduce((sum, m) => sum + m.count, 0)).toBe(plan.totals.events);
+    for (const mode of ["default", "wide"] as const) {
+      const t = plan.expectedTotals[mode];
+      expect(t.candidate + t.protected + t.skipped).toBe(ds.count);
+    }
+    expect(plan.expectedTotals.wide.candidate).toBeGreaterThan(plan.expectedTotals.default.candidate);
+    // Request count stays small: the received emails add events, not profiles.
+    expect(plan.submitRequests).toBeLessThan(60);
     expect(text).toMatch(/Total: \d+ requests/);
     expect(text).toMatch(/Estimated duration: about \d+ min/);
   });

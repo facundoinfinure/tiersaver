@@ -10,47 +10,59 @@ import type { EngagementSignal } from "./config";
  * end in protection, never in candidacy. Each unknown is therefore replaced by
  * the value that protects, and reported in `gaps` so the UI can say why.
  *
- * ## How engagement is read (design decision, 2026-11-25)
+ * ## How engagement is read (design decision, 2026-11-25, revised the same day)
  *
- * GET /api/profiles has no "last opened / clicked / ordered" field, so the
- * dates come from somewhere else. Options checked against the 2026-10-15 spec:
+ * The default rules are Klaviyo's own "long-term inactive" criteria: created
+ * at least 365 days ago, 5 or more emails received in the last 504 days, and
+ * NO open, click, site visit, product view, checkout or order at any time.
+ * So the questions are "did this profile EVER do X" and "how many emails did
+ * it receive", over the account's whole history. GET /api/profiles answers
+ * neither. Options checked against the 2026-10-15 spec:
  *
- * 1. Events API, one scan per metric over the rule window (chosen).
- *    GET /api/events?filter=equals(metric_id,..),greater-or-equal(datetime,..)
- *    returns up to 1,000 events per request with the profile id in
- *    `relationships`, at 350/s and 3,500/m. Gives real dates (what
- *    `ProfileSignals` needs), tells machine opens apart, needs read scopes
- *    only, creates nothing in the merchant's account, works unchanged on the
- *    seeded test account (different metric ids), and an interrupted scan is
- *    simply "coverage unknown". Cost grows with event volume, not profiles.
- * 2. Segments with metric conditions ("opened 0 times in 90 days"). Bounded by
- *    profile count (members are read 100 per request), but needs
- *    `segments:write`, leaves segments visible in the merchant's account, is
- *    limited to 100 segment creations per day per account, yields only
- *    yes/no (no dates), bakes the merchant's thresholds into the segment, and
- *    a segment that is still processing looks exactly like "nobody engaged",
- *    which is the unsafe direction.
- * 3. Query Metric Aggregates: cannot group by profile (the `by` enum has no
- *    profile dimension). Not usable.
+ * 1. One segment holding exactly those conditions, evaluated by Klaviyo
+ *    (chosen; `buildCandidateSegmentDefinition` in api.ts). Klaviyo already
+ *    has every event indexed, "over all time" included, so the answer covers
+ *    the full history at no extra cost, and it is the same engine Klaviyo's
+ *    own recommendation uses. We read the members (100 per request). Only
+ *    members can become candidates, so every failure mode is safe: a segment
+ *    that is missing, processing, deactivated or edited yields no candidates.
+ *    Costs: the `segments:write` scope, one segment visible in the merchant's
+ *    account, and a per-profile answer that is yes/no without dates.
+ * 2. Events API, scanning each metric. Gives dates, needs read scopes only.
+ *    But "ever" means reading the account's entire open / click / order /
+ *    site history, and the received count means reading every send of the
+ *    last 72 weeks, then counting per profile without double counting across
+ *    retries. See the budget below. Kept as an alternative reader
+ *    (`listEngagementEventsPage`, `foldEngagement`), not used and not scoped.
+ * 3. Query Metric Aggregates: cannot group by profile. Not usable.
  * 4. Events per profile: one request per profile per metric. Not usable.
  *
- * Request budget for an account with 150,000 profiles (the profile and group
- * numbers are exact; event volumes are ESTIMATES that depend on how much the
- * merchant sends):
- *   profiles            150,000 / 100            = 1,500 requests
- *   metrics             1-2 pages                = 2
- *   opens, 90 days      ~750,000 events / 1,000  = ~750
- *   clicks, 180 days    ~90,000 / 1,000          = ~90
- *   orders, 365 days    ~60,000 / 1,000          = ~60
- *   checkouts, 180 days ~50,000 / 1,000          = ~50
- *   active on site, 180 days ~500,000 / 1,000    = ~500
- *   protected groups    members / 100 per group  = e.g. 50 for 5,000 VIPs
- *   account + billing usage                      = 2
- *   total                                        ≈ 3,000 (1,500 fixed + events)
- * At half the published rate limits that is about 5 minutes of wall time,
- * dominated by the profile pages. It does not fit in one Worker invocation
- * (1,000 subrequests on Workers Paid, 50 on Free), so every reader is
- * page-at-a-time and the audit has to run as resumable steps.
+ * Request budget for an account with 150,000 profiles. Counts of profiles and
+ * pages are exact; shares and event volumes are ESTIMATES that depend on the
+ * merchant, shown so the orders of magnitude can be compared.
+ *
+ *   Segment path (chosen)
+ *     metrics list                                   1-2
+ *     find segment by name                           1
+ *     create / update segment                        0 (1 when rules change)
+ *     poll until processed                           a few
+ *     members, 100 per page: 20% inactive = 30,000   300   (worst case 1,500)
+ *     protected group members, 100 per page          e.g. 50 for 5,000 VIPs
+ *     total                                          ~360  (worst case ~1,560)
+ *   Fits one Workers Paid invocation (1,000 subrequests) in the usual case and
+ *   takes about a minute at half the published rate; on Workers Free (50) it
+ *   needs about 8 invocations. Segment writes: 1 per rules change, against a
+ *   limit of 100 per day per account.
+ *
+ *   Events path (rejected for "ever" rules)
+ *     received, 504 days: 150,000 x ~60% x ~8/month x 16.5  ~12,000,000 events = ~12,000 requests
+ *     opens, all time: several times that                    tens of thousands
+ *     clicks, orders, checkouts, site, product views         thousands more
+ *     profiles, 100 per page                                 1,500
+ *     total                                                  30,000+ requests and millions of rows to hold
+ *
+ * Every reader is still page-at-a-time with a cursor, so the caller decides
+ * how much fits in one invocation and can resume anywhere.
  */
 
 export interface ProfileEngagement {
@@ -82,6 +94,7 @@ function later(a: Date | null | undefined, b: Date | null | undefined): Date | n
 }
 
 /**
+ * Events path only (alternative reader, see above).
  * Adds one page of events of `signal` to the per-profile state. Order does not
  * matter, and feeding the same page twice changes nothing, so a resumed scan
  * can safely re-read its last page.
@@ -119,7 +132,12 @@ export function foldEngagement(
         break;
       case "checkout":
       case "activeOnSite":
+      case "viewedProduct":
         e.lastSiteActivityAt = later(e.lastSiteActivityAt, event.at);
+        break;
+      case "received":
+        // Deliberately not counted here: a count is not idempotent, so a page read
+        // twice would inflate it, and a higher count is what makes a candidate.
         break;
     }
   }
@@ -128,14 +146,25 @@ export function foldEngagement(
 
 /** Something we could not read for a profile; each one forces protection. */
 export type SignalGap =
+  | "send_history_unknown"
   | "created_unknown"
   | "email_subscription_unknown"
   | "sms_consent_unknown"
   | "protected_group_membership_unknown";
 
 export interface ProfileContext {
-  /** Engagement folded from the Events API; undefined when the profile had no events in the scanned windows. */
+  /**
+   * Set when the profile was read as a member of the candidate segment, from
+   * a segment that was not processing, was active and had the expected
+   * definition. Klaviyo then vouches that the profile received at least
+   * `minEmailsReceived` emails in the send window and has none of the events
+   * the definition excludes. Leave it out for any other profile.
+   */
+  candidateSegment?: { minEmailsReceived: number } | null;
+  /** Events path: engagement folded from the Events API. */
   engagement?: ProfileEngagement | null;
+  /** Events path: emails received in the send window, when counted reliably. */
+  emailsReceived?: number | null;
   /** Last order of this email in Shopify (matched by hash); null when there is none on record. */
   shopifyLastPurchaseAt?: Date | null;
   /**
@@ -144,7 +173,7 @@ export interface ProfileContext {
    * protected group could not be read): the profile is then treated as a member.
    */
   inProtectedGroup: boolean | null;
-  /** Last time TierSaver unsuppressed this profile (undo or reactivation), from our own run history. */
+  /** Last time TierSaver unsuppressed this profile (an undo run), from our own run history. */
   reactivatedAt?: Date | null;
   /**
    * Test accounts only: use the profile's seeded creation date instead of
@@ -162,6 +191,8 @@ export interface MappedProfile {
  * Builds the rule engine's view of one profile.
  *
  * Unknowns and what they become:
+ * - emails received unknown (not a segment member, not counted) ->
+ *   `emailsReceived: null` (engine: unknown_send_history)
  * - creation date missing            -> `createdAt: null` (engine: unknown_profile_age)
  * - email subscription data missing  -> not treated as suppressed (so it is
  *   evaluated and counted as billable) and `smsConsent: true` to force protection
@@ -176,6 +207,15 @@ export interface MappedProfile {
 export function toProfileSignals(profile: KlaviyoProfileRecord, context: ProfileContext): MappedProfile {
   const gaps: SignalGap[] = [];
   const engagement = context.engagement ?? emptyEngagement();
+
+  // Emails received. For a segment member this is the minimum Klaviyo vouched for, not the exact count.
+  let emailsReceived: number | null = null;
+  const vouched = context.candidateSegment?.minEmailsReceived;
+  if (typeof vouched === "number" && Number.isFinite(vouched) && vouched >= 1) emailsReceived = vouched;
+  else if (typeof context.emailsReceived === "number" && Number.isFinite(context.emailsReceived) && context.emailsReceived >= 0) {
+    emailsReceived = context.emailsReceived;
+  }
+  if (emailsReceived === null) gaps.push("send_history_unknown");
 
   // Age: Klaviyo's creation date or the email consent date, whichever is later.
   const created = context.useTestCreatedAt ? (profile.testCreatedAt ?? null) : profile.createdAt;
@@ -232,6 +272,7 @@ export function toProfileSignals(profile: KlaviyoProfileRecord, context: Profile
       lastClickAt: engagement.lastClickAt,
       lastPurchaseAt: later(engagement.lastOrderAt, context.shopifyLastPurchaseAt),
       lastSiteActivityAt: engagement.lastSiteActivityAt,
+      emailsReceived,
       smsConsent,
       inProtectedGroup,
       reactivatedAt: context.reactivatedAt ?? null,
@@ -240,7 +281,25 @@ export function toProfileSignals(profile: KlaviyoProfileRecord, context: Profile
   };
 }
 
-/** The outcome of scanning one signal's events. */
+/**
+ * Coverage for profiles read as members of the candidate segment.
+ *
+ * Klaviyo evaluated the segment's conditions over its complete event history,
+ * so engagement and site activity are covered from the beginning of time
+ * (which satisfies the "ever" rules for a profile of any age). Purchases also
+ * need our own Shopify order data: pass how far back it is complete, or null
+ * when it is not (then every member is protected by the purchase rule, and
+ * under an "ever" rule so is every member older than the order data).
+ *
+ * Valid only together with `ProfileContext.candidateSegment`, i.e. for
+ * profiles that really came out of a verified segment read.
+ */
+export function candidateSegmentCoverage(input: { shopifyOrdersSince: Date | null }): DataCoverage {
+  const beginning = new Date(0);
+  return { engagementSince: beginning, purchasesSince: input.shopifyOrdersSince, siteActivitySince: beginning };
+}
+
+/** Events path: the outcome of scanning one signal's events. */
 export interface SignalScan {
   /** Metric ids scanned. Empty means the metric was not found in the account. */
   metricIds: readonly string[];
@@ -257,7 +316,7 @@ function scanCovers(scan: SignalScan | null | undefined): scan is SignalScan {
 }
 
 /**
- * How far back the data can be trusted. A window counts only if its scan
+ * Events path only. How far back the data can be trusted. A window counts only if its scan
  * found the metric, finished, and attributed every event; anything less is
  * "unknown" (null), and the rule engine then protects every profile that has
  * no recent event of that kind.

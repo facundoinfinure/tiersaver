@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { KLAVIYO_SCOPES } from "../app/klaviyo/config";
+import { KLAVIYO_OPTIONAL_SCOPES, KLAVIYO_REQUIRED_SCOPES, KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import { KlaviyoOAuthError } from "../app/klaviyo/errors";
 import {
   OAUTH_STATE_TTL_MS,
@@ -61,17 +61,26 @@ describe("authorization request (PKCE + signed state)", () => {
     expect([...KLAVIYO_SCOPES].sort()).toEqual(
       [
         "accounts:read",
-        "events:read",
         "lists:read",
         "metrics:read",
         "profiles:read",
         "profiles:write",
         "segments:read",
+        "segments:write",
         "subscriptions:read",
         "subscriptions:write",
         "usage:read",
       ].sort(),
     );
+    // Billing usage is the only optional scope: a grant without it is complete.
+    expect([...KLAVIYO_OPTIONAL_SCOPES]).toEqual(["usage:read"]);
+    expect(KLAVIYO_REQUIRED_SCOPES).not.toContain("usage:read");
+    expect(missingScopes(KLAVIYO_REQUIRED_SCOPES.join(" "), KLAVIYO_REQUIRED_SCOPES)).toEqual([]);
+    expect(missingScopes(KLAVIYO_REQUIRED_SCOPES.join(" "))).toEqual(["usage:read"]);
+    // Scopes for things the app does not do are never requested.
+    for (const unused of ["events:read", "events:write", "lists:write", "campaigns:read", "flows:read", "data-privacy:write"]) {
+      expect(KLAVIYO_SCOPES).not.toContain(unused);
+    }
   });
 
   it("derives a valid verifier whose S256 challenge is the one in the URL, and keeps it out of the URL", async () => {

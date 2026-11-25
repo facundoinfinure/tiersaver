@@ -2,7 +2,7 @@ import { decryptToken, importTokenKey } from "@tiersaver/core";
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { KLAVIYO_SCOPES } from "../app/klaviyo/config";
+import { KLAVIYO_REQUIRED_SCOPES, KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import {
   REFRESH_LEASE_MS,
   completeAuthorization,
@@ -322,6 +322,26 @@ describe("connecting and disconnecting", () => {
     await expect(getAccessToken(deps, shop)).resolves.toMatch(/^access-/);
   });
 
+  it("billing usage is optional: no usage:read scope, or a failing endpoint, still connects", async () => {
+    const without = fresh();
+    without.fake.grantedScopes = KLAVIYO_REQUIRED_SCOPES.join(" ");
+    without.fake.billingUsage = [{ id: "active_profiles", usage_used: 1, usage_max: 2, unit: "profiles" }];
+    const shopA = `connect-${crypto.randomUUID().slice(0, 8)}.myshopify.com`;
+    await db.insert(schema.shops).values({ shop: shopA });
+    const a = await consent(without.fake, shopA);
+    const infoA = await completeAuthorization(without.deps, { shop: shopA, code: a.code, codeVerifier: a.codeVerifier, redirectUri: REDIRECT });
+    expect(infoA).toMatchObject({ status: "connected", profilesUsageTypeId: null });
+    expect(without.fake.requestsTo(/^\/api\/billing-usage/)).toHaveLength(0);
+
+    const failing = fresh();
+    failing.fake.failNext(/^\/api\/billing-usage/, () => FakeKlaviyo.clientError(403, "permission_denied"));
+    const shopB = `connect-${crypto.randomUUID().slice(0, 8)}.myshopify.com`;
+    await db.insert(schema.shops).values({ shop: shopB });
+    const b = await consent(failing.fake, shopB);
+    const infoB = await completeAuthorization(failing.deps, { shop: shopB, code: b.code, codeVerifier: b.codeVerifier, redirectUri: REDIRECT });
+    expect(infoB).toMatchObject({ status: "connected", profilesUsageTypeId: null });
+  });
+
   it("refuses a grant that lacks a required scope, stores nothing and revokes the install", async () => {
     const { fake, deps } = fresh();
     fake.grantedScopes = KLAVIYO_SCOPES.filter((s) => s !== "subscriptions:write").join(" ");
@@ -349,5 +369,15 @@ describe("connecting and disconnecting", () => {
     second.fake.failNext(/^\/oauth\/revoke$/, () => new Response("down", { status: 503 }));
     expect(await disconnect(second.deps, second.shop)).toEqual({ existed: true, revoked: false });
     expect(await getConnection(db, second.shop)).toBeNull();
+
+    // Already dead on Klaviyo's side (merchant removed the app there): still cleans up, in any status.
+    const third = await setup({ expiresInMs: 1000 });
+    third.fake.revokeEverything();
+    await expect(getAccessToken(third.deps, third.shop)).rejects.toMatchObject({ code: "klaviyo_needs_reauth" });
+    third.fake.failNext(/^\/oauth\/revoke$/, () => new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 }));
+    expect(await disconnect(third.deps, third.shop)).toEqual({ existed: true, revoked: false });
+    expect(await getConnection(db, third.shop)).toBeNull();
+    const dump = await env.DB.prepare("SELECT COUNT(*) AS n FROM klaviyo_connections WHERE shop = ?").bind(third.shop).first<{ n: number }>();
+    expect(dump?.n).toBe(0);
   });
 });

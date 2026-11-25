@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulation and approval · TierSaver</title>
+  <meta name="description" content="TierSaver never suppresses a Klaviyo profile without a simulation you approved. What a simulation shows, how long an approval lasts and how monthly runs are approved.">
+  <link rel="canonical" href="https://tiersaver.com/help/simulation-and-approval">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Simulation and approval">
+  <meta property="og:description" content="TierSaver never suppresses a Klaviyo profile without a simulation you approved. What a simulation shows, how long an approval lasts and how monthly runs are approved.">
+  <meta property="og:url" content="https://tiersaver.com/help/simulation-and-approval">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Simulation and approval</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Simulation and approval</h1>
+          <p class="lead">Nothing is suppressed without a simulation that you approved. There is no path past that step, in the app or behind it.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>What a simulation shows</h2>
+<ul>
+  <li>How many profiles were evaluated, how many would be suppressed, how many are kept and how many were skipped.</li>
+  <li>For kept profiles, the reason. A profile can be kept for several reasons at once.</li>
+  <li>A sample of the candidates, so you can check them before you approve.</li>
+  <li>How many active profiles you would have afterwards.</li>
+</ul>
+<p>A simulation changes nothing in Klaviyo.</p>
+
+<h2>Approving</h2>
+<p>When you approve a simulation, TierSaver suppresses exactly the profiles in that simulation and no others. Before it sends each batch to Klaviyo it leaves out any profile that should no longer be suppressed.</p>
+<p>An approval is tied to one simulation:</p>
+<ul>
+  <li><strong>It expires after 24 hours.</strong> Lists change. If more time has passed, you get a fresh simulation to review.</li>
+  <li><strong>It runs once.</strong> A simulation cannot be used for a second cleanup.</li>
+  <li><strong>Changing your criteria replaces it.</strong> If you edit the <a href="/help/cleanup-criteria">cleanup criteria</a> or a protected list, pending simulations are discarded.</li>
+</ul>
+<p>The app records who approved each simulation, when, and under which criteria.</p>
+
+<h2>The first cleanup is always manual</h2>
+<p>You start the first cleanup yourself, after reviewing its simulation. Monthly cleanups only start after that.</p>
+
+<h2>Monthly cleanups</h2>
+<p>Before each monthly cleanup TierSaver runs a new simulation and emails you a summary. There are two modes:</p>
+<ul>
+  <li><strong>Approval required</strong> (default). The cleanup waits for you to approve the simulation.</li>
+  <li><strong>Automatic.</strong> An explicit opt-in. The cleanup runs on the scheduled day using the new simulation, and you still receive the summary.</li>
+</ul>
+<p>See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule</a> for when cleanups run.</p>
+
+<h2>What to know before you approve</h2>
+<ul>
+  <li>Suppressed profiles can no longer receive marketing email from you, even if they later buy.</li>
+  <li>If you remove a suppression, Klaviyo does not let that profile be suppressed again for 90 days from the previous suppression.</li>
+  <li>Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</li>
+</ul>
+
+<h2>While a cleanup runs</h2>
+<p>Profiles are suppressed in batches. The app shows the state of the run: queued, running, completed, or completed with errors. If a run is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If a batch keeps failing, the run stops and the remaining profiles are left untouched.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+</ul>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval" aria-current="page">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/uninstalling">What happens on uninstall</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 <mark class="placeholder" data-todo="legal-entity">[LEGAL ENTITY]</mark>. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

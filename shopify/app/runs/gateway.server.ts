@@ -14,9 +14,11 @@ import { RUN_BATCH_SIZE, type BatchRequest, type BatchResult, type SuppressionGa
  * one bulk suppress ("suppress" runs) or unsuppress ("undo" runs) job.
  *
  * Safety switches, checked in this order before anything touches the network:
- * 1. `SUPPRESSION_ENABLED` must be exactly "true". It is absent by default, so
- *    a deployment cannot change a merchant's Klaviyo account until the owner
- *    turns it on. Refusal: `suppression_disabled`.
+ * 1. `SUPPRESSION_ENABLED` must be exactly "true" for suppress batches. It is
+ *    absent by default, so a deployment cannot suppress anyone until the owner
+ *    turns it on. Refusal: `suppression_disabled`. Undo batches are exempt:
+ *    they only exist for runs that already happened, and reversal must not
+ *    depend on the switch (product rule 3).
  * 2. The shop must have a Klaviyo connection in status `connected`. Refusals:
  *    `klaviyo_not_connected`, `klaviyo_needs_reauth`, `klaviyo_disconnected`.
  * Both are non-retryable: the run stops and every remaining profile stays untouched.
@@ -62,7 +64,8 @@ function refuse(code: string): never {
 export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: GatewayDeps = {}): SuppressionGateway {
   return {
     async submitBatch(request: BatchRequest): Promise<BatchResult> {
-      if (env.SUPPRESSION_ENABLED !== "true") refuse("suppression_disabled");
+      // Undo is never blocked by the switch: anything the app suppressed must stay reversible.
+      if (request.kind !== "undo" && env.SUPPRESSION_ENABLED !== "true") refuse("suppression_disabled");
       if (!shop || request.shop !== shop) refuse("gateway_shop_mismatch");
       const profileIds = [...new Set(request.profileIds)];
       if (profileIds.length === 0 || profileIds.length > RUN_BATCH_SIZE) refuse("batch_invalid_size");

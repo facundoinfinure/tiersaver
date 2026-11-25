@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cleanup criteria: who is a candidate and who is always kept · TierSaver</title>
+  <meta name="description" content="By default TierSaver only suppresses Klaviyo profiles that are at least 365 days old, received your emails and never opened, clicked, visited or bought. The criteria follow the ones Klaviyo publishes.">
+  <link rel="canonical" href="https://tiersaver.com/help/cleanup-criteria">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Cleanup criteria: who is a candidate and who is always kept">
+  <meta property="og:description" content="By default TierSaver only suppresses Klaviyo profiles that are at least 365 days old, received your emails and never opened, clicked, visited or bought. The criteria follow the ones Klaviyo publishes.">
+  <meta property="og:url" content="https://tiersaver.com/help/cleanup-criteria">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Cleanup criteria</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Cleanup criteria: who is a candidate and who is always kept</h1>
+          <p class="lead">A profile is a cleanup candidate only when it has never engaged in any way. When in doubt, the profile stays active.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>The default criteria</h2>
+<p>A profile is a candidate only if <strong>all</strong> of these are true:</p>
+<ul>
+  <li>It was created at least 365 days ago.</li>
+  <li>It has received at least 5 emails in roughly the last 72 weeks.</li>
+  <li>It has never opened an email.</li>
+  <li>It has never clicked an email.</li>
+  <li>It has never visited your site or started a checkout.</li>
+  <li>It has never purchased, checked against both your Shopify orders and Klaviyo.</li>
+</ul>
+<p>These follow the criteria Klaviyo publishes for its own suppression recommendations: created at least 365 days ago, 5 or more emails received over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+
+<h2>Who is always kept</h2>
+<ul>
+  <li><strong>Buyers.</strong> Anyone with a purchase in your Shopify orders or in Klaviyo.</li>
+  <li><strong>SMS subscribers.</strong> Any profile with SMS consent.</li>
+  <li><strong>Protected lists and segments.</strong> Any list or segment you mark as protected, for example VIPs or wholesale accounts.</li>
+  <li><strong>Profiles with incomplete data.</strong> If TierSaver cannot see a profile's creation date, or cannot see far enough back in your order or engagement history to be sure, the profile stays.</li>
+  <li><strong>Profiles restored by an undo.</strong> They are left out of cleanups for 365 days. See <a href="/help/undo">undo</a>.</li>
+</ul>
+<p>Profiles that are already suppressed, and profiles with no email address, are skipped entirely.</p>
+
+<h2>Buyers are checked twice</h2>
+<p>Klaviyo only knows about the purchases it has recorded. Your Shopify order history is an independent check. To match orders to Klaviyo profiles, TierSaver compares one-way hashes of email addresses, so it does not need to store your customers' email addresses. See <a href="/help/data-and-privacy">data and privacy</a>.</p>
+
+<h2>About opens</h2>
+<p>Klaviyo flags opens that may have been triggered by Apple's Mail Privacy Protection instead of a person. TierSaver counts those opens as engagement, which is the cautious choice: a flagged open keeps the profile.</p>
+
+<h2>The wider mode</h2>
+<p>You can opt in to a wider mode that uses time windows instead of "never". It comes with a warning in the app, because it can select people who engaged with you in the past. The windows cannot be set shorter than these floors:</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Floors of the wider mode">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Signal</th><th scope="col">Shortest window allowed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>No opens, clicks or site activity</td><td>182 days</td></tr>
+      <tr><td>No purchases</td><td>365 days</td></tr>
+      <tr><td>Profile age</td><td>180 days</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>SMS subscribers, protected lists and profiles with incomplete data are kept in the wider mode too. Changing the criteria discards any simulation that has not run yet: you get a new one to review.</p>
+
+<h2>Why the criteria are strict</h2>
+<p>Klaviyo's help center points out that a suppressed profile stays suppressed even if that person later starts a checkout or buys, and that suppressing too early can cost revenue. Suppression is meant for profiles that are truly inactive, so that is all the default mode selects.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to identify iOS15 Mail Privacy Protection opens". <a href="https://help.klaviyo.com/hc/en-us/articles/4416791883163" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/4416791883163</a> (read 2026-11-25)</li>
+</ul>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria" aria-current="page">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/uninstalling">What happens on uninstall</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 <mark class="placeholder" data-todo="legal-entity">[LEGAL ENTITY]</mark>. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

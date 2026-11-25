@@ -3,7 +3,8 @@
  *
  * Every value below was checked against the official OpenAPI spec
  * (github.com/klaviyo/openapi, openapi/stable.json, info.version 2026-10-15)
- * and developers.klaviyo.com on 2026-11-25. See README.md for sources.
+ * and developers.klaviyo.com on 2026-11-25 (re-checked the same day for the
+ * "Received Email" seeding). See README.md for sources.
  */
 
 export const KLAVIYO_BASE_URL = "https://a.klaviyo.com";
@@ -68,9 +69,15 @@ export const LIMITS = {
  * built-in metrics on purpose, but events created through the API always land
  * in a metric owned by the "API" integration, which is a DIFFERENT metric (own
  * id) from the built-in one owned by the "Klaviyo" or "Shopify" integration.
- * See README.md, "Métricas".
+ * See README.md, "Hallazgos".
+ *
+ * "Received Email" is Klaviyo's built-in metric for a delivered email
+ * (developers.klaviyo.com/en/docs/using_the_query_metric_aggregates_endpoint:
+ * "To get the total number of emails received [...] the `Received Email`
+ * metric ID"). It feeds `ProfileSignals.emailsReceived`.
  */
 export const METRICS = {
+  received: "Received Email",
   open: "Opened Email",
   click: "Clicked Email",
   purchase: "Placed Order",
@@ -97,6 +104,10 @@ export const SEED_PROPERTIES = {
   createdAt: "ts_seed_created_at",
   /** Expected decision under DEFAULT_RULE_SETTINGS, e.g. "protected:recent_click". */
   expected: "ts_seed_expected",
+  /** Expected decision under WIDE_RULE_SETTINGS (the opt-in wider mode at its floors), e.g. "candidate:lapsed". */
+  expectedWide: "ts_seed_expected_wide",
+  /** "Received Email" events seeded inside the 504-day window before `ts_seed_now`. */
+  emailsReceived: "ts_seed_emails_received",
 } as const;
 
 /**

@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  buildCandidateSegmentDefinition,
+  canonicalDefinition,
+  ensureCandidateSegment,
+  findCandidateSegment,
+  getCandidateSegment,
+  listCandidateSegmentProfilesPage,
+  type KlaviyoMetric,
+  type SegmentDefinition,
   getAccount,
   getProfileEmails,
   getProfilesUsage,
@@ -17,10 +25,10 @@ import {
   type KlaviyoProfileRecord,
 } from "../app/klaviyo/api";
 import { KlaviyoClient, filterString, nextCursor } from "../app/klaviyo/client";
-import { KLAVIYO_REVISION, SEEDED_METRIC_SPECS } from "../app/klaviyo/config";
+import { CANDIDATE_SEGMENT_NAME, KLAVIYO_REVISION, SEEDED_METRIC_SPECS } from "../app/klaviyo/config";
 import { KlaviyoApiError } from "../app/klaviyo/errors";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
-import { hashEmail } from "@tiersaver/core";
+import { DEFAULT_RULE_SETTINGS, hashEmail } from "@tiersaver/core";
 
 /** A client on a fake clock: `sleep` advances time instead of waiting. */
 function setup(options: { maxAttempts?: number; maxWaitMs?: number; subrequestBudget?: number } = {}) {
@@ -367,18 +375,22 @@ describe("API functions", () => {
     expect(fake.requests.at(-1)!.url.searchParams.get("fields[metric]")).toBe("name,integration");
 
     expect(resolveMetrics(items)).toEqual({
+      received: [],
       open: ["NATIVE_OPEN"],
       click: ["NATIVE_CLICK"],
       purchase: ["SHOPIFY_ORDER"],
       checkout: ["SHOPIFY_CHECKOUT"],
       activeOnSite: [],
+      viewedProduct: [],
     });
     expect(resolveMetrics(items, SEEDED_METRIC_SPECS)).toEqual({
+      received: [],
       open: ["API_OPEN"],
       click: [],
       purchase: ["API_ORDER"],
       checkout: [],
       activeOnSite: [],
+      viewedProduct: [],
     });
     expect(resolveMetrics(items, { open: { names: ["Opened Email"], integrations: ["Klaviyo", "API"] } }).open).toEqual([
       "NATIVE_OPEN",
@@ -498,5 +510,209 @@ describe("API functions", () => {
     });
     await expect(submitSuppressionJob(client, "suppress", [])).rejects.toMatchObject({ code: "klaviyo_suppression_batch_empty" });
     expect(fake.requests.length).toBe(before);
+  });
+});
+
+describe("candidate segment (Klaviyo's long-term inactive criteria)", () => {
+  const metric = (id: string, name: string, integration: string): KlaviyoMetric => ({
+    id,
+    name,
+    integrationName: integration,
+    integrationCategory: null,
+  });
+  const METRICS: KlaviyoMetric[] = [
+    metric("RECV", "Received Email", "Klaviyo"),
+    metric("OPEN", "Opened Email", "Klaviyo"),
+    metric("CLICK", "Clicked Email", "Klaviyo"),
+    metric("ORDER", "Placed Order", "Shopify"),
+    metric("CHECKOUT", "Checkout Started", "Shopify"),
+    metric("SITE", "Active on Site", "API"),
+    metric("VIEW", "Viewed Product", "API"),
+    metric("BOUNCE", "Bounced Email", "Klaviyo"),
+  ];
+  const ALLTIME = { type: "date", operator: "alltime" };
+  const zero = (metric_id: string, timeframe_filter: unknown = ALLTIME) => ({
+    conditions: [
+      {
+        type: "profile-metric",
+        metric_id,
+        measurement: "count",
+        measurement_filter: { type: "numeric", operator: "equals", value: 0 },
+        timeframe_filter,
+      },
+    ],
+  });
+
+  function definitionFor(metrics = METRICS, settings = DEFAULT_RULE_SETTINGS, overrides = {}): SegmentDefinition {
+    const built = buildCandidateSegmentDefinition(metrics, settings, overrides);
+    if (!built.ok) throw new Error(built.reason);
+    return built.definition;
+  }
+
+  it("with the default rules is exactly Klaviyo's published criteria, each as its own AND group", () => {
+    const built = buildCandidateSegmentDefinition(METRICS, DEFAULT_RULE_SETTINGS);
+    expect(built).toEqual({
+      ok: true,
+      minEmailsReceived: 5,
+      definition: {
+        condition_groups: [
+          {
+            conditions: [
+              {
+                type: "profile-marketing-consent",
+                consent: { channel: "email", can_receive_marketing: true, consent_status: { subscription: "any" } },
+              },
+            ],
+          },
+          {
+            conditions: [
+              {
+                type: "profile-metric",
+                metric_id: "RECV",
+                measurement: "count",
+                measurement_filter: { type: "numeric", operator: "greater-than-or-equal", value: 5 },
+                timeframe_filter: { type: "date", operator: "in-the-last", unit: "day", quantity: 504 },
+              },
+            ],
+          },
+          zero("OPEN"),
+          zero("CLICK"),
+          zero("ORDER"),
+          zero("CHECKOUT"),
+          zero("SITE"),
+          zero("VIEW"),
+        ],
+      },
+    });
+    // No OR anywhere: a profile has to pass every single condition.
+    expect(definitionFor().condition_groups.every((g) => g.conditions.length === 1)).toBe(true);
+    expect(FakeKlaviyo.definitionProblem(definitionFor())).toBeNull();
+  });
+
+  it("excludes on every metric with a matching name, whatever its integration", () => {
+    const metrics = [...METRICS, metric("API_OPEN", "Opened Email", "API"), metric("API_ORDER", "Placed Order", "API"), metric("WOO_ORDER", "Placed Order", "WooCommerce")];
+    const ids = definitionFor(metrics).condition_groups.map((g) => (g.conditions[0] as { metric_id?: string }).metric_id);
+    expect(ids).toEqual([undefined, "RECV", "API_OPEN", "OPEN", "CLICK", "API_ORDER", "ORDER", "WOO_ORDER", "CHECKOUT", "SITE", "VIEW"]);
+  });
+
+  it("refuses to build a definition when the admitting metric or the core engagement metrics are not certain", () => {
+    const without = (id: string) => METRICS.filter((m) => m.id !== id);
+    expect(buildCandidateSegmentDefinition(without("RECV"), DEFAULT_RULE_SETTINGS)).toEqual({ ok: false, reason: "received_metric_unresolved" });
+    // An API-created "Received Email" is not Klaviyo's own send record.
+    expect(buildCandidateSegmentDefinition([...without("RECV"), metric("X", "Received Email", "API")], DEFAULT_RULE_SETTINGS)).toEqual({
+      ok: false,
+      reason: "received_metric_unresolved",
+    });
+    // Two metrics that both look like the send record: ambiguous, so no.
+    expect(buildCandidateSegmentDefinition([...METRICS, metric("RECV2", "Received Email", "Klaviyo")], DEFAULT_RULE_SETTINGS)).toMatchObject({ ok: false });
+    expect(buildCandidateSegmentDefinition(without("OPEN"), DEFAULT_RULE_SETTINGS)).toEqual({ ok: false, reason: "open_metric_missing" });
+    expect(buildCandidateSegmentDefinition(without("CLICK"), DEFAULT_RULE_SETTINGS)).toEqual({ ok: false, reason: "click_metric_missing" });
+    expect(buildCandidateSegmentDefinition(METRICS, { ...DEFAULT_RULE_SETTINGS, minEmailsReceived: 0 })).toMatchObject({ ok: false });
+    expect(buildCandidateSegmentDefinition([], DEFAULT_RULE_SETTINGS)).toMatchObject({ ok: false });
+  });
+
+  it("works on the seeded test account through the metric override", () => {
+    const seeded = [metric("S_RECV", "Received Email", "API"), metric("S_OPEN", "Opened Email", "API"), metric("S_CLICK", "Clicked Email", "API")];
+    expect(buildCandidateSegmentDefinition(seeded, DEFAULT_RULE_SETTINGS)).toMatchObject({ ok: false });
+    const def = definitionFor(seeded, DEFAULT_RULE_SETTINGS, SEEDED_METRIC_SPECS);
+    expect(def.condition_groups).toHaveLength(4);
+  });
+
+  it("turns numeric windows of the wider mode into 'zero times in the last N days'", () => {
+    const def = definitionFor(METRICS, { ...DEFAULT_RULE_SETTINGS, openDays: 365, clickDays: 182, purchaseDays: 730, siteActivityDays: 200, minEmailsReceived: 8 });
+    const last = (quantity: number) => ({ type: "date", operator: "in-the-last", unit: "day", quantity });
+    expect(def.condition_groups.slice(2)).toEqual([
+      zero("OPEN", last(365)),
+      zero("CLICK", last(182)),
+      zero("ORDER", last(730)),
+      zero("CHECKOUT", last(200)),
+      zero("SITE", last(200)),
+      zero("VIEW", last(200)),
+    ]);
+    expect((def.condition_groups[1]!.conditions[0] as { measurement_filter: { value: number } }).measurement_filter.value).toBe(8);
+  });
+
+  it("compares definitions regardless of key order and of the nulls Klaviyo echoes back", () => {
+    const def = definitionFor();
+    const echoed = {
+      condition_groups: def.condition_groups.map((g) => ({
+        conditions: g.conditions.map((c) => ({ metric_filters: null, ...Object.fromEntries(Object.entries(c).reverse()) })),
+      })),
+    };
+    expect(canonicalDefinition(echoed)).toBe(canonicalDefinition(def));
+    const looser = { condition_groups: def.condition_groups.slice(0, -1) };
+    expect(canonicalDefinition(looser)).not.toBe(canonicalDefinition(def));
+  });
+
+  it("creates the segment once, then finds it by name without writing again", async () => {
+    const { fake, client } = setup({ maxWaitMs: 600_000 });
+    const def = definitionFor();
+    const created = await ensureCandidateSegment(client, def);
+    expect(created).toMatchObject({ id: "SEG001", written: "created", isProcessing: true });
+    const post = fake.requestsTo(/^\/api\/segments$/, "POST")[0]!;
+    expect(JSON.parse(post.body)).toEqual({ data: { type: "segment", attributes: { name: CANDIDATE_SEGMENT_NAME, definition: def } } });
+    const find = fake.requestsTo(/^\/api\/segments$/, "GET")[0]!;
+    expect(find.url.searchParams.get("filter")).toBe(`equals(name,"${CANDIDATE_SEGMENT_NAME}")`);
+
+    // Still processing: the state says so, and nothing is written.
+    expect(await getCandidateSegment(client, created.id, def)).toMatchObject({ isProcessing: true, isActive: true, definitionMatches: true });
+    fake.segments[0]!.isProcessing = false;
+    for (let i = 0; i < 3; i++) {
+      expect(await ensureCandidateSegment(client, def)).toMatchObject({ id: "SEG001", written: null, isProcessing: false, definitionMatches: true });
+    }
+    expect(fake.requestsTo(/^\/api\/segments/).filter((r) => r.method !== "GET")).toHaveLength(1);
+    expect(fake.segments).toHaveLength(1);
+  });
+
+  it("replaces the definition when the rules change or when someone edited the segment", async () => {
+    const { fake, client } = setup({ maxWaitMs: 600_000 });
+    const def = definitionFor();
+    await ensureCandidateSegment(client, def);
+    fake.segments[0]!.isProcessing = false;
+
+    // The merchant loosened the segment by hand in Klaviyo.
+    fake.segments[0]!.definition = { condition_groups: def.condition_groups.slice(0, 3) };
+    expect(await findCandidateSegment(client, def)).toMatchObject({ definitionMatches: false });
+    const repaired = await ensureCandidateSegment(client, def);
+    expect(repaired).toMatchObject({ id: "SEG001", written: "updated", isProcessing: true });
+    const patch = fake.requestsTo(/^\/api\/segments\/SEG001$/, "PATCH")[0]!;
+    expect(JSON.parse(patch.body)).toEqual({ data: { type: "segment", id: "SEG001", attributes: { definition: def } } });
+    expect(canonicalDefinition(fake.segments[0]!.definition)).toBe(canonicalDefinition(def));
+
+    // New rules: one more write, same segment.
+    fake.segments[0]!.isProcessing = false;
+    const wider = definitionFor(METRICS, { ...DEFAULT_RULE_SETTINGS, openDays: 365 });
+    expect(await ensureCandidateSegment(client, wider)).toMatchObject({ id: "SEG001", written: "updated" });
+    expect(fake.segments).toHaveLength(1);
+  });
+
+  it("reports a deactivated segment and refuses to pick between two segments with our name", async () => {
+    const { fake, client } = setup();
+    const def = definitionFor();
+    fake.segments.push({ id: "S1", name: CANDIDATE_SEGMENT_NAME, members: [], definition: def, isActive: false });
+    expect(await findCandidateSegment(client, def)).toMatchObject({ id: "S1", isActive: false, isProcessing: false });
+    fake.segments.push({ id: "S2", name: CANDIDATE_SEGMENT_NAME, members: [], definition: def });
+    await expect(ensureCandidateSegment(client, def)).rejects.toMatchObject({ code: "klaviyo_candidate_segment_ambiguous", retryable: false });
+    expect(fake.requests.filter((r) => r.method !== "GET")).toHaveLength(0);
+  });
+
+  it("reads the members of the segment with consent data, 100 per page, without emails", async () => {
+    const { fake, client } = setup({ maxWaitMs: 600_000 });
+    for (let i = 0; i < 260; i++) fake.profiles.set(`P${i}`, { id: `P${i}`, email: `p${i}@buyers.test` });
+    fake.segments.push({ id: "SEG9", name: CANDIDATE_SEGMENT_NAME, members: Array.from({ length: 130 }, (_, i) => `P${i * 2}`) });
+    const first = await listCandidateSegmentProfilesPage(client, "SEG9");
+    const sent = fake.requests.at(-1)!;
+    expect(sent.url.pathname).toBe("/api/segments/SEG9/profiles");
+    expect(sent.url.searchParams.get("page[size]")).toBe("100");
+    expect(sent.url.searchParams.get("additional-fields[profile]")).toBe("subscriptions");
+    expect(sent.url.searchParams.has("sort")).toBe(false);
+    expect(first.items).toHaveLength(100);
+    const second = await listCandidateSegmentProfilesPage(client, "SEG9", { cursor: first.nextCursor });
+    expect(second.items).toHaveLength(30);
+    expect(second.nextCursor).toBeNull();
+    const all = [...first.items, ...second.items];
+    expect(all.every((p) => Number(p.id.slice(1)) % 2 === 0)).toBe(true);
+    expect(all[0]).toMatchObject({ emailHash: await hashEmail("p0@buyers.test"), email: { canReceiveMarketing: true }, sms: { canReceiveMarketing: false } });
+    expect(JSON.stringify(all)).not.toContain("@buyers.test");
   });
 });

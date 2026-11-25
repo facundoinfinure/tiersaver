@@ -44,7 +44,7 @@ export type QueryValue = string | number | readonly string[] | null | undefined;
 
 export interface KlaviyoRequest {
   endpoint: EndpointName;
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   /** Path starting with /api/. */
   path: string;
   query?: Record<string, QueryValue>;

@@ -24,19 +24,19 @@ updated: Draft of 2026-11-25
 <ul>
   <li><strong>Store details:</strong> the store's myshopify.com domain, time zone, installation status and dates.</li>
   <li><strong>Access credentials:</strong> the Shopify access token and the Klaviyo OAuth access and refresh tokens, stored encrypted, with the permissions granted and the Klaviyo account ID.</li>
-  <li><strong>Settings:</strong> protection rule windows, protected lists or segments (by Klaviyo ID), billing day, run mode, the Klaviyo plan type and, if the merchant provides it, the price the merchant currently pays Klaviyo.</li>
-  <li><strong>Audit and simulation results:</strong> profile counts, billing usage figures read from Klaviyo, tiers, estimated savings, and the rule settings used.</li>
+  <li><strong>Settings:</strong> cleanup criteria, protected lists or segments (by Klaviyo ID), the plan renewal day, run mode and the Klaviyo plan type.</li>
+  <li><strong>Audit and simulation results:</strong> profile counts, the Klaviyo plan size shown as a reference, and the criteria used.</li>
   <li><strong>Profiles selected for suppression:</strong> for each simulation and each run, the Klaviyo profile ID, the reason the profile was selected, its processing status and, for matching purposes, a SHA-256 hash of the profile's email address.</li>
   <li><strong>Hashed purchase records:</strong> for each buyer found in the store's Shopify orders, a SHA-256 hash of the normalized order email address, the date of the most recent order, and a SHA-256 hash of the Shopify customer ID.</li>
-  <li><strong>Activity log:</strong> which action was taken, when, and by whom (a Shopify user ID, the schedule, a webhook or the system). Log details do not contain customer personal data.</li>
-  <li><strong>Fee records:</strong> tiers before and after, estimated, confirmed and billable savings, the fee and the Shopify usage record ID.</li>
+  <li><strong>Activity log:</strong> which action was taken or approved, when, and by whom (a Shopify user ID, the schedule, a webhook or the system). Log details do not contain customer personal data.</li>
+  <li><strong>Billing records:</strong> the price band that applied and the identifiers of the charges created through Shopify.</li>
 </ul>
 
 <h3>Data we process but do not store</h3>
 <ul>
   <li><strong>Email addresses from Shopify orders</strong> are read in order to compute the hash described above. The address itself is not stored.</li>
-  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo at the moment a batch of profiles is suppressed or reactivated, because Klaviyo's suppression interface works with email addresses. They are not stored.</li>
-  <li><strong>Klaviyo engagement data</strong> (such as the dates of a profile's last open, click, purchase or site activity, SMS consent and list membership) is read to evaluate the protection rules.</li>
+  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo at the moment a batch of profiles is suppressed or restored, because Klaviyo's suppression interface works with email addresses. They are not stored.</li>
+  <li><strong>Klaviyo engagement data</strong> (such as emails received, opens, clicks, purchases, site activity, SMS consent and list membership) is read to evaluate the cleanup criteria.</li>
 </ul>
 
 <h3>Data we do not collect</h3>
@@ -46,9 +46,9 @@ updated: Draft of 2026-11-25
 
 <h2>4. Why we process it</h2>
 <ul>
-  <li>To provide the service the merchant asked for: audit the list, apply protection rules, simulate, suppress the approved profiles, undo a run and schedule cleanups.</li>
+  <li>To provide the service the merchant asked for: audit the list, apply the cleanup criteria, simulate, suppress the approved profiles, undo a run and schedule monthly cleanups.</li>
   <li>To keep buyers from being suppressed, by matching Shopify orders to Klaviyo profiles through hashes.</li>
-  <li>To calculate and bill our fee through Shopify.</li>
+  <li>To bill our flat monthly price through Shopify.</li>
   <li>To keep a record of what was changed, by whom and when, so that changes are traceable and reversible.</li>
   <li>To secure the service and to meet legal obligations.</li>
 </ul>
@@ -88,11 +88,11 @@ updated: Draft of 2026-11-25
   <li><strong>When a customer asks a store to erase their data:</strong> on Shopify's customer deletion request we delete that customer's hashed purchase record and remove their hash from past simulations and runs. Klaviyo profile IDs in the run history are kept so a run can still be undone.</li>
   <li><strong>When a customer asks a store for their data:</strong> the only data we hold that is derived from a customer is a one-way hash and the date of their last order. There is nothing readable to export.</li>
 </ul>
-<p>Uninstalling the app does not reactivate suppressed profiles in Klaviyo, and does not delete anything in the merchant's Klaviyo or Shopify accounts.</p>
-<p><mark class="placeholder" data-todo="retention-records">[TO CONFIRM BEFORE PUBLISHING: retention of billing and tax records that must be kept after uninstall, if any]</mark></p>
+<p>Uninstalling the app does not restore suppressed profiles in Klaviyo, and does not delete anything in the merchant's Klaviyo or Shopify accounts.</p>
+<p><mark class="placeholder" data-todo="retention-records">[TO CONFIRM BEFORE PUBLISHING: retention of billing and tax records after uninstall, if any; and whether operational logs without personal data are kept for 365 days]</mark></p>
 
 <h2>10. This website</h2>
-<p>tiersaver.com sets no cookies and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site. The estimate calculator runs in your browser, and the numbers you enter are not sent to us.</p>
+<p>tiersaver.com sets no cookies and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site. The list health check runs in your browser, and the numbers you enter are not sent to us.</p>
 <p>Like any website, the hosting provider processes technical data such as IP addresses to deliver pages and protect the service.</p>
 <p>If you email us, we use your message and address to reply.</p>
 

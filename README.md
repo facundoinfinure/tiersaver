@@ -28,7 +28,14 @@ Fecha del handover: 25 de noviembre de 2026.
 | `docs/08-RIESGOS-Y-METRICAS.md` | Cortes para frenar y riesgos |
 | `docs/09-FUENTES.md` | Fuentes y qué es dato versus estimación |
 | `docs/10-TAREAS-HUMANAS.md` | Lo que solo puede hacer Facundo |
+| `docs/11-HANDOFF-SESION.md` | Notas de traspaso entre sesiones |
+| `docs/12-CUMPLIMIENTO-KLAVIYO.md` | Análisis de las políticas de Klaviyo y de Shopify. Sus reglas de producto (sección 3.1) y de texto (sección 3.2) son obligatorias desde el 2026-11-25 |
+| `docs/13-INSTRUCTIVO-CUENTAS.md` | Pasos para crear las cuentas de Shopify y de Klaviyo |
 | `docs/STATUS.md` | Bitácora viva que mantiene la sesión |
+
+## Qué es el producto (actualizado el 2026-11-25)
+
+Higiene de lista para Klaviyo: la app suprime, con simulación y aprobación del merchant, los perfiles que nunca interactuaron, usando por defecto los criterios publicados por Klaviyo. Precio fijo mensual por tamaño de lista; el ciclo sin limpieza no se cobra. No hay reactivación automática. Antes de escribir cualquier texto que vea un merchant, leé `docs/12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2.
 
 ## Lo que una sesión de Claude no puede hacer sola
 

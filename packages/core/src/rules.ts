@@ -210,11 +210,12 @@ export function evaluateProfile(
 
   if (within(profile.lastClickAt, settings.clickDays, now)) reasons.push("recent_click");
 
-  const openDate = settings.countMachineOpens
-    ? profile.lastOpenAt
-    : profile.lastOpenIsMachine
-      ? (profile.lastHumanOpenAt ?? null)
-      : profile.lastOpenAt;
+  // Ignoring machine opens needs to know the last human open. If that is
+  // unknown (undefined, as opposed to a known "none" = null), the open still protects.
+  const openDate =
+    settings.countMachineOpens || !profile.lastOpenIsMachine || profile.lastHumanOpenAt === undefined
+      ? profile.lastOpenAt
+      : profile.lastHumanOpenAt;
   if (within(openDate, settings.openDays, now)) reasons.push("recent_open");
 
   const engagementWindow = widest(settings.clickDays, settings.openDays);

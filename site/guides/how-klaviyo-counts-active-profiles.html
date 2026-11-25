@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How Klaviyo counts active profiles · TierSaver</title>
+  <meta name="description" content="What Klaviyo counts as an active profile, which profiles are not counted, when the count is taken and how plan sizes follow it, with links to Klaviyo's own help center.">
+  <link rel="canonical" href="https://tiersaver.com/guides/how-klaviyo-counts-active-profiles">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How Klaviyo counts active profiles">
+  <meta property="og:description" content="What Klaviyo counts as an active profile, which profiles are not counted, when the count is taken and how plan sizes follow it, with links to Klaviyo's own help center.">
+  <meta property="og:url" content="https://tiersaver.com/guides/how-klaviyo-counts-active-profiles">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">How Klaviyo counts active profiles</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Guide</p>
+          <h1>How Klaviyo counts active profiles</h1>
+          <p class="lead">Klaviyo's email plans are sized by active profiles. Here is what that term covers, when the count is taken and what changes it.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+        </header>
+        <div class="prose">
+<h2>What counts as an active profile</h2>
+<p>Klaviyo's definition: any profile that can be emailed through Klaviyo, regardless of consent status, is an active profile. In practice that is a profile with an email address that is not suppressed from email.</p>
+<p>That includes two groups:</p>
+<ul>
+  <li><strong>Subscribers</strong>, who explicitly opted in to email marketing.</li>
+  <li><strong>Profiles added by general engagement</strong>, such as someone who entered their email at checkout without opting in to marketing.</li>
+</ul>
+
+<h2>What does and does not count</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Which profiles count toward the Profiles and Email plan">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Profile</th><th scope="col">Counts toward the Profiles and Email plan?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Has an email address, not suppressed</td><td>Yes, whether or not they subscribed</td></tr>
+      <tr><td>Suppressed from email</td><td>No, once the suppression is processed. The profile stays in your account.</td></tr>
+      <tr><td>Unsubscribed from email</td><td>No</td></tr>
+      <tr><td>Deleted</td><td>No. The profile is permanently removed and cannot be recovered.</td></tr>
+      <tr><td>Has no email address (for example, a phone number only)</td><td>No</td></tr>
+      <tr><td>Unsubscribed from SMS only, still emailable</td><td>Yes</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>One exception Klaviyo points out: its Advanced KDP product is sized by total profiles, and suppressed profiles still count there.</p>
+
+<h2>When Klaviyo takes the count</h2>
+<ul>
+  <li>Paid plans renew every month on the date your account started paying.</li>
+  <li>Your plan has to cover the number of active profiles you have at the end of your billing cycle.</li>
+  <li>You can see your cycle dates under Billing, on the Overview tab, and your Active and Suppressed counts under Audience, Profiles.</li>
+  <li>Klaviyo updates usage several times per day. After a large cleanup, the count shown in billing may take up to 72 hours to refresh.</li>
+</ul>
+
+<h2>How plan sizes follow the count</h2>
+<ul>
+  <li><strong>Growing.</strong> If you have more active profiles than your plan allows at the end of a cycle, Klaviyo moves you to a plan that covers them for the next cycle. This does not depend on your upgrade preference: that setting is about sending limits.</li>
+  <li><strong>Shrinking.</strong> Klaviyo states that a plan does not automatically move down just because you have fewer profiles. You can choose a smaller plan yourself after your count updates, or enable auto-downgrade based on profiles. With auto-downgrade on, Klaviyo checks your count shortly before the cycle renews.</li>
+  <li><strong>Timing.</strong> A plan change takes effect in the next billing cycle, and it does not change your renewal date.</li>
+</ul>
+
+<h2>Keeping the count accurate</h2>
+<p>An active profile count is only meaningful if it reflects people you can still reach. Klaviyo calls the work of keeping it that way active profile management: suppressing profiles that have shown a long, sustained period of inactivity. It also gives two cautions:</p>
+<ul>
+  <li>Suppressing profiles too early, when they might still come back, can cost you revenue, because you can no longer email them.</li>
+  <li>A suppressed profile stays suppressed even if that person later starts a checkout or buys.</li>
+</ul>
+<p>The practical steps are in <a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a>.</p>
+
+<h2>Sources</h2>
+<ul class="sources">
+  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to choose your upgrade preference". <a href="https://help.klaviyo.com/hc/en-us/articles/4405883690651" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/4405883690651</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding suppressed email profiles". <a href="https://help.klaviyo.com/hc/en-us/articles/115005246108" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115005246108</a> (read 2026-11-25)</li>
+</ul>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles" aria-current="page">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 <mark class="placeholder" data-todo="legal-entity">[LEGAL ENTITY]</mark>. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

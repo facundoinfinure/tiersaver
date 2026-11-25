@@ -178,7 +178,7 @@ describe("executeSeed: full run", () => {
 
     const again = await executeSeed(config(), deps);
     expect(again).toMatchObject({ stepsRun: 1, warnings: [] });
-    expect(server.smsConsent.size).toBe(100);
+    expect(server.smsConsent.size).toBe(80);
   });
 
   it("flags a partial failure header on the SMS step", async () => {
@@ -297,7 +297,7 @@ describe("verifySeed", () => {
     await executeSeed(config(), deps);
     const before = writes(server).length;
     const rows = await verifySeed(config(), deps);
-    expect(rows).toHaveLength(26);
+    expect(rows).toHaveLength(39);
     expect(rows.filter((r) => !r.ok)).toEqual([]);
     expect(writes(server).length).toBe(before);
   });
@@ -310,10 +310,12 @@ describe("verifySeed", () => {
     server.profiles.delete("ts-seed-7-00001@seed.tiersaver-test.dev");
     const rows = await verifySeed(config(), deps);
     const problems = Object.fromEntries(rows.map((r) => [r.cohort, r.problems.join("; ")]));
-    expect(problems.recent_purchaser).toBe("profile not found");
-    expect(problems.lapsed).toMatch(/0 events stored, \d+ sent/);
+    expect(problems.never_engaged).toBe("profile not found");
+    expect(problems.opened_long_ago).toMatch(/0 events stored, \d+ sent/);
+    // Received emails are events too: a candidate with none stored is a broken seed.
+    expect(problems.boundary_emails_received_5).toBe("0 events stored, 5 sent");
     expect(problems.already_suppressed).toContain("email suppression is false, expected true");
-    expect(problems.never_engaged).toBe("");
+    expect(problems.no_emails_received).toBe("");
   });
 
   it("applies the same account guard and needs a previous run", async () => {

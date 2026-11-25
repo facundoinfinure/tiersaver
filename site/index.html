@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TierSaver: automatic list hygiene for Klaviyo</title>
+  <meta name="description" content="TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. Simulated first, approved by you, logged and reversible. Nothing is deleted.">
+  <link rel="canonical" href="https://tiersaver.com/">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TierSaver: automatic list hygiene for Klaviyo">
+  <meta property="og:description" content="TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. Simulated first, approved by you, logged and reversible. Nothing is deleted.">
+  <meta property="og:url" content="https://tiersaver.com/">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <script src="/assets/list-check.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <p class="label"><span>For Shopify brands</span><span>Works with Klaviyo</span></p>
+          <h1 class="two-tone" id="hero-title">Automatic list hygiene <span>for Klaviyo.</span></h1>
+          <p class="lead">TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. Every cleanup is simulated first, approved by you and logged. Nothing is deleted.</p>
+          <div class="cluster">
+            <a class="button" href="#" data-todo="app-store-url">Run my free list audit</a>
+            <a class="button button--secondary" href="#how-it-works">See how it works</a>
+          </div>
+          <p class="hero__note">The audit is free and read-only. Nothing changes until you approve a simulation.</p>
+        </div>
+        <figure class="sim" aria-labelledby="sim-caption">
+          <div class="sim__head">
+            <p class="label"><span>Example</span><span>Simulation</span></p>
+            <span class="pill">Nothing changed yet</span>
+          </div>
+          <p class="sim__figure">12,500</p>
+          <p class="sim__caption">active profiles, each checked against Shopify orders</p>
+          <svg class="split-bar" aria-hidden="true" focusable="false">
+            <rect class="split-bar__track" width="100%" height="100%"/>
+            <rect class="split-bar__kept" width="80%" height="100%"/>
+          </svg>
+          <ul class="legend">
+            <li>10,000 stay active</li>
+            <li>2,500 never engaged</li>
+          </ul>
+          <dl class="rows">
+            <div><dt>Would be suppressed, if you approve</dt><dd>2,500</dd></div>
+            <div><dt>Buyers among them</dt><dd>None</dd></div>
+            <div><dt>Profiles deleted</dt><dd>None</dd></div>
+          </dl>
+          <figcaption class="sim__foot" id="sim-caption">An illustration with example numbers, not a customer result.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="proof" aria-label="Why it is safe to run">
+      <div class="container grid">
+        <article class="card">
+          <p class="label"><span>01</span><span>Buyers stay</span></p>
+          <h2>Every profile is checked against your Shopify orders before anything changes.</h2>
+          <p>Anyone who has ever bought, opened, clicked or visited is kept. So is anyone with incomplete data.</p>
+        </article>
+        <article class="card">
+          <p class="label"><span>02</span><span>You stay in control</span></p>
+          <h2>Every cleanup is simulated first and can be undone.</h2>
+          <p>You see who would be suppressed, and why, before you approve anything.</p>
+        </article>
+        <article class="card card--emphasis">
+          <p class="label"><span>03</span><span>Nothing is deleted</span></p>
+          <h2>Profiles are suppressed, never deleted. Their history stays in Klaviyo.</h2>
+          <p>Every run is logged: who approved it, when, and under which criteria.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works" aria-labelledby="how-title">
+      <div class="container steps-layout">
+        <div class="section-head">
+          <p class="label"><span>How it works</span></p>
+          <h2 class="two-tone" id="how-title"><span>Five steps.</span> You approve the one that matters.</h2>
+          <p class="lead">Klaviyo recommends suppressing profiles that have never engaged. TierSaver does it every month, with your Shopify orders as the safety check.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <p class="label"><span>01</span><span>Audit</span></p>
+            <div class="steps__body">
+              <h3>See where your list stands</h3>
+              <p>Connect Klaviyo and run a free, read-only audit. It shows how many active profiles you have and how many of them meet the cleanup criteria.</p>
+            </div>
+          </li>
+          <li>
+            <p class="label"><span>02</span><span>Simulate</span></p>
+            <div class="steps__body">
+              <h3>Preview every cleanup</h3>
+              <p>A simulation lists how many profiles would be suppressed and why, with a sample you can review. Nothing runs without a simulation you approved in the last 24 hours.</p>
+            </div>
+          </li>
+          <li>
+            <p class="label"><span>03</span><span>Protect buyers</span></p>
+            <div class="steps__body">
+              <h3>Keep everyone who ever showed interest</h3>
+              <p>A profile is only a candidate if every one of these is true. Purchases are checked against both your Shopify orders and Klaviyo.</p>
+              <ul class="pill-list" aria-label="Default cleanup criteria">
+                <li class="pill">Created 365+ days ago</li>
+                <li class="pill">Received 5+ emails</li>
+                <li class="pill">Never opened</li>
+                <li class="pill">Never clicked</li>
+                <li class="pill">Never visited</li>
+                <li class="pill">Never bought</li>
+              </ul>
+              <p>SMS subscribers, lists you protect and profiles with incomplete data are always kept.</p>
+            </div>
+          </li>
+          <li>
+            <p class="label"><span>04</span><span>Suppress</span></p>
+            <div class="steps__body">
+              <h3>Run it every month</h3>
+              <p>You start the first cleanup yourself. After that TierSaver runs monthly and finishes before your plan renews, so Klaviyo's count is up to date. Scheduled runs wait for your approval unless you choose otherwise.</p>
+            </div>
+          </li>
+          <li>
+            <p class="label"><span>05</span><span>Undo</span></p>
+            <div class="steps__body">
+              <h3>Correct any run</h3>
+              <p>If a run suppressed someone it should not have, undo restores exactly the profiles from that run. Restored profiles are left out of cleanups for the next 365 days.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="list-check" aria-labelledby="check-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="label"><span>List health check</span></p>
+          <h2 class="two-tone" id="check-title"><span>How much of your list</span> is still listening?</h2>
+          <p class="lead">Enter your numbers to see how many profiles would stay active and what TierSaver costs for a list of your size.</p>
+        </div>
+      <div class="panel calc" data-list-check data-status="ok">
+        <form class="calc__form" novalidate aria-label="List health check">
+          <fieldset class="calc__fields" data-fields disabled>
+            <legend class="visually-hidden">Your Klaviyo list</legend>
+            <div class="field">
+              <label for="check-active">Active profiles now</label>
+              <input class="input" id="check-active" name="active" type="text" inputmode="numeric" autocomplete="off" value="12,500" aria-describedby="check-active-hint">
+              <p class="field__hint" id="check-active-hint">In Klaviyo: Audience, then Profiles.</p>
+            </div>
+            <fieldset class="field">
+              <legend>Profiles that meet the cleanup criteria</legend>
+              <div class="field__row">
+                <input class="input" id="check-criteria" name="criteria" type="text" inputmode="decimal" autocomplete="off" value="2,500" aria-label="Profiles that meet the cleanup criteria" aria-describedby="check-criteria-hint">
+                <div class="segmented">
+                  <label><input type="radio" name="unit" value="profiles" checked>Profiles</label>
+                  <label><input type="radio" name="unit" value="percent">% of list</label>
+                </div>
+              </div>
+              <p class="field__hint" id="check-criteria-hint">Profiles created at least 365 days ago that received your emails and never opened, clicked, visited or bought. Not sure? The free audit counts them for you.</p>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Your Klaviyo plan</legend>
+              <div class="segmented">
+                <label><input type="radio" name="plan" value="email" checked>Email</label>
+                <label><input type="radio" name="plan" value="marketing">Marketing</label>
+                <label><input type="radio" name="plan" value="free">Free</label>
+              </div>
+              <p class="field__hint">Only used for the plan size reference below the result.</p>
+            </fieldset>
+          </fieldset>
+          <noscript>
+            <p class="note">The list health check needs JavaScript. Without it, the example shown here still applies, and the free audit counts your real numbers.</p>
+          </noscript>
+        </form>
+        <div class="calc__result" aria-live="polite" aria-atomic="true">
+          <p class="label"><span>Profiles that would stay active</span></p>
+          <p class="calc__figure" data-out="figure">10,000</p>
+          <p class="calc__message" data-out="message">2,500 of 12,500 profiles meet the cleanup criteria. They would be suppressed only after you approve a simulation. None are deleted.</p>
+          <div class="calc__detail">
+            <svg class="split-bar" aria-hidden="true" focusable="false">
+              <rect class="split-bar__track" width="100%" height="100%"/>
+              <rect class="split-bar__kept" data-bar width="80%" height="100%"/>
+            </svg>
+            <ul class="legend">
+              <li data-out="staying">10,000 stay active</li>
+              <li data-out="leaving">2,500 meet the cleanup criteria</li>
+            </ul>
+            <dl class="rows">
+              <div>
+                <dt>TierSaver price for your list size<br><span class="small" data-out="tiersaver-plan">Flat price for lists up to 25,000 active profiles</span></dt>
+                <dd class="rows__strong" data-out="tiersaver-price">$29/month</dd>
+              </div>
+            </dl>
+            <div class="calc__reference">
+              <p class="label"><span>For reference</span><span>Klaviyo plan size</span></p>
+              <dl class="rows rows--plain">
+                <div><dt>Today</dt><dd data-out="klaviyo-before">Up to 12,500 profiles ($275/mo list price)</dd></div>
+                <div><dt>After the cleanup</dt><dd data-out="klaviyo-after">Up to 10,000 profiles ($150/mo list price)</dd></div>
+              </dl>
+              <p class="calc__fine">Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">Klaviyo's help center</a>. Whether you change plans is your decision, made in Klaviyo's billing settings. Klaviyo list prices read on 2026-11-25, in US dollars; your invoice may differ.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="label"><span>Pricing</span></p>
+          <h2 class="two-tone" id="pricing-title"><span>A flat monthly price,</span> by the size of your list.</h2>
+          <p class="lead">The audit is free. A month in which no cleanup runs is not charged.</p>
+        </div>
+        <ul class="plans">
+          <li class="plan">
+            <p class="plan__range">Up to 25,000 active profiles</p>
+            <p class="plan__price"><span class="plan__amount">$29</span> <span class="plan__per">per month</span></p>
+          </li>
+          <li class="plan">
+            <p class="plan__range">25,001 to 75,000 active profiles</p>
+            <p class="plan__price"><span class="plan__amount">$79</span> <span class="plan__per">per month</span></p>
+          </li>
+          <li class="plan">
+            <p class="plan__range">75,001 to 150,000 active profiles</p>
+            <p class="plan__price"><span class="plan__amount">$149</span> <span class="plan__per">per month</span></p>
+          </li>
+          <li class="plan plan--contact">
+            <p class="plan__range">Above 150,000 active profiles</p>
+            <p class="plan__price"><span class="plan__amount">Contact us</span></p>
+          </li>
+        </ul>
+        <p class="text-muted small pricing-note">Prices in US dollars, billed through your Shopify invoice. Your list size is your number of active profiles in Klaviyo. For lists above 150,000 profiles, write to <mark class="placeholder" data-todo="contact-email">[CONTACT EMAIL]</mark>. <a href="/help/pricing">How pricing works</a>.</p>
+      </div>
+    </section>
+
+    <section class="section" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-layout">
+        <div class="section-head">
+          <p class="label"><span>Questions</span></p>
+          <h2 class="two-tone" id="faq-title"><span>It touches your list,</span> so ask the hard questions.</h2>
+          <p class="text-secondary">More detail in the <a href="/help/">help center</a>.</p>
+        </div>
+        <div class="faq">
+          <details open>
+            <summary>Will I lose customers?</summary>
+            <div>
+              <p>No one who buys is touched. By default a profile is only a candidate if it has never purchased, checked against both your Shopify orders and Klaviyo, and has never opened, clicked or visited. You approve a simulation before anything runs, and if something looks wrong afterwards you can undo the run.</p>
+              <p><a href="/help/cleanup-criteria">See the cleanup criteria</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Is my data deleted?</summary>
+            <div>
+              <p>No. TierSaver suppresses profiles; it does not delete them. Their history stays in Klaviyo.</p>
+              <p><a href="/help/what-suppress-means">What suppressing means in Klaviyo</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Doesn't Klaviyo already do this?</summary>
+            <div>
+              <p>Klaviyo recommends suppressing profiles that never engaged and gives you the tools to do it by hand. TierSaver applies the same criteria every month, adds a check against your Shopify orders, shows you a simulation first and keeps a log so a run can be undone.</p>
+              <p>If you prefer to do it yourself, <a href="/guides/klaviyo-list-hygiene">the manual steps are here</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>What happens if I uninstall?</summary>
+            <div>
+              <p>Profiles that were suppressed stay suppressed. You can remove the suppression from Klaviyo at any time.</p>
+              <p>TierSaver removes its access tokens when you uninstall and the rest of your store's data when Shopify sends its deletion request. <a href="/help/uninstalling">What happens on uninstall</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Does a cleaner list change my Klaviyo plan?</summary>
+            <div>
+              <p>Not by itself. Klaviyo's help center says that suppressed profiles do not count toward your email plan's active profile count. If your count drops, you can move to a smaller plan in Klaviyo's billing settings, or let Klaviyo's auto-downgrade option do it. TierSaver never changes your plan, and makes no promise about your Klaviyo invoice.</p>
+              <p><a href="/help/monthly-schedule-and-your-klaviyo-plan">The monthly schedule and your Klaviyo plan</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Can I still email someone after they are suppressed?</summary>
+            <div>
+              <p>No. A suppressed profile cannot receive marketing email from your Klaviyo account, even if that person later buys. That is why the default criteria only select profiles that have never engaged in any way.</p>
+            </div>
+          </details>
+          <details>
+            <summary>What does TierSaver store about my customers?</summary>
+            <div>
+              <p>Klaviyo profile IDs and one-way hashes of email addresses, so it can recognize buyers and undo a run. It does not store customer email addresses, names or order contents. Access tokens are encrypted.</p>
+              <p><a href="/help/data-and-privacy">Data and privacy</a>.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="container">
+        <div class="panel panel--dark">
+          <div class="closing__copy">
+            <p class="label"><span>Free audit</span><span>Nothing changes until you approve</span></p>
+            <h2 class="two-tone" id="closing-title"><span>Keep your list healthy.</span> See what your audit finds.</h2>
+            <p class="lead">Every cleanup is simulated first, logged and reversible. Nothing is deleted.</p>
+            <div class="cluster">
+              <a class="button" href="#" data-todo="app-store-url">Run my free list audit</a>
+              <a class="button button--secondary" href="/help/">Read the help center</a>
+            </div>
+          </div>
+          <img class="closing__mark" src="/assets/mark-dark.svg" alt="" width="240" height="240">
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Product</h2>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Help center</h2>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Guides</h2>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__col">
+          <h2 class="label">Legal</h2>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 <mark class="placeholder" data-todo="legal-entity">[LEGAL ENTITY]</mark>. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -102,6 +102,8 @@ describe("wider mode (opt-in windows)", () => {
     const settings = { ...WIDE, countMachineOpens: false };
     const p = inactiveProfile({ lastOpenAt: daysAgo(5), lastOpenIsMachine: true, lastHumanOpenAt: daysAgo(400) });
     expect(evalP(p, FULL_COVERAGE, settings).kind).toBe("candidate");
+    const unknownHuman = inactiveProfile({ lastOpenAt: daysAgo(5), lastOpenIsMachine: true });
+    expect(evalP(unknownHuman, FULL_COVERAGE, settings).kind).toBe("protected");
     const human = inactiveProfile({ lastOpenAt: daysAgo(5), lastOpenIsMachine: false });
     expect(evalP(human, FULL_COVERAGE, settings).kind).toBe("protected");
   });

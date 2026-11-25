@@ -1,15 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import {
-  CURRENT_PRICE_TABLES,
-  DEFAULT_FEE_POLICY,
-  DEFAULT_RULE_SETTINGS,
-  DEFAULT_SCHEDULE,
-  estimateSavings,
-  formatUsd,
-  quoteCharge,
-} from "@tiersaver/core";
+import { CURRENT_PRICE_TABLES, DEFAULT_SCHEDULE, SIMULATION_TTL_MS } from "@tiersaver/core";
+import { CLEANUP_CRITERIA, TIERSAVER_PLANS } from "../src/site-config.js";
 import { SITE_DIR, generate } from "../build/build.mjs";
 import { checkLinks } from "../build/check-links.mjs";
 import { headersFor, parseHeaders } from "../build/serve.mjs";
@@ -49,19 +42,19 @@ describe("build output", () => {
       "404.html",
       "help/index.html",
       "help/how-the-audit-works.html",
-      "help/protection-rules.html",
+      "help/cleanup-criteria.html",
       "help/simulation-and-approval.html",
       "help/what-suppress-means.html",
-      "help/undo-and-the-90-day-rule.html",
-      "help/billing-date-and-auto-downgrade.html",
-      "help/how-the-fee-works.html",
+      "help/undo.html",
+      "help/monthly-schedule-and-your-klaviyo-plan.html",
+      "help/pricing.html",
       "help/uninstalling.html",
       "help/data-and-privacy.html",
-      "guides/klaviyo-bill-calculator.html",
-      "guides/reduce-klaviyo-bill.html",
-      "guides/klaviyo-active-profiles.html",
+      "guides/klaviyo-list-hygiene.html",
+      "guides/how-klaviyo-counts-active-profiles.html",
+      "guides/suppress-vs-delete-vs-unsubscribe.html",
       "sitemap.xml",
-      "assets/calculator.js",
+      "assets/list-check.js",
     ]) {
       expect(paths).toContain(expected);
     }
@@ -71,72 +64,69 @@ describe("build output", () => {
     const sitemap = generated.get("sitemap.xml")!;
     expect(sitemap).toContain("<loc>https://tiersaver.com/</loc>");
     expect(sitemap).toContain("<loc>https://tiersaver.com/help/</loc>");
-    expect(sitemap).toContain("<loc>https://tiersaver.com/guides/klaviyo-active-profiles</loc>");
+    expect(sitemap).toContain("<loc>https://tiersaver.com/guides/how-klaviyo-counts-active-profiles</loc>");
     expect(sitemap).not.toContain("404");
     expect(sitemap.match(/<loc>/g)).toHaveLength(pages.length - 1);
   });
 });
 
-describe("numbers on the pages come from core", () => {
-  const email = CURRENT_PRICE_TABLES.email;
-  const ex1 = estimateSavings({ profilesBefore: 12_500, profilesRemoved: 2_500, table: email });
-  const ex2 = estimateSavings({ profilesBefore: 50_000, profilesRemoved: 30_000, table: email });
-  const fee1 = quoteCharge({ monthlySavingsCents: ex1.monthlySavingsCents });
-  const fee2 = quoteCharge({ monthlySavingsCents: ex2.monthlySavingsCents });
+describe("numbers on the pages come from core and site-config", () => {
+  const usd = (cents: number) => `$${(cents / 100).toLocaleString("en-US")}`;
 
-  it("landing page worked example", () => {
-    const text = textOf(generated.get("index.html")!);
-    expect(formatUsd(ex1.monthlySavingsCents)).toBe("$125");
-    expect(formatUsd(fee1.feeCents)).toBe("$25");
-    expect(text).toContain(`Estimated saving ${formatUsd(ex1.monthlySavingsCents)}/mo`);
-    expect(text).toContain(`TierSaver fee 20% of ${formatUsd(ex1.monthlySavingsCents)} ${formatUsd(fee1.feeCents)}`);
-    expect(text).toContain(
-      `You keep that month, estimated ${formatUsd(ex1.monthlySavingsCents - fee1.feeCents)}`,
-    );
-    expect(text).toContain(
-      `50,000 to 20,000 profiles ${formatUsd(ex2.monthlySavingsCents)}/mo ${formatUsd(fee2.feeCents)}`,
-    );
-    expect(text).toContain(`capped at US${formatUsd(DEFAULT_FEE_POLICY.windowCapCents)} per month`);
-    expect(text).toContain(`Klaviyo list prices as read on ${email.capturedOn}`);
-  });
-
-  it("protection rule defaults", () => {
-    const text = textOf(generated.get("help/protection-rules.html")!);
-    for (const days of [
-      DEFAULT_RULE_SETTINGS.purchaseDays,
-      DEFAULT_RULE_SETTINGS.clickDays,
-      DEFAULT_RULE_SETTINGS.openDays,
-      DEFAULT_RULE_SETTINGS.newProfileDays,
-      DEFAULT_RULE_SETTINGS.siteActivityDays,
-      DEFAULT_RULE_SETTINGS.reactivationLockDays,
-    ]) {
-      expect(text).toContain(`last ${days} days`);
-    }
-    expect(textOf(generated.get("index.html")!)).toContain(
-      `Bought in the last ${DEFAULT_RULE_SETTINGS.purchaseDays} days`,
-    );
-  });
-
-  it("schedule lead time", () => {
-    expect(textOf(generated.get("help/billing-date-and-auto-downgrade.html")!)).toContain(
-      `runs ${DEFAULT_SCHEDULE.leadDays} days before your billing date`,
-    );
-  });
-
-  it("the tier table lists every tier of both plans", () => {
-    const html = generated.get(join("guides", "klaviyo-bill-calculator.html"))!;
-    for (const table of [CURRENT_PRICE_TABLES.email, CURRENT_PRICE_TABLES.email_sms]) {
-      for (const tier of table.tiers) {
-        expect(html).toContain(
-          `<td>Up to ${tier.maxProfiles.toLocaleString("en-US")}</td><td>${formatUsd(tier.monthlyCents)}</td>`,
-        );
+  it("pricing: every provisional plan is shown, on the landing page and in the help center", () => {
+    for (const path of ["index.html", "help/pricing.html"]) {
+      const text = textOf(generated.get(path)!);
+      for (const plan of TIERSAVER_PLANS) {
+        expect(text, path).toContain(`${plan.maxProfiles.toLocaleString("en-US")}`);
+        expect(text, path).toMatch(new RegExp(`\\${usd(plan.monthlyCents)} per month`));
       }
+      expect(text, path).toContain("Above 150,000");
+      expect(text, path).toContain("Contact us");
     }
+    const landing = textOf(generated.get("index.html")!);
+    expect(landing).toContain("A month in which no cleanup runs is not charged.");
+    expect(landing).toContain("The audit is free.");
+  });
+
+  it("list health check: static default equals core's plan sizes, dated", () => {
+    const email = CURRENT_PRICE_TABLES.email;
+    const text = textOf(generated.get("index.html")!);
+    const before = email.tiers.find((t) => t.maxProfiles === 12_500)!;
+    const after = email.tiers.find((t) => t.maxProfiles === 10_000)!;
+    expect(text).toContain(`Today Up to 12,500 profiles (${usd(before.monthlyCents)}/mo list price)`);
+    expect(text).toContain(`After the cleanup Up to 10,000 profiles (${usd(after.monthlyCents)}/mo list price)`);
+    expect(text).toContain(`Klaviyo list prices read on ${email.capturedOn}`);
+    expect(text).toContain("Suppressed profiles do not count toward your Klaviyo email plan, according to Klaviyo's help center");
+    expect(generated.get("index.html")!).toContain('href="https://help.klaviyo.com/hc/en-us/articles/24263920096027"');
+  });
+
+  it("cleanup criteria", () => {
+    const text = textOf(generated.get("help/cleanup-criteria.html")!);
+    expect(text).toContain(`created at least ${CLEANUP_CRITERIA.minProfileAgeDays} days ago`);
+    expect(text).toContain(
+      `at least ${CLEANUP_CRITERIA.minEmailsReceived} emails in roughly the last ${CLEANUP_CRITERIA.emailsReceivedWeeks} weeks`,
+    );
+    expect(text).toContain(`No opens, clicks or site activity ${CLEANUP_CRITERIA.widerMinEngagementDays} days`);
+    expect(text).toContain(`No purchases ${CLEANUP_CRITERIA.widerMinPurchaseDays} days`);
+    expect(text).toContain(`Profile age ${CLEANUP_CRITERIA.widerMinProfileAgeDays} days`);
+    expect(textOf(generated.get("help/undo.html")!)).toContain(
+      `leaves them alone for ${CLEANUP_CRITERIA.undoLockDays} days`,
+    );
+  });
+
+  it("simulation window and schedule lead time come from core", () => {
+    expect(textOf(generated.get("help/simulation-and-approval.html")!)).toContain(
+      `expires after ${SIMULATION_TTL_MS / 3_600_000} hours`,
+    );
+    expect(textOf(generated.get("help/monthly-schedule-and-your-klaviyo-plan.html")!)).toContain(
+      `runs ${DEFAULT_SCHEDULE.leadDays} days before your plan's renewal date`,
+    );
   });
 });
 
 describe("copy rules (brand/messaging.md)", () => {
   const forbidden: [string, RegExp][] = [
+    // brand/messaging.md
     ["avoid", /\bavoid/i],
     ["dodge", /\bdodg/i],
     ["beat", /\bbeat/i],
@@ -153,9 +143,24 @@ describe("copy rules (brand/messaging.md)", () => {
     ["last chance", /\blast chance\b/i],
     ["deliverability tool", /deliverability tool/i],
     ["email marketing tool", /email marketing tool/i],
-    ["pay Klaviyo less", /pay klaviyo less/i],
     ["exclamation mark", /!/],
     ["other brands", /infinure|dnuvi|alupont/i],
+    // docs/12-CUMPLIMIENTO-KLAVIYO.md, section 3.2
+    ["pays for itself", /pays? for itself/i],
+    ["stop paying Klaviyo", /stop paying/i],
+    ["pay Klaviyo less", /pay(ing)? klaviyo less|pay less/i],
+    ["lower/reduce/cut your Klaviyo bill", /(lower|reduce|cut|shrink|slash)\w*\s+(your\s+|the\s+|a\s+)?klaviyo\s+(bill|invoice|cost)/i],
+    ["Klaviyo bill", /klaviyo bill\b/i],
+    ["billing date", /billing date/i],
+    ["before Klaviyo counts", /before klaviyo counts/i],
+    ["savings", /\bsav(e|es|ed|ing|ings)\b/i],
+    ["lower tier", /lower tier|drop a tier|down a tier/i],
+    ["percentage of savings", /\b20%|percent(age)? of (the |your )?sav/i],
+    ["fee", /\bfees?\b/i],
+    ["cap", /\bcapped\b|\bcap\b/i],
+    ["reactivation", /reactivat/i],
+    ["endorsement words", /\bofficial|\bcertified|recommended by|\bpartners?\b/i],
+    ["old examples", /\$125\b|\$25\b|\$345\b|\$69\b/],
   ];
 
   it("no forbidden word or framing appears on any page", () => {
@@ -178,17 +183,24 @@ describe("copy rules (brand/messaging.md)", () => {
     }
   });
 
-  it("every page that shows a dollar figure says it is estimated", () => {
+  it("Klaviyo list prices only appear on the landing page, dated and labelled as list prices", () => {
+    const tierSaverPrices = new Set(TIERSAVER_PLANS.map((p) => `$${p.monthlyCents / 100}`));
     for (const [path, html] of pages) {
       const text = textOf(html);
-      if (/\$\d/.test(text)) expect(/estimate/i.test(text), `${path} shows $ without "estimate"`).toBe(true);
+      const other = (text.match(/\$[\d,]+(\.\d\d)?/g) ?? []).filter((m) => !tierSaverPrices.has(m));
+      if (path === "index.html") {
+        expect(other.sort()).toEqual(["$150", "$275"]);
+        expect(text).toContain("/mo list price");
+      } else {
+        expect(other, path).toEqual([]);
+      }
     }
   });
 
   it("the landing page says Klaviyo and what the product does in the first heading", () => {
     const html = generated.get("index.html")!;
     const h1 = textOf(/<h1[\s\S]*?<\/h1>/.exec(html)![0]).trim();
-    expect(h1).toBe("Klaviyo list hygiene that pays for itself.");
+    expect(h1).toBe("Automatic list hygiene for Klaviyo.");
     expect(html).toContain(">Run my free list audit</a>");
   });
 
@@ -220,6 +232,7 @@ describe("security and privacy of the pages", () => {
       for (const m of html.matchAll(/<(script|link|img|iframe|source|video|audio|form)\b[^>]*>/gi)) {
         const tag = m[0];
         if (/rel="canonical"/.test(tag)) continue;
+        if (/^<link/i.test(tag) === false && /^<(script|img|iframe|source|video|audio|form)/i.test(tag) === false) continue;
         expect(/(src|href|action)="(https?:)?\/\//i.test(tag), `${path}: ${tag}`).toBe(false);
       }
     }
@@ -233,8 +246,8 @@ describe("security and privacy of the pages", () => {
     );
   });
 
-  it("the calculator bundle makes no network calls and sets no cookies", () => {
-    const js = generated.get(join("assets", "calculator.js"))!;
+  it("the list check bundle makes no network calls and sets no cookies", () => {
+    const js = generated.get(join("assets", "list-check.js"))!;
     expect(js).not.toMatch(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|document\.cookie|localStorage|sessionStorage/);
     // The only URL in the bundle is the price table's "source" string from core (data, never requested).
     expect((js.match(/https?:\/\/[^\s"')]+/g) ?? []).every((u) => u === "https://www.klaviyo.com/pricing")).toBe(true);
@@ -258,7 +271,8 @@ describe("links and placeholders", () => {
   it("every internal link, asset and anchor resolves", async () => {
     const result = await checkLinks();
     expect(result.errors).toEqual([]);
-    expect(result.external).toEqual([]);
+    // The only external URLs are plain links to the Klaviyo help center articles cited as sources.
+    for (const url of result.external) expect(url).toMatch(/^https:\/\/help\.klaviyo\.com\/hc\/en-us\/articles\/\d+$/);
   });
 
   it("the only placeholder link is the App Store URL, and it is marked on every CTA", () => {

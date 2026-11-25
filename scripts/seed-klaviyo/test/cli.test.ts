@@ -74,7 +74,7 @@ describe("runCli: dry run is the default", () => {
     expect(readdirSync(stateDir)).toEqual([]);
     const text = out.join("\n");
     expect(text).toContain("Profiles       3000");
-    expect(text).toMatch(/recent_purchaser\s+330/);
+    expect(text).toMatch(/recent_purchaser\s+150/);
     expect(text).toMatch(/Total: \d+ requests/);
     expect(text).toMatch(/Estimated duration/);
     expect(text).toContain("DRY RUN: no network request was made");
@@ -167,7 +167,7 @@ describe("runCli: real run against the fake API", () => {
     expect(out.join("\n")).toContain("0 steps run");
 
     expect(await run("--verify", "--account-id", "TsTest")).toBe(EXIT.ok);
-    expect(out.at(-1)).toBe("All 26 sampled profiles match.");
+    expect(out.at(-1)).toBe("All 39 sampled profiles match.");
     expect(all()).not.toContain(TEST_KEY);
     for (const request of server.requests) expect(request.headers.Authorization).toBe(`Klaviyo-API-Key ${TEST_KEY}`);
   });
