@@ -14,7 +14,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 - Configuración de Shopify publicada: versión `tiersaver-for-klaviyo-2`. La suscripción a `orders/create` está comentada en `shopify.app.toml` hasta que la app tenga acceso a datos protegidos de clientes.
 - D1 `tiersaver` con migraciones `0000` a `0004`. Cron Trigger horario (`17 * * * *`): programación mensual y reintento de cargos.
 - Workflows `tiersaver-suppression-run`, `tiersaver-orders-backfill` y `tiersaver-scan`.
-- `SUPPRESSION_ENABLED` no está definido: ninguna corrida puede suprimir. Solo Facundo lo enciende.
+- **`SUPPRESSION_ENABLED=true` y `SUPPRESSION_ALLOWED_ACCOUNT_ID=SGKvLG` están cargados como secretos del Worker** para la limpieza real que Facundo autorizó sobre la cuenta de prueba (2026-11-25). Borrarlos al terminar: `npx wrangler secret delete SUPPRESSION_ENABLED` y lo mismo con el otro, desde `shopify/`. Fuera de esa prueba, solo Facundo lo enciende.
 - Secretos `KLAVIYO_CLIENT_ID` y `KLAVIYO_CLIENT_SECRET` cargados (Klaviyo los acepta). La app muestra "Connect Klaviyo". Al cierre de este handoff la tienda todavía no había conectado.
 - Segmento administrado creado en SGKvLG por la verificación: `WRvyjd` (984 miembros, correcto).
 - Variable `KLAVIYO_SEEDED_ACCOUNT_ID = SGKvLG` (modo cuenta sembrada; ver `STATUS.md`).

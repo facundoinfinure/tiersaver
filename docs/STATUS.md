@@ -336,3 +336,16 @@ Worker versión `97e0c4e5`, migración `0004_schedule.sql` aplicada en la D1 rem
 - Auditoría real de punta a punta, rotación del refresh token y paso `/app/klaviyo/finish`: esperan a que Facundo conecte Klaviyo desde la tienda.
 - Falta de la Fase 3: mails (aviso de simulación programada lista, resultado de la corrida), detector de ciclos (guardarraíl 6), reporte mensual, y decidir si se muestra la estimación de plan de Klaviyo.
 - La corrida cobra por lo **enviado** a Klaviyo; no espera a que los jobs confirmen cuántos procesó Klaviyo.
+
+**Primer intento real de "Connect Klaviyo" (Facundo, 2026-11-25 18:21 UTC): falló, causa encontrada y corregida**
+- Lo que anduvo: consentimiento en Klaviyo, callback, y **`/app/klaviyo/finish` abre dentro del admin de Shopify** con `code` y `state` (la URL `admin.shopify.com/store/<tienda>/apps/<client id>/…` redirige bien a la app embebida).
+- Lo que falló: `klaviyo_oauth_invalid_grant`. Logs del Worker: **Shopify cargó el paso final tres veces y canceló la primera a los 300 ms**, cuando el código ya se había canjeado en Klaviyo; las otras dos recibieron `invalid_grant` porque el código es de un solo uso. No quedó ninguna conexión guardada.
+- Corrección (`finishKlaviyoAuthorization`, migración `0005_oauth_attempts.sql`): la primera carga que reclama el `state` hace el canje dentro de `waitUntil` (termina y se registra aunque le cancelen el request) y las demás esperan y devuelven ese resultado. El código nunca va dos veces a Klaviyo y cada `state` sirve una sola vez. La tabla nueva guarda solo el SHA-256 del `state`.
+- Efecto lateral: Klaviyo emitió tokens en ese primer canje que la app nunca guardó ni puede revocar. Se pisan al reconectar; si se quiere limpiar, se quita la app en Klaviyo (Integrations) antes de volver a conectar.
+
+**Decisiones de Facundo (2026-11-25, cuarta sesión)**
+- **El cargo es estimado hasta que los jobs de Klaviyo confirmen.** Implementado: al terminar la corrida se guarda el cargo como estimado (`pending`) y no va nada a Shopify; el Workflow espera los jobs (30 s, 1, 2, 4, 8 y después 15 minutos, unas 2 horas en total) y recién con todos `complete` crea el usage record por lo que Klaviyo confirmó (`completed_count − skipped_count`). Si Klaviyo confirma cero, no se cobra. El cron reintenta las corridas chicas (hasta 10 jobs); las grandes dependen de su Workflow. **A verificar en la corrida real: qué cuenta exactamente `completed_count`.**
+- **Autorizada una limpieza real sobre SGKvLG** (suprimir, consultar jobs, deshacer, apagar). Para eso: candado nuevo `SUPPRESSION_ALLOWED_ACCOUNT_ID` (si está definido, solo se suprime para una tienda conectada a esa cuenta de Klaviyo; deshacer no depende). Cargados como secretos del Worker, no en el repo: `SUPPRESSION_ENABLED=true` y `SUPPRESSION_ALLOWED_ACCOUNT_ID=SGKvLG`. **Hay que borrarlos al terminar la prueba** (`wrangler secret delete`).
+- Para la cuenta sembrada, la suscripción de Shopify no bloquea el arranque (así se puede probar antes de resolver el cobro); para cualquier otra cuenta sigue siendo obligatoria.
+
+Worker versión `7c98e25e`. 260 tests.
