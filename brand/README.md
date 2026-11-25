@@ -1,6 +1,6 @@
 # brand/ · Marca de TierSaver (Fase 2)
 
-Estado: **borrador, a la espera de que Facundo elija logo y apruebe los mensajes.** Hasta entonces no se aplica ningún logo en ningún lado (ni en el sitio, ni en la app, ni en la ficha). El styleguide del sitio usa el nombre en texto plano por ese motivo.
+Estado: **Facundo eligió el logo B (Lower Step) y aprobó los mensajes el 2026-11-25.** Los archivos a usar están en `logo/final/` (copia de `option-b/`). Las carpetas `option-a/` y `option-c/` y `options.png` quedan como archivo de la decisión. Pendiente: búsqueda de marcas parecidas y chequeo de las reglas vigentes de ícono del App Store.
 
 Fuente de verdad: `docs/03-MARCA.md`. Si algo de acá lo contradice, gana ese documento.
 

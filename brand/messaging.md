@@ -1,6 +1,6 @@
 # TierSaver messaging guide
 
-> **Status: draft, pending the owner's approval.** Nothing here is final until it is approved in Phase 2. Source: `docs/03-MARCA.md`. Do not publish copy from this file before approval.
+> **Status: approved by the owner on 2026-11-25.** Source: `docs/03-MARCA.md`. Subject to the wording rules in `docs/12-CUMPLIMIENTO-KLAVIYO.md` once that review is done.
 
 ## Name
 
