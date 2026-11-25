@@ -74,7 +74,10 @@ export class KlaviyoClient {
 
   constructor(options: KlaviyoClientOptions) {
     this.getAccessToken = options.getAccessToken;
-    this.fetchImpl = options.fetch ?? fetch;
+    // Never call the global `fetch` as a method of this object: Cloudflare Workers reject it with
+    // "Illegal invocation" (found on 2026-11-25: every real API call from the deployed Worker failed that way).
+    const fetchFn = options.fetch ?? fetch;
+    this.fetchImpl = (input, init) => fetchFn(input, init);
     this.sleep = options.sleep ?? defaultSleep;
     this.now = options.now ?? Date.now;
     this.random = options.random ?? Math.random;

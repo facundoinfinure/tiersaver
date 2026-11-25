@@ -715,4 +715,19 @@ describe("candidate segment (Klaviyo's long-term inactive criteria)", () => {
     expect(all[0]).toMatchObject({ emailHash: await hashEmail("p0@buyers.test"), email: { canReceiveMarketing: true }, sms: { canReceiveMarketing: false } });
     expect(JSON.stringify(all)).not.toContain("@buyers.test");
   });
+
+  it("calls the global fetch as a plain function (Workers reject it as a method: Illegal invocation)", async () => {
+    const strict = vi.fn(function (this: unknown) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/vnd.api+json" } }));
+    });
+    vi.stubGlobal("fetch", strict);
+    try {
+      const client = new KlaviyoClient({ getAccessToken: async () => "token" });
+      await expect(client.request({ endpoint: "metrics", path: "/api/metrics" })).resolves.toEqual({ data: [] });
+      expect(strict).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
