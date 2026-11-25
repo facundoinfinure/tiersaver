@@ -24,7 +24,8 @@ Una sesión de Claude no crea cuentas, no escribe contraseñas ni datos bancario
 | 9 | Crear la app OAuth en Klaviyo si se confirma ese camino (requiere rol owner, admin o manager) | Fase 3 |
 | 10 | Cargar los registros DNS de tiersaver.com en Cloudflare con los valores que dé la sesión, o conectar el conector nuevo de Cloudflare | Fase 4 |
 | 11 | Crear casilla de soporte (por ejemplo support@tiersaver.com) | Fase 4 |
-| 12 | Hacer revisar por un abogado: política de privacidad, términos, limitación de responsabilidad por supresiones, y si los términos de la API de Klaviyo permiten el producto | Fase 4 |
+| 12 | Hacer revisar por un abogado: política de privacidad, términos, limitación de responsabilidad por supresiones, y si los términos de la API de Klaviyo permiten el producto. **Adelantada a ya** (2026-11-25) para la cláusula de la AUP de Klaviyo sobre evadir cargos | Ya |
+| 12b | En el Dev Dashboard de Shopify, pedir `read_all_orders` y acceso a datos protegidos nivel 2 (email), con la justificación que redacta la sesión | Fase 3 |
 
 ## Para lanzar
 

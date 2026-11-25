@@ -6,3 +6,4 @@ export * from "./simulation.js";
 export * from "./schedule.js";
 export * from "./batch.js";
 export * from "./price-tables/klaviyo.js";
+export * from "./email-hash.js";

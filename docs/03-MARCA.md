@@ -11,23 +11,25 @@ Cuidado: en el Shopify App Store "tier" suele leerse como descuento por volumen.
 
 ## Posicionamiento
 
-Ahorro puro. No es una herramienta de entregabilidad ni de email marketing.
+Cambiado el 2026-11-25: **higiene de lista automática para Klaviyo**, con el ahorro como resultado medible. Motivo: la Acceptable Use Policy de Klaviyo prohíbe usar el servicio de forma "designed to avoid or circumvent bills… or other fees". Un producto presentado solo como "pagá menos a Klaviyo" queda expuesto. No es una herramienta de entregabilidad ni de email marketing.
 
-- **Para**: marcas de Shopify que pagan Klaviyo por perfiles que no abren.
-- **Promesa**: "Stop paying Klaviyo for people who never open."
-- **Cómo**: audita, simula, suprime antes del corte de facturación y reactiva solo a quien vuelve a comprar.
-- **Por qué creerlo**: el ahorro se ve en dólares antes de pagar nada; nada se toca sin simulación; todo se puede deshacer; si no hay ahorro, no se cobra.
+- **Para**: marcas de Shopify con listas de Klaviyo llenas de perfiles que dejaron de interactuar.
+- **Promesa**: mantener la lista sana sin trabajo manual, sin tocar a nadie que compra.
+- **Cómo**: audita, simula, cruza cada perfil con los pedidos de Shopify, suprime antes de la fecha de facturación y reactiva a quien vuelve a comprar.
+- **Por qué creerlo**: nada se toca sin simulación; los compradores quedan protegidos con datos de Shopify; todo se puede deshacer; solo se cobra cuando Klaviyo confirma un tramo más bajo.
 
 ## Mensajes
 
+Borrador a aprobar en la Fase 2.
+
 | Uso | Texto |
 | --- | --- |
-| Titular | Stop paying Klaviyo for people who never open. |
-| Subtítulo | TierSaver suppresses inactive profiles before your billing date, so you drop a pricing tier without losing a buyer. |
-| Prueba 1 | See your savings in dollars before you install anything paid. |
+| Titular | Klaviyo list hygiene that pays for itself. |
+| Subtítulo | TierSaver suppresses profiles that stopped engaging, never your buyers, right before your billing date. Your list stays healthy and your Klaviyo bill can drop a tier. |
+| Prueba 1 | Every profile is checked against your Shopify orders before anything changes. |
 | Prueba 2 | Every cleanup is simulated first and can be undone. |
-| Prueba 3 | No savings, no charge. |
-| CTA | Run my free audit |
+| Prueba 3 | You only pay when Klaviyo confirms a lower tier. |
+| CTA | Run my free list audit |
 
 ## Voz
 
@@ -35,6 +37,7 @@ Ahorro puro. No es una herramienta de entregabilidad ni de email marketing.
 - Honesta: toda cifra de ahorro dice "estimated" hasta que el merchant la ve en su factura.
 - Tranquila con lo delicado: la app toca la lista del merchant, así que el tono es de control, no de urgencia.
 - Sin signos de exclamación, sin jerga de growth.
+- Nunca hablar de "evitar", "esquivar" o "ganarle" a los precios de Klaviyo. El ahorro es consecuencia de una lista sana: los perfiles suprimidos no cuentan para el plan, según la propia ayuda de Klaviyo.
 
 Objeciones a responder en el sitio y la ayuda:
 - "¿Voy a perder clientes?" → reglas de protección, simulación, deshacer.

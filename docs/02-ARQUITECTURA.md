@@ -49,6 +49,19 @@ Costo objetivo de infraestructura: US$ 60 a 150 por mes cuando haya clientes; ce
 | 9 | ¿Qué versión de la Admin API de Shopify es la estable vigente y qué scopes mínimos hacen falta para leer pedidos y clientes? | Permisos y revisión | — |
 | 10 | Acceso a datos protegidos de clientes en Shopify (protected customer data): ¿hace falta pedir aprobación para leer mails y pedidos? | Puede demorar la revisión | Pedir el nivel mínimo y justificarlo |
 
+## Datos de Shopify (decidido el 2026-11-25)
+
+- Scopes: `read_orders` y `read_all_orders` (requiere aprobación de Shopify en el Dev Dashboard) para ver 365 días de pedidos.
+- Datos protegidos de clientes: nivel 2, solo el campo email. Se pide con justificación: "match recent buyers to Klaviyo profiles so they are never suppressed".
+- Minimización: el mail de cada pedido se normaliza (minúsculas, sin espacios) y se guarda solo su SHA-256 junto con la fecha del último pedido. El cruce con Klaviyo compara hashes. No se guardan mails en claro.
+- Reactivación: webhook `orders/create`. Si el hash del comprador coincide con un perfil suprimido por TierSaver, se reactiva (si el merchant activó la opción).
+- Mientras la aprobación de `read_all_orders` no llegue, la cobertura de pedidos es de 60 días y la regla de compra protege a todos (`insufficient_purchase_history`): la app funciona, pero no suprime.
+
+## Verificación de tramo con Klaviyo
+
+- `GET /api/billing-usage` (scope `usage:read`): `usage_max` del tipo de uso de perfiles activos da el tramo real. Se guarda al conectar, antes de cada corrida y después de cada renovación.
+- Si `usage_max` no coincide con un tramo de la tabla oficial, no se estima ni se cobra ahorro.
+
 ## Modelo de datos (borrador)
 
 - `shops`: dominio, token de Shopify cifrado, estado de instalación, zona horaria.

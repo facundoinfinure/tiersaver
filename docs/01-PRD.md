@@ -18,6 +18,8 @@ El merchant paga por perfiles que nunca abren. Limpiar a mano es tedioso, hay qu
 ### 1. Instalación y conexión
 - Instala desde Shopify (app embebida).
 - Conecta Klaviyo con el método que resulte de la verificación en `02-ARQUITECTURA.md` (OAuth preferido).
+- Conexión con OAuth de Klaviyo (confirmado: funciona sin estar listada en su marketplace).
+- Paso de onboarding: activar el auto-downgrade de Klaviyo (Billing > Preferences; solo Owner o Admin) o comprometerse a bajar de plan a mano. Se explica que sin eso la factura no baja. Se vuelve a recordar antes de cada corrida.
 - Aceptación: en menos de 3 minutos el merchant llega a la pantalla de auditoría.
 
 ### 2. Auditoría gratis (solo lectura)
@@ -27,7 +29,7 @@ El merchant paga por perfiles que nunca abren. Limpiar a mano es tedioso, hay qu
 
 ### 3. Reglas de protección
 Un perfil **nunca** se suprime si cumple alguna:
-- Compró en los últimos N días (default 365), según pedidos de Shopify.
+- Compró en los últimos N días (default 365), según pedidos de Shopify (fuente principal, comparando hashes de mail) y el evento "Placed Order" de Klaviyo. Si falta cobertura de alguna de las dos, el perfil queda protegido.
 - Hizo clic en un mail en los últimos N días (default 180).
 - Abrió un mail en los últimos N días (default 90). Las aperturas automáticas de Apple Mail inflan este dato; mostrarlo como señal débil.
 - Se suscribió hace menos de N días (default 90).
@@ -63,10 +65,10 @@ El merchant ajusta los N y los segmentos protegidos. Los defaults son conservado
 - Aceptación: tras deshacer, el conjunto de perfiles suprimidos por TierSaver vuelve al estado anterior.
 
 ### 9. Reporte
-- Mail mensual: perfiles suprimidos, tramo antes y después, ahorro estimado, cargo de TierSaver.
+- Mail mensual: perfiles suprimidos, tramo antes y después (verificado con la Billing Usage API de Klaviyo), ahorro verificado, cargo de TierSaver.
 
 ### 10. Cobro
-- Ver `04-PRECIO-Y-COBRO.md`.
+- Ver `04-PRECIO-Y-COBRO.md`. Se cobra solo cuando el ciclo nuevo de Klaviyo muestra un tramo más bajo.
 
 ### 11. Privacidad y desinstalación
 - Webhooks obligatorios de Shopify implementados y verificados.

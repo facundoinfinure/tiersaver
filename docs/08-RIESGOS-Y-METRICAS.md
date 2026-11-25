@@ -20,7 +20,7 @@ Se construye sin validación previa. Estos cortes son el freno de mano: si no se
 | --- | --- | --- |
 | Klaviyo automatiza la supresión de forma nativa | Alta | Diferenciarse por timing de facturación, cruce con pedidos de Shopify y reporte de ahorro; revisar klaviyo.com/whats-new cada mes |
 | El App Store no trae instalaciones | Alta | Agencias y calculadora como canales principales |
-| Klaviyo restringe o revoca el acceso a la API para este uso | Media | Leer términos en la Fase 0; posicionar como higiene de lista; no depender de endpoints no documentados |
+| Klaviyo restringe o revoca el acceso a la API para este uso | Media | La AUP prohíbe uso "designed to avoid or circumvent bills… or other fees" (leída el 2026-11-25). Posicionamiento cambiado a higiene de lista; nunca hablar de evadir precios; consulta con abogado adelantada; solo endpoints documentados |
 | Se suprime a quien no correspondía | Media | Simulación obligatoria, defaults conservadores, deshacer, términos revisados por abogado |
 | El cobro por % del ahorro genera disputas o no pasa la revisión | Media | Cobrar sobre la simulación aprobada, con tope; plan B de tramos fijos |
 | Clones | Media | Reseñas y relación con agencias antes que funciones |

@@ -2,10 +2,19 @@
 
 ## Modelo decidido
 
-- 20% del ahorro estimado en cada limpieza.
-- Tope de US$ 149 por mes.
-- Si no hay ahorro, no se cobra.
+Actualizado el 2026-11-25 (decisión de Facundo).
+
+- 20% del ahorro **verificado**, una vez por ciclo de facturación de Klaviyo.
+- Tope de US$ 149 por mes, como `cappedAmount` de la Billing API de Shopify.
+- Si la cuenta no baja de tramo, no se cobra.
 - Auditoría siempre gratis.
+
+### Cuándo se cobra
+
+1. El merchant aprueba la simulación y corre la limpieza. No se cobra nada todavía.
+2. En el onboarding y antes de cada corrida, la app le pide activar el auto-downgrade de Klaviyo (Billing > Preferences; solo Owner o Admin) o bajar de plan a mano. Sin eso, el ahorro no se materializa.
+3. Después de la renovación del ciclo de Klaviyo, la app lee `usage_max` en la Billing Usage API (`GET /api/billing-usage`). Si es un tramo más bajo que el del ciclo anterior, crea el cargo con `appUsageRecordCreate`.
+4. Si `usage_max` no coincide con ningún tramo de la tabla oficial, o no bajó, no se cobra y se avisa al merchant.
 
 Ejemplos (con precios del plan Email de Klaviyo de noviembre de 2026; los tramos de 20.000 y 50.000 son aproximados):
 
@@ -15,12 +24,13 @@ Ejemplos (con precios del plan Email de Klaviyo de noviembre de 2026; los tramos
 | Baja de 50.000 a 20.000 perfiles | ~US$ 345 | ~US$ 69 |
 | Ahorro de US$ 1.000 | US$ 1.000 | US$ 149 (tope) |
 
-## Definición de "ahorro estimado"
+## Definición de "ahorro verificado"
 
-Ahorro = precio del tramo en el que la cuenta habría quedado sin la limpieza − precio del tramo resultante, según la tabla de precios versionada, al momento de la simulación que el merchant aprueba.
+Ahorro verificado = precio de lista del tramo del ciclo anterior (`usage_max` antes) − precio de lista del tramo del ciclo nuevo (`usage_max` después), con la tabla oficial versionada (`packages/core/src/price-tables/klaviyo.ts`).
 
-- Se cobra sobre la simulación aprobada, no sobre la factura real de Klaviyo, que no vemos.
-- Si la ejecución suprime menos de lo simulado y el tramo resultante es más alto, se recalcula hacia abajo antes de cobrar.
+- Lo que la simulación muestra antes de aprobar es una **estimación** y se rotula así.
+- El cargo usa el menor valor entre el ahorro estimado aprobado y el verificado.
+- Clientes con el descuento de "appreciation" de Klaviyo (suba limitada al 25%) pueden ahorrar menos que la diferencia de lista: la auditoría pregunta cuánto pagan hoy y, si informan un precio, el ahorro se limita con ese dato.
 - Un cargo por ciclo de facturación de Klaviyo, no por cada corrida.
 - El merchant ve el cálculo completo antes de aprobar.
 
@@ -34,6 +44,8 @@ Verificado el 25 de noviembre de 2026 en shopify.dev:
 - El merchant puede cambiar el tope desde su admin. Hay webhooks para cambios de suscripción y para cuando se acerca al tope.
 
 ## A verificar antes de programar el cobro
+
+Resueltas el 2026-11-25; ver `STATUS.md`. Se eligió la Billing API porque Shopify App Pricing no admite tope de uso.
 
 | # | Duda | Si la respuesta es no |
 | --- | --- | --- |

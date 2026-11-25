@@ -85,3 +85,50 @@ export function profilesToDropOneTier(activeProfiles: number, table: PriceTable)
   const lower = table.tiers[current.index - 1]!;
   return Math.ceil(activeProfiles) - lower.maxProfiles;
 }
+
+export type VerifiedSavingsUnavailableReason = "unknown_tier" | "no_tier_drop";
+
+export interface VerifiedSavings {
+  priceTableId: string;
+  tierMaxBefore: number;
+  tierMaxAfter: number;
+  monthlySavingsCents: number;
+  unavailableReason: VerifiedSavingsUnavailableReason | null;
+}
+
+/**
+ * Savings confirmed by Klaviyo itself: compares the plan's profile limit
+ * (`usage_max` from the Billing Usage API) before and after a cleanup.
+ * Both values must be exact tier boundaries in the table, otherwise we
+ * cannot price them and report no savings.
+ */
+export function verifiedSavings(args: { tierMaxBefore: number; tierMaxAfter: number; table: PriceTable }): VerifiedSavings {
+  const { tierMaxBefore, tierMaxAfter, table } = args;
+  const base = { priceTableId: table.id, tierMaxBefore, tierMaxAfter };
+  const before = table.tiers.find((t) => t.maxProfiles === tierMaxBefore);
+  const after = table.tiers.find((t) => t.maxProfiles === tierMaxAfter);
+  if (!before || !after) return { ...base, monthlySavingsCents: 0, unavailableReason: "unknown_tier" };
+  const delta = before.monthlyCents - after.monthlyCents;
+  if (delta <= 0) return { ...base, monthlySavingsCents: 0, unavailableReason: "no_tier_drop" };
+  return { ...base, monthlySavingsCents: delta, unavailableReason: null };
+}
+
+/**
+ * The amount we bill on: never more than what the merchant approved in the
+ * simulation, never more than what Klaviyo confirmed, and, when the merchant
+ * told us what they actually pay, never more than their real price difference.
+ */
+export function billableSavingsCents(args: {
+  approvedEstimateCents: number;
+  verifiedCents: number;
+  /** Optional: merchant-reported current monthly price, for discounted legacy accounts. */
+  reportedCurrentPriceCents?: number | null;
+  /** List price of the tier after the cleanup. */
+  listPriceAfterCents?: number | null;
+}): number {
+  let cents = Math.min(Math.max(0, args.approvedEstimateCents), Math.max(0, args.verifiedCents));
+  if (args.reportedCurrentPriceCents != null && args.listPriceAfterCents != null) {
+    cents = Math.min(cents, Math.max(0, args.reportedCurrentPriceCents - args.listPriceAfterCents));
+  }
+  return cents;
+}

@@ -69,9 +69,17 @@ Otros datos de Shopify: revenue share 0% hasta US$ 1 M acumulado y luego 15%; 2,
 10. Las pautas de nombres de Klaviyo para terceros no aparecen; competidores usan "Marca: Klaviyo …" sin problema visible.
 11. Rama de trabajo: la sesión solo puede empujar a `claude/gallant-knuth-51pv2e`, no a ramas por fase.
 
-## Decisiones pendientes de Facundo
+## Decisiones de Facundo (2026-11-25)
 
-Ver el mensaje de la sesión del 2026-11-25. Resumen: A) términos de Klaviyo, B) camino de cobro, C) fuente de datos de compras, D) gasto en infraestructura, E) cobrar sobre tramo verificado en vez de estimado.
+| Tema | Decisión |
+| --- | --- |
+| A · Términos de Klaviyo | Reposicionar como higiene de lista automática; el ahorro es resultado, no titular. Abogado adelantado |
+| B · Cuándo se cobra | 20% del ahorro verificado con `usage_max` de la Billing Usage API tras la renovación; onboarding pide activar el auto-downgrade |
+| C · Cobro en Shopify | Billing API con `cappedAmount` US$ 149 |
+| D · Datos de compras | Mantener el cruce con pedidos de Shopify: `read_orders` + `read_all_orders` + email nivel 2, guardando solo hashes |
+| E · Stack | Pendiente: Facundo pidió alternativas (Cloudflare) |
+
+Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, `04-PRECIO-Y-COBRO.md`, `08-RIESGOS-Y-METRICAS.md`, `10-TAREAS-HUMANAS.md` y en `packages/core` (`verifiedSavings`, `billableSavingsCents`, `hashEmail`).
 
 ## Bitácora
 
@@ -79,6 +87,6 @@ Ver el mensaje de la sesión del 2026-11-25. Resumen: A) términos de Klaviyo, B
 - Paquete de handover creado. Sin código todavía.
 - Nombre TierSaver elegido; tiersaver.com registrado en Cloudflare.
 - USPTO sin resultados para "Tiersaver".
-- Sesión: paquete copiado al repo; monorepo con `shopify/` (plantilla oficial React Router, API 2026-10, build y typecheck OK) y `packages/core/` (tablas oficiales de precios de Klaviyo, tramos, ahorro, cargo, reglas de protección, compuerta de simulación, programación por fecha de facturación, lotes y rate limit) con 63 tests unitarios pasando.
+- Sesión: paquete copiado al repo; monorepo con `shopify/` (plantilla oficial React Router, API 2026-10, build y typecheck OK) y `packages/core/` (tablas oficiales de precios de Klaviyo, tramos, ahorro, cargo, reglas de protección, compuerta de simulación, programación por fecha de facturación, lotes y rate limit) con 63 tests unitarios pasando (69 tras aplicar las decisiones).
 - Dudas de `02` y `04` resueltas con las salvedades de arriba. Fase 0 frenada en el corte de `08-RIESGOS-Y-METRICAS.md` hasta que Facundo decida A–E.
 - Bloqueantes humanas sin hacer: no hay `.env` en la sesión, ni Shopify Partner / Dev Dashboard, ni tienda de desarrollo, ni cuenta de Klaviyo de prueba. Vercel y Supabase están conectados pero sin proyectos de TierSaver.

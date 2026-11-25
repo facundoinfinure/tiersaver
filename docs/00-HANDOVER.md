@@ -21,11 +21,13 @@ App de Shopify que baja la factura de Klaviyo suprimiendo perfiles inactivos ant
 | Nombre | TierSaver. En la ficha: "TierSaver for Klaviyo". Pensado para sumar otras herramientas con precio por tramos más adelante |
 | Dominio | tiersaver.com, registrado en Cloudflare |
 | Marca | Independiente |
-| Posicionamiento | Ahorro puro |
+| Posicionamiento | Higiene de lista automática para Klaviyo; el ahorro en la factura es el resultado medible, no el titular. Cambiado el 2026-11-25 por la cláusula de la Acceptable Use Policy de Klaviyo sobre evadir cargos (ver `STATUS.md`) |
 | Identidad | Derivada de Infinure v3 en tema claro; ver `03-MARCA.md` |
-| Precio | 20% del ahorro estimado en cada limpieza, tope US$ 149 por mes, nada si no hay ahorro |
+| Precio | 20% del ahorro **verificado**: se cobra recién cuando la Billing Usage API de Klaviyo muestra la cuenta en un tramo más bajo. Tope US$ 149 por mes. Nada si no baja de tramo. Decidido el 2026-11-25 |
+| Cobro en Shopify | Billing API ("Manual Pricing") con suscripción por uso y `cappedAmount` de US$ 149, visible al aprobar. Decidido el 2026-11-25 |
+| Datos de compras | Pedidos de Shopify como diferenciador (`read_orders` + `read_all_orders` con aprobación + mail como dato protegido nivel 2), cruzados con "Placed Order" de Klaviyo. Decidido el 2026-11-25 |
 | Camino | Construir directo, sin validación previa. Los cortes de `08-RIESGOS-Y-METRICAS.md` son el freno |
-| Hosting | Vercel + Supabase, plan gratis al inicio |
+| Hosting | **En revisión** (2026-11-25): Vercel Hobby no permite uso comercial y los 2 proyectos gratis de Supabase están ocupados. Alternativas en `STATUS.md` |
 | Cobro | LLC de EE.UU., por la facturación de Shopify |
 | Soporte | Automatizado: centro de ayuda + bot, escalando lo crítico a Facundo |
 | Mercado | Global en inglés, merchants de Shopify con 5.000 a 150.000 perfiles |
