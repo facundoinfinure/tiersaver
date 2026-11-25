@@ -93,3 +93,7 @@ Aplicado en `00-HANDOVER.md`, `01-PRD.md`, `02-ARQUITECTURA.md`, `03-MARCA.md`, 
 - Facundo aprobó A–E. Docs actualizados; `packages/core` suma ahorro verificado, hash de mails y cifrado de tokens (73 tests).
 - Spike de Cloudflare: la app corre en `workerd` con D1, sesiones cifradas y webhooks de cumplimiento; 8 de 8 chequeos de humo pasan. Pendiente: instalación real en la tienda de desarrollo (requiere cuenta de Shopify y deploy).
 - Pendiente de Facundo: cuenta de Cloudflare nueva para TierSaver y mover tiersaver.com (pasos en `10-TAREAS-HUMANAS.md`).
+- Cloudflare: cuenta "TierSaver" creada y `tiersaver.com` agregado ahí (zona en estado *pending*, plan Free, DNSSEC apagado). API token cargado como network secret y verificado (activo).
+- tiersaver.com se registró el 2026-11-25 05:17 UTC en la cuenta de Infinure. Cloudflare exige más de 10 días para moverlo entre cuentas: el move recién se puede pedir desde el **2026-12-05 05:18 UTC**. Hasta entonces la app se despliega en `*.workers.dev`.
+- El token ve las tres cuentas (Alupont, Infinure, TierSaver) a nivel cuenta; conviene restringir "Account resources" a TierSaver.
+

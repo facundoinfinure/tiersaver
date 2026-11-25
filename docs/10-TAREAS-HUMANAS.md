@@ -21,6 +21,8 @@ Una sesión de Claude no crea cuentas, no escribe contraseñas ni datos bancario
 3. En la cuenta vieja: **Domain Registration → Manage Domains → tiersaver.com → Configuration**. Apagar DNSSEC si está activo y pedir el **move** a la cuenta nueva con su Account ID.
 4. Aprobar el mail que llega a la cuenta nueva (hay 5 días; si no, se cancela).
 
+Estado al 2026-11-25: pasos 1 y 2 hechos. El dominio se registró el 2026-11-25, así que los pasos 3 y 4 se pueden hacer desde el **2026-12-05**.
+
 Condiciones: el dominio tiene que tener más de 10 días de registrado y el mail del titular verificado. La configuración de la cuenta vieja se pierde y el dominio queda bloqueado para transferencias 30 días. Fuente: developers.cloudflare.com/registrar/account-options/inter-account-transfer/
 
 ## Durante la construcción
