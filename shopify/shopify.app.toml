@@ -20,6 +20,11 @@ api_version = "2026-10"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
+  # Keeps buyer protection current. Needs protected customer data access (email).
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks/orders/create"
+
   # Mandatory compliance topics for App Store apps.
   [[webhooks.subscriptions]]
   uri = "/webhooks/compliance"

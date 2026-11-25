@@ -21,6 +21,12 @@
       "name": "tiersaver-suppression-run",
       "binding": "SUPPRESSION_RUN",
       "class_name": "SuppressionRunWorkflow"
+    },
+    {
+      // One-time read of a shop's order history into hashed buyers, one page per step.
+      "name": "tiersaver-orders-backfill",
+      "binding": "ORDERS_BACKFILL",
+      "class_name": "OrdersBackfillWorkflow"
     }
   ],
   "vars": {

@@ -8,6 +8,7 @@ declare module "react-router" {
 
 // Workflow classes must be exported from the Worker entry.
 export { SuppressionRunWorkflow } from "./suppression-run";
+export { OrdersBackfillWorkflow } from "./orders-backfill";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
