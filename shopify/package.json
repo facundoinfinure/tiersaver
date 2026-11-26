@@ -19,7 +19,8 @@
     "cf-typegen": "wrangler types --strict-vars=false && react-router typegen",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "deploy:worker": "npm run build && wrangler deploy",
-    "smoke:worker": "node scripts/smoke-worker.mjs"
+    "smoke:worker": "node scripts/smoke-worker.mjs",
+    "preview:app": "wrangler d1 migrations apply DB --local -c preview/wrangler.preview.jsonc --persist-to .wrangler/state && react-router dev --config vite.preview.config.ts"
   },
   "type": "module",
   "engines": {

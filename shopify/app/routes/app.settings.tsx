@@ -79,6 +79,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  purchaseDays: "The purchase window",
+  clickDays: "The click window",
+  openDays: "The open window",
+  siteActivityDays: "The site activity window",
+  newProfileDays: "The minimum profile age",
+  minEmailsReceived: "The number of emails received",
+};
+/** Validation messages name the setting, not the field in the code. */
+const readable = (message: string) => message.replace(/^(\w+)(?= must)/, (key) => FIELD_LABELS[key] ?? key).replace("or empty for any time", "or empty for \"ever\"");
+
 function optionalInt(value: FormDataEntryValue | null): number | null | undefined {
   const text = typeof value === "string" ? value.trim() : "";
   if (text === "") return null;
@@ -107,7 +118,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     mode: form.get("automatic") === "yes" ? "automatic" : "approval",
   };
   const result = await saveSettings(db, { shop: session.shop, actor: sessionActor(sessionToken), input });
-  if (!result.ok) return { saved: false as const, errors: result.errors };
+  if (!result.ok) return { saved: false as const, errors: result.errors.map(readable) };
   if (result.versionBumped) {
     // Rules changed: whatever was simulated before no longer applies.
     await db
@@ -157,6 +168,7 @@ export default function Settings() {
       ) : null}
 
       <Form method="post">
+        <s-stack gap="base">
         <s-section heading="Who counts as inactive">
           <s-stack gap="base">
             <s-paragraph>
@@ -251,6 +263,7 @@ export default function Settings() {
             Save settings
           </s-button>
         </s-section>
+        </s-stack>
       </Form>
     </s-page>
   );

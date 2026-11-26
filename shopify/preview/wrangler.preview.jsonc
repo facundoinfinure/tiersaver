@@ -1,0 +1,25 @@
+{
+  // Local preview only. See README.md. Never deployed: there is no account, and the secrets below are dummies.
+  "name": "tiersaver-app-preview",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-11-12",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "tiersaver-preview", "database_id": "00000000-0000-0000-0000-00000000beef", "migrations_dir": "../drizzle" }
+  ],
+  "workflows": [
+    { "name": "preview-suppression-run", "binding": "SUPPRESSION_RUN", "class_name": "SuppressionRunWorkflow" },
+    { "name": "preview-scan", "binding": "SCAN", "class_name": "ScanWorkflow" },
+    { "name": "preview-orders-backfill", "binding": "ORDERS_BACKFILL", "class_name": "OrdersBackfillWorkflow" }
+  ],
+  "vars": {
+    "SCOPES": "read_orders",
+    "SHOPIFY_APP_URL": "http://localhost:3210",
+    "SHOPIFY_API_KEY": "preview-api-key",
+    "SHOPIFY_API_SECRET": "preview-api-secret",
+    "TOKEN_ENCRYPTION_KEY": "cHJldmlldy1vbmx5LWtleS1ub3QtYS1zZWNyZXQtMDE=",
+    "KLAVIYO_CLIENT_ID": "fake-client-id",
+    "KLAVIYO_CLIENT_SECRET": "fake-client-secret-0123456789abcdef",
+    "KLAVIYO_SEEDED_ACCOUNT_ID": "",
+    "SUPPRESSION_ENABLED": "true"
+  }
+}

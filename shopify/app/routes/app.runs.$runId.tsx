@@ -216,6 +216,11 @@ export default function Run() {
             </s-paragraph>
             {result?.jobs ? (
               <s-stack gap="base">
+                <s-banner tone={result.jobs.jobs.every((j) => j.status === "complete") && result.jobs.unreadable === 0 ? "success" : "info"}>
+                  {result.jobs.jobs.filter((j) => j.status === "complete").length} of {result.jobs.jobs.length} jobs{result.jobs.pages > 1 ? " on this page" : ""} are
+                  complete: {number(result.jobs.jobs.reduce((n, j) => n + (j.completed ?? 0), 0))} profiles processed,{" "}
+                  {number(result.jobs.jobs.reduce((n, j) => n + (j.skipped ?? 0), 0))} skipped by Klaviyo.
+                </s-banner>
                 <s-table>
                   <s-table-header-row>
                     <s-table-header>Job</s-table-header>

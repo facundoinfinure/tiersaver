@@ -75,7 +75,10 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
         ? "A protected list or segment could not be read, so every profile was kept active."
         : summary.note
           ? (NOTES[summary.note] ?? null)
-          : null,
+          : simulation.candidateCount === 0 && (summary.protectedByReason?.insufficient_purchase_history ?? 0) > 0
+            ? // Not "your list is clean": we simply cannot tell yet who bought.
+              "TierSaver could not check these profiles against your full Shopify order history yet, so all of them were kept active. Nobody is suppressed until every profile can be checked against your orders."
+            : null,
       price: tier ? formatUsd(tier.monthlyCents) : null,
       seededTestAccount: summary.seededTestAccount === true,
       resurfaced: summary.resurfaced ?? 0,

@@ -210,6 +210,12 @@ export function HomeScreen({
                 {SCAN_ERRORS[scan.error ?? ""] ?? "Something went wrong while reading from Klaviyo. Nothing was changed. Please run the audit again."}
               </s-banner>
             ) : null}
+            {result && simulation?.state === "superseded" ? (
+              <s-banner tone="warning">Your rules or protected lists changed after this audit. Run the audit again to see the current numbers.</s-banner>
+            ) : null}
+            {result && simulation?.state === "executed" ? (
+              <s-banner tone="info">These numbers are from before your last cleanup. Run the audit again to see your list as it is now.</s-banner>
+            ) : null}
             {result ? (
               <>
                 {result.seededTestAccount ? <s-banner tone="info">Test account: this audit reads seeded sample data.</s-banner> : null}
