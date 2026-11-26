@@ -1,12 +1,13 @@
 import { DEFAULT_RULE_SETTINGS, RULE_LIMITS, SIMULATION_TTL_MS } from "@tiersaver/core";
 import { env } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { CHARGE_HOLD_HOURS, runsWithOpenCharges, settleRunCharge, subscriptionTerms, type AdminGraphql } from "../app/billing/billing";
 import { KlaviyoClient } from "../app/klaviyo/client";
 import { KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import { saveConnection } from "../app/klaviyo/connection.server";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
+import { advanceChargeConfirmation } from "../app/runs/confirm";
 import { createSuppressionRun, createUndoRun, executeRun, renewalSince } from "../app/runs/engine";
 import { createSuppressionGateway, type GatewayEnv } from "../app/runs/gateway.server";
 import { approveAutomatically, decideAutomatic } from "../app/schedule/automatic";
@@ -456,6 +457,39 @@ describe("charging a cleanup", () => {
     await db.update(schema.runs).set({ status: "cancelled" }).where(eq(schema.runs.id, undo.runId));
     expect((await settleRunCharge({ db, graphql: admin.graphql, now: AFTER_HOLD }, runId)).status).toBe("charged");
     expect(admin.records[0]!.description).toContain("2 profiles");
+  });
+
+  it("the cron confirms a cleanup of any size a page of jobs at a time, keeping its place between ticks", async () => {
+    const { runId } = await finishedCleanup(5);
+    // Five jobs, one per profile.
+    const rows = await db.select({ profileId: schema.runProfiles.profileId }).from(schema.runProfiles).where(eq(schema.runProfiles.runId, runId));
+    for (const [i, row] of rows.entries()) {
+      await db.update(schema.runProfiles).set({ klaviyoJobId: `JOB${i}` }).where(and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.profileId, row.profileId)));
+    }
+    const pendingJobs = new Set(["JOB3"]);
+    let reads = 0;
+    const jobsClient = new KlaviyoClient({
+      getAccessToken: async () => "token",
+      sleep: async () => {},
+      fetch: (async (input: RequestInfo | URL) => {
+        reads += 1;
+        const id = new URL(String(input instanceof Request ? input.url : input)).pathname.split("/").filter(Boolean).pop()!;
+        const attributes = pendingJobs.has(id) ? { status: "processing", total_count: 1, completed_count: 0 } : { status: "complete", total_count: 1, completed_count: 1, skipped_count: 0 };
+        return new Response(JSON.stringify({ data: { type: "profile-suppression-bulk-create-job", id, attributes } }), { headers: { "content-type": "application/json" } });
+      }) as typeof fetch,
+    });
+    expect(await advanceChargeConfirmation(db, jobsClient, runId, 2)).toBeNull(); // no charge row yet
+    await settleRunCharge({ db, graphql: null }, runId);
+    expect(await advanceChargeConfirmation(db, jobsClient, runId, 2)).toEqual({ done: false, suppressed: 0 }); // JOB0, JOB1
+    expect(await advanceChargeConfirmation(db, jobsClient, runId, 2)).toEqual({ done: false, suppressed: 0 }); // JOB3 not complete: page not counted
+    expect(await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) })).toMatchObject({ confirmOffset: 2, confirmSuppressed: 2 });
+    pendingJobs.clear();
+    expect(await advanceChargeConfirmation(db, jobsClient, runId, 2)).toEqual({ done: false, suppressed: 0 }); // JOB2, JOB3
+    const done = await advanceChargeConfirmation(db, jobsClient, runId, 2); // JOB4
+    expect(done).toEqual({ done: true, suppressed: 5 });
+    expect(reads).toBe(7);
+    expect((await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }))?.lastAttemptAt).not.toBeNull();
+    expect((await settleRunCharge({ db, graphql: fakeAdmin().graphql, now: AFTER_HOLD }, runId, done)).status).toBe("charged");
   });
 
   it("stays open and can be retried when Shopify has no subscription or rejects the record", async () => {

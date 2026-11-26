@@ -69,3 +69,21 @@ export async function confirmRunJobs(db: Db, client: KlaviyoClient, runId: strin
   if (page.jobs > maxJobs) return null;
   return { done: page.complete, suppressed: page.suppressed };
 }
+
+/**
+ * Confirmation of a run of any size from the hourly cron: one page of jobs per call, with the place kept on the
+ * run's charge. A page counts only when every job in it is complete; otherwise the same page is read again next
+ * time. Returns the confirmation once the last page is in, null while it is not (or when there is no charge row
+ * yet). Also stamps the attempt, so charges that cannot be confirmed take turns instead of blocking the queue.
+ */
+export async function advanceChargeConfirmation(db: Db, client: KlaviyoClient, runId: string, limit = 10, now = new Date()): Promise<JobsConfirmation | null> {
+  const charge = await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) });
+  if (!charge) return null;
+  await db.update(schema.usageCharges).set({ lastAttemptAt: now }).where(eq(schema.usageCharges.id, charge.id));
+  const page = await confirmJobsPage(db, client, { runId, offset: charge.confirmOffset, limit });
+  if (!page.complete) return { done: false, suppressed: 0 };
+  const offset = charge.confirmOffset + page.checked;
+  const suppressed = charge.confirmSuppressed + page.suppressed;
+  await db.update(schema.usageCharges).set({ confirmOffset: offset, confirmSuppressed: suppressed }).where(eq(schema.usageCharges.id, charge.id));
+  return offset >= page.jobs ? { done: true, suppressed } : { done: false, suppressed: 0 };
+}

@@ -501,6 +501,9 @@ export const usageCharges = sqliteTable(
     lastAttemptAt: timestamp("last_attempt_at"),
     /** When Klaviyo's jobs confirmed `profilesSuppressed`; from then on the charge needs no further read of Klaviyo. */
     confirmedAt: timestamp("confirmed_at"),
+    /** Progress of the cron's page-by-page confirmation: jobs already read as complete, and what they add up to. */
+    confirmOffset: integer("confirm_offset").notNull().default(0),
+    confirmSuppressed: integer("confirm_suppressed").notNull().default(0),
   },
   (t) => [
     uniqueIndex("usage_charges_idempotency_unique").on(t.idempotencyKey),

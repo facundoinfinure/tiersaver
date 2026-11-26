@@ -1,0 +1,1597 @@
+[
+  {
+    "coverage_id": "package-lock.json%23dependency%20tree::run-metadata.json%23scope_paths::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "package-lock.json#dependency tree",
+      "boundary": "run-metadata.json#scope_paths",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "Dependency resolution, lockfile and installed packages",
+    "boundary": "Scope of this run",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "package-lock.json"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "out_of_scope",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Outside scope_paths: dependencies, lockfile and node_modules (including the Shopify libraries the app relies on for session-token and webhook authentication) were not reviewed."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fcomponents%23embedded%20UI%20rendering::shopify%2Fapp%2Froot.tsx%23React%20rendering::profile%2Fquick%2Fall-in-scope-subsystems::CLIENT-SIDE.md%23DOM-based%20XSS",
+    "canonical_refs": {
+      "surface": "shopify/app/components#embedded UI rendering",
+      "boundary": "shopify/app/root.tsx#React rendering",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLIENT-SIDE.md#DOM-based XSS"
+    },
+    "surface": "Embedded UI and the two HTML responses built by hand",
+    "boundary": "React escaping; no raw HTML sinks",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "DOM-based XSS",
+    "starting_paths": [
+      "shopify/app/components/ui.tsx",
+      "shopify/app/components/home-screen.tsx",
+      "shopify/app/root.tsx",
+      "shopify/app/klaviyo/flow.server.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#DOM-based XSS",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/components/ui.tsx",
+      "shopify/app/components/home-screen.tsx",
+      "shopify/app/root.tsx",
+      "shopify/app/klaviyo/flow.server.ts",
+      "shopify/app/routes/app._index.tsx",
+      "shopify/app/routes/app.runs.$runId.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/components/ui.tsx",
+          "shopify/app/components/home-screen.tsx",
+          "shopify/app/root.tsx",
+          "shopify/app/klaviyo/flow.server.ts",
+          "shopify/app/routes/app._index.tsx",
+          "shopify/app/routes/app.runs.$runId.tsx"
+        ],
+        "invariant": "No request, Klaviyo or database value is written to the DOM as markup or used as a navigation target.",
+        "method": "source",
+        "result": "No dangerouslySetInnerHTML, innerHTML, eval or postMessage in scope; the only hand-built HTML is a constant string; the klaviyo query value is mapped to a fixed set before display and the reason value is never read; redirects go to fixed paths, to Shopify's confirmationUrl or to a URL built from the validated shop handle.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fentry.server.tsx%23handleRequest::shopify%2Fapp%2Fshopify.server.ts%23addDocumentResponseHeaders::profile%2Fquick%2Fall-in-scope-subsystems::CLIENT-SIDE.md%23Clickjacking",
+    "canonical_refs": {
+      "surface": "shopify/app/entry.server.tsx#handleRequest",
+      "boundary": "shopify/app/shopify.server.ts#addDocumentResponseHeaders",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLIENT-SIDE.md#Clickjacking"
+    },
+    "surface": "Document response headers of the embedded app",
+    "boundary": "frame-ancestors produced by the Shopify library",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Clickjacking",
+    "starting_paths": [
+      "shopify/app/entry.server.tsx",
+      "shopify/app/shopify.server.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Clickjacking",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "quick_profile_not_reached: the header value is produced by @shopify/shopify-app-react-router in node_modules, which is out of scope for this run; not reviewed."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fklaviyo%2Fapi.ts%23Klaviyo%20request%20construction::shopify%2Fapp%2Fklaviyo%2Fclient.ts%23filterString%2BbuildUrl::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "shopify/app/klaviyo/api.ts#Klaviyo request construction",
+      "boundary": "shopify/app/klaviyo/client.ts#filterString+buildUrl",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "Values placed in Klaviyo filters, paths, SQL and CSV",
+    "boundary": "Escaping of filter literals, id patterns for paths, bound SQL parameters, CSV cell neutralisation",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "shopify/app/klaviyo/api.ts",
+      "shopify/app/klaviyo/client.ts",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/settings/settings.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/klaviyo/api.ts",
+      "shopify/app/klaviyo/client.ts",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/settings/settings.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/scans/engine.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/klaviyo/api.ts",
+          "shopify/app/klaviyo/client.ts",
+          "shopify/app/simulations/review.ts",
+          "shopify/app/settings/settings.ts",
+          "shopify/app/runs/engine.ts",
+          "shopify/app/scans/engine.ts"
+        ],
+        "invariant": "No request value reaches a Klaviyo filter, URL path, SQL statement or CSV cell unescaped, and no response value selects the next request URL.",
+        "method": "source",
+        "result": "Filter literals go through filterString, path ids through pathId, the base URL is fixed and only the page cursor is taken from links.next; protected group refs must match a strict pattern; SQL uses bound parameters (the two sql.raw uses are constants); CSV cells are quoted and formula prefixes neutralised.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fklaviyo%2Fconnection.server.ts%23saveConnection%2Bshopify%2Fapp%2Fsession-storage.server.ts%23EncryptedSessionStorage::packages%2Fcore%2Fsrc%2Ftoken-crypto.ts%23encryptToken::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "shopify/app/klaviyo/connection.server.ts#saveConnection+shopify/app/session-storage.server.ts#EncryptedSessionStorage",
+      "boundary": "packages/core/src/token-crypto.ts#encryptToken",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "Tokens at rest, keyed email hashes, OAuth state keys",
+    "boundary": "AES-256-GCM with a key outside the database; HMAC keys separated by purpose",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "packages/core/src/token-crypto.ts",
+      "packages/core/src/email-hash.ts",
+      "shopify/app/email-hash.ts",
+      "shopify/app/session-storage.server.ts",
+      "shopify/app/klaviyo/oauth.ts",
+      "shopify/app/secrets.d.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "packages/core/src/token-crypto.ts",
+      "packages/core/src/email-hash.ts",
+      "shopify/app/email-hash.ts",
+      "shopify/app/session-storage.server.ts",
+      "shopify/app/klaviyo/oauth.ts",
+      "shopify/app/klaviyo/errors.ts",
+      "shopify/app/klaviyo/client.ts",
+      "shopify/app/secrets.d.ts",
+      "shopify/wrangler.jsonc"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "packages/core/src/token-crypto.ts",
+          "packages/core/src/email-hash.ts",
+          "shopify/app/email-hash.ts",
+          "shopify/app/session-storage.server.ts",
+          "shopify/app/klaviyo/oauth.ts",
+          "shopify/app/klaviyo/errors.ts",
+          "shopify/app/klaviyo/client.ts",
+          "shopify/app/secrets.d.ts",
+          "shopify/wrangler.jsonc"
+        ],
+        "invariant": "No secret or token is committed, logged or returned; tokens are encrypted with a random IV; signatures are compared in constant time; there is no fallback to unkeyed hashing or to no encryption.",
+        "method": "source",
+        "result": "Random 96-bit IV per encryption, key length enforced, HKDF purpose separation for state, PKCE and ticket keys, crypto.subtle.verify for comparisons, errors reduced to codes, invocation logs disabled, no secret values in wrangler.jsonc or tracked files. Ciphertexts are not bound to their shop (no additional authenticated data): only an actor with database write access could move one, so it is recorded as hardening.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "packages/core/src/token-crypto.ts encrypts without additional authenticated data. Passing the shop (and token kind) as AES-GCM additionalData would make a ciphertext unusable in another shop's row."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fklaviyo%2Fflow.server.ts%23startKlaviyoAuthorization%2BhandleKlaviyoCallback%2BfinishKlaviyoAuthorization::shopify%2Fapp%2Fklaviyo%2Foauth.ts%23verifyAuthorizationStateForShop::profile%2Fquick%2Fall-in-scope-subsystems::WEB-PROTOCOL-AND-AUTH.md%23OAuth%2FOIDC%20request%20and%20callback%20binding",
+    "canonical_refs": {
+      "surface": "shopify/app/klaviyo/flow.server.ts#startKlaviyoAuthorization+handleKlaviyoCallback+finishKlaviyoAuthorization",
+      "boundary": "shopify/app/klaviyo/oauth.ts#verifyAuthorizationStateForShop",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding"
+    },
+    "surface": "Klaviyo OAuth start, callback and embedded finish",
+    "boundary": "Signed state bound to browser cookie and to the Shopify session shop; PKCE verifier derived server-side",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "OAuth/OIDC request and callback binding",
+    "starting_paths": [
+      "shopify/app/routes/klaviyo.oauth.start.tsx",
+      "shopify/app/routes/klaviyo.oauth.callback.tsx",
+      "shopify/app/routes/app.klaviyo.finish.tsx",
+      "shopify/app/klaviyo/flow.server.ts",
+      "shopify/app/klaviyo/oauth.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/klaviyo/oauth.ts",
+      "shopify/app/klaviyo/flow.server.ts",
+      "shopify/app/routes/klaviyo.oauth.start.tsx",
+      "shopify/app/routes/klaviyo.oauth.callback.tsx",
+      "shopify/app/routes/app.klaviyo.finish.tsx",
+      "shopify/app/klaviyo/connection.server.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/klaviyo/oauth.ts",
+          "shopify/app/klaviyo/flow.server.ts",
+          "shopify/app/routes/klaviyo.oauth.start.tsx",
+          "shopify/app/routes/klaviyo.oauth.callback.tsx"
+        ],
+        "invariant": "A start ticket or state for shop A can never store a connection for shop B, and a callback is only forwarded for the browser that started the flow.",
+        "method": "source",
+        "result": "Ticket and state are HMAC-SHA-256 signed with HKDF-separated keys, expire after 10 minutes, and the state carries the shop and the SHA-256 of a __Host- cookie value; the callback compares the cookie and stores nothing.",
+        "artifact": null
+      },
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.klaviyo.finish.tsx",
+          "shopify/app/klaviyo/flow.server.ts",
+          "shopify/app/klaviyo/connection.server.ts"
+        ],
+        "invariant": "The code is exchanged and the connection stored only for the shop of the authenticated Shopify session, once per state.",
+        "method": "source",
+        "result": "finishKlaviyoAuthorization takes shop from authenticate.admin, requires state.shop to equal it, claims the state hash with INSERT ... ON CONFLICT DO NOTHING, and the PKCE verifier is derived from the signed state with a server secret, so a foreign code cannot be paired with a victim state.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "priority_rationale": "Rank 1: unauthenticated top-level entry surfaces protecting third-party credentials."
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Forders%2Fsync.ts%23advanceOrdersSync::shopify%2Fapp%2Forders%2Fsync.ts%23claimShopsForOrdersSync::profile%2Fquick%2Fall-in-scope-subsystems::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Worker%2C%20pool%2C%20and%20priority%20starvation",
+    "canonical_refs": {
+      "surface": "shopify/app/orders/sync.ts#advanceOrdersSync",
+      "boundary": "shopify/app/orders/sync.ts#claimShopsForOrdersSync",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Worker, pool, and priority starvation"
+    },
+    "surface": "Orders backfill and incremental sync, schedule tick limits",
+    "boundary": "Per-tick limits shared by all shops",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Worker, pool, and priority starvation",
+    "starting_paths": [
+      "shopify/app/orders/sync.ts",
+      "shopify/workers/orders-backfill.ts",
+      "shopify/app/schedule/schedule.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Worker, pool, and priority starvation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "quick_profile_not_reached: orders/sync.ts was only skimmed for query construction; claim fairness and the fixed per-tick limits (40 shops, 500 schedule rows, 20 scan starts) were not analysed."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%23app.%2A%20embedded%20loaders%20and%20actions::shopify%2Fapp%2Fruns%2Fview.server.ts%23loadRunDetail::profile%2Fquick%2Fall-in-scope-subsystems::DATA-ISOLATION-AND-LIFECYCLE.md%23Missing%20tenant%20or%20owner%20enforcement",
+    "canonical_refs": {
+      "surface": "shopify/app/routes#app.* embedded loaders and actions",
+      "boundary": "shopify/app/runs/view.server.ts#loadRunDetail",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement"
+    },
+    "surface": "Embedded app routes that take a run, simulation or data-request id from the request",
+    "boundary": "Every id from the request is resolved together with the session shop",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Missing tenant or owner enforcement",
+    "starting_paths": [
+      "shopify/app/routes/app.runs.$runId.tsx",
+      "shopify/app/routes/app.simulation.tsx",
+      "shopify/app/routes/app.simulation_.candidates.tsx",
+      "shopify/app/routes/app.settings_.data-request.tsx",
+      "shopify/app/runs/view.server.ts",
+      "shopify/app/runs/confirm.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/routes/app.runs.$runId.tsx",
+      "shopify/app/runs/view.server.ts",
+      "shopify/app/runs/confirm.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/runs/start.server.ts",
+      "shopify/app/routes/app.simulation.tsx",
+      "shopify/app/routes/app.simulation_.candidates.tsx",
+      "shopify/app/routes/app.settings_.data-request.tsx",
+      "shopify/app/routes/app.runs._index.tsx",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/data/privacy.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.runs.$runId.tsx",
+          "shopify/app/runs/view.server.ts",
+          "shopify/app/runs/confirm.ts",
+          "shopify/app/runs/engine.ts",
+          "shopify/app/runs/start.server.ts"
+        ],
+        "invariant": "A merchant of shop A cannot read, stop, restore or query Klaviyo jobs of a run of shop B by supplying its id.",
+        "method": "source",
+        "result": "loadRunDetail, checkRunJobs, requestStopRun and createUndoRun all select the run with id AND shop; the undo intent checks ownership before confirmRunJobs, which also receives the session shop.",
+        "artifact": null
+      },
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.simulation.tsx",
+          "shopify/app/routes/app.simulation_.candidates.tsx",
+          "shopify/app/routes/app.settings_.data-request.tsx",
+          "shopify/app/routes/app.runs._index.tsx",
+          "shopify/app/simulations/review.ts",
+          "shopify/app/data/privacy.ts"
+        ],
+        "invariant": "Simulation approval, start, candidate CSV and customer data export only act on rows of the session shop.",
+        "method": "source",
+        "result": "approveSimulation, createSuppressionRun, candidatesCsvPart and exportCustomerData all filter by shop in the lookup and again inside the atomic UPDATE; listRuns filters by shop.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "priority_rationale": "Rank 2: cross-tenant read or write of suppression runs."
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%23app.%2A%20embedded%20loaders%20and%20actions::shopify%2Fapp%2Fshopify.server.ts%23authenticate.admin::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "shopify/app/routes#app.* embedded loaders and actions",
+      "boundary": "shopify/app/shopify.server.ts#authenticate.admin",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Embedded app routes",
+    "boundary": "Shopify session-token authentication on every loader and action",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "shopify/app/routes/app.tsx",
+      "shopify/app/routes/app._index.tsx",
+      "shopify/app/routes/app.settings.tsx",
+      "shopify/app/routes/app.$.tsx",
+      "shopify/app/routes/auth.$.tsx",
+      "shopify/app/routes/auth.login/route.tsx",
+      "shopify/app/routes/_index/route.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/routes/app.tsx",
+      "shopify/app/routes/app._index.tsx",
+      "shopify/app/routes/app.settings.tsx",
+      "shopify/app/routes/app.$.tsx",
+      "shopify/app/routes/auth.$.tsx",
+      "shopify/app/routes/auth.login/route.tsx",
+      "shopify/app/routes/_index/route.tsx",
+      "shopify/app/routes/app.klaviyo.finish.tsx",
+      "shopify/app/routes/webhooks.orders.create.tsx",
+      "shopify/app/routes/webhooks.app.scopes_update.tsx",
+      "shopify/app/data/events-log.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.tsx",
+          "shopify/app/routes/app._index.tsx",
+          "shopify/app/routes/app.settings.tsx",
+          "shopify/app/routes/app.$.tsx",
+          "shopify/app/routes/auth.$.tsx",
+          "shopify/app/routes/auth.login/route.tsx",
+          "shopify/app/routes/_index/route.tsx",
+          "shopify/app/routes/app.klaviyo.finish.tsx",
+          "shopify/app/routes/webhooks.orders.create.tsx",
+          "shopify/app/routes/webhooks.app.scopes_update.tsx",
+          "shopify/app/data/events-log.ts"
+        ],
+        "invariant": "Every route that reads or changes shop data authenticates first and takes the shop from the session, never from the request.",
+        "method": "source",
+        "result": "All /app routes call authenticate.admin before any read; the two remaining webhooks use authenticate.webhook; the only unauthenticated routes are the public landing, auth.login, and the Klaviyo start and callback steps, which store nothing. The actor is the numeric sub claim of the verified session token.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%23unauthenticated%20entry%20points::shopify%2Fapp%2Fshopify-webhook.server.ts%23verifyShopifyWebhook%2Bshopify%2Fapp%2Fklaviyo%2Foauth.ts%23verifyStartTicket::profile%2Fquick%2Fall-in-scope-subsystems::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Pre-authentication%20work%20imbalance",
+    "canonical_refs": {
+      "surface": "shopify/app/routes#unauthenticated entry points",
+      "boundary": "shopify/app/shopify-webhook.server.ts#verifyShopifyWebhook+shopify/app/klaviyo/oauth.ts#verifyStartTicket",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance"
+    },
+    "surface": "Webhooks, Klaviyo start and callback, auth.login, landing",
+    "boundary": "Signature checks before any database or third-party work",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Pre-authentication work imbalance",
+    "starting_paths": [
+      "shopify/app/shopify-webhook.server.ts",
+      "shopify/app/klaviyo/flow.server.ts",
+      "shopify/app/routes/auth.login/route.tsx",
+      "shopify/app/routes/_index/route.tsx"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/shopify-webhook.server.ts",
+      "shopify/app/klaviyo/flow.server.ts",
+      "shopify/app/klaviyo/oauth.ts",
+      "shopify/app/routes/auth.login/route.tsx",
+      "shopify/app/routes/_index/route.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/shopify-webhook.server.ts",
+          "shopify/app/klaviyo/flow.server.ts",
+          "shopify/app/klaviyo/oauth.ts",
+          "shopify/app/routes/auth.login/route.tsx",
+          "shopify/app/routes/_index/route.tsx"
+        ],
+        "invariant": "An unauthenticated request cannot cause database writes, Klaviyo or Shopify calls, or unbounded work.",
+        "method": "source",
+        "result": "Webhooks read the body and verify one HMAC before anything else; start and callback verify one HMAC and answer with a redirect or a constant page; no table is written before authentication. The webhook body is read without an explicit size cap (platform limit applies), noted as hardening.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "shopify/app/shopify-webhook.server.ts:23 reads the whole body before checking the signature; rejecting a Content-Length above a small bound first would cap the unauthenticated work."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%2Fapp.simulation.tsx%23action::shopify%2Fapp%2Fruns%2Fengine.ts%23createSuppressionRun::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "shopify/app/routes/app.simulation.tsx#action",
+      "boundary": "shopify/app/runs/engine.ts#createSuppressionRun",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Approve and start a cleanup; automatic mode after a scheduled scan",
+    "boundary": "Nothing is suppressed without an approved, fresh, non-superseded simulation",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "shopify/app/routes/app.simulation.tsx",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/schedule/automatic.ts",
+      "shopify/workers/scan.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/routes/app.simulation.tsx",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/schedule/automatic.ts",
+      "shopify/workers/scan.ts",
+      "shopify/app/settings/settings.ts",
+      "shopify/app/routes/app.settings.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.simulation.tsx",
+          "shopify/app/simulations/review.ts",
+          "shopify/app/runs/engine.ts"
+        ],
+        "invariant": "A run cannot be created twice for one simulation, from an unapproved, expired or superseded simulation, or while another cleanup of the shop is open.",
+        "method": "source",
+        "result": "The claim is one D1 batch whose first UPDATE repeats every condition (approved, fresh, settings version, no run for the simulation, no open cleanup) and whose later statements depend on it; runs.simulation_id is unique; the Workflow instance id is the run id and the start step re-checks the gate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/schedule/automatic.ts",
+          "shopify/workers/scan.ts",
+          "shopify/app/settings/settings.ts",
+          "shopify/app/routes/app.settings.tsx"
+        ],
+        "invariant": "Automatic approval only happens for a scheduled scan, with recommended rules, after an earlier person-approved cleanup, and within the size guardrails.",
+        "method": "source",
+        "result": "decideAutomatic and approveAutomatically enforce origin, mode, rules, a prior user-approved run and the share and growth limits; saveSettings refuses automatic mode with wider windows; a rules change bumps the settings version and supersedes open simulations.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "priority_rationale": "Rank 2: the product's central safety control."
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%2Fapp.simulation_.candidates.tsx%23loader%2Bshopify%2Fapp%2Froutes%2Fapp.settings_.data-request.tsx%23loader::shopify%2Fapp%2Fsimulations%2Freview.ts%23candidatesCsvPart::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "shopify/app/routes/app.simulation_.candidates.tsx#loader+shopify/app/routes/app.settings_.data-request.tsx#loader",
+      "boundary": "shopify/app/simulations/review.ts#candidatesCsvPart",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "Candidate CSV and customer data export downloads",
+    "boundary": "Exports are limited to the session shop and to the review window",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "shopify/app/routes/app.simulation_.candidates.tsx",
+      "shopify/app/routes/app.settings_.data-request.tsx",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/data/privacy.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/routes/app.simulation_.candidates.tsx",
+      "shopify/app/routes/app.settings_.data-request.tsx",
+      "shopify/app/simulations/review.ts",
+      "shopify/app/data/privacy.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/routes/app.simulation_.candidates.tsx",
+          "shopify/app/routes/app.settings_.data-request.tsx",
+          "shopify/app/simulations/review.ts",
+          "shopify/app/data/privacy.ts"
+        ],
+        "invariant": "A download cannot return another shop's profiles or serve as an export of already suppressed profiles, and is not cacheable.",
+        "method": "source",
+        "result": "Both loaders authenticate, resolve the id with the session shop, send no-store and an attachment disposition; the CSV is refused unless the simulation is open; emails are read from the merchant's own Klaviyo account and not stored.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%2Fwebhooks.compliance.tsx%23action%2Bshopify%2Fapp%2Froutes%2Fwebhooks.app.uninstalled.tsx%23action::shopify%2Fapp%2Fdata%2Fprivacy.ts%23installedAfter::profile%2Fquick%2Fall-in-scope-subsystems::PROTOCOLS-RPC-AND-MESSAGING.md%23Out-of-order%20and%20stale%20message%20acceptance",
+    "canonical_refs": {
+      "surface": "shopify/app/routes/webhooks.compliance.tsx#action+shopify/app/routes/webhooks.app.uninstalled.tsx#action",
+      "boundary": "shopify/app/data/privacy.ts#installedAfter",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "PROTOCOLS-RPC-AND-MESSAGING.md#Out-of-order and stale message acceptance"
+    },
+    "surface": "Shopify uninstall and compliance webhooks verified by HMAC alone",
+    "boundary": "Late or repeated uninstall / shop/redact deliveries versus a newer installation",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Out-of-order and stale message acceptance",
+    "starting_paths": [
+      "shopify/app/data/privacy.ts",
+      "shopify/app/routes/webhooks.compliance.tsx",
+      "shopify/app/routes/webhooks.app.uninstalled.tsx",
+      "shopify/app/shopify.server.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Out-of-order and stale message acceptance",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Universal moves",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/data/privacy.ts",
+      "shopify/app/routes/webhooks.compliance.tsx",
+      "shopify/app/routes/webhooks.app.uninstalled.tsx",
+      "shopify/app/shopify.server.ts",
+      "shopify/app/orders/purchases.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/data/privacy.ts",
+          "shopify/app/routes/webhooks.compliance.tsx",
+          "shopify/app/routes/webhooks.app.uninstalled.tsx",
+          "shopify/app/shopify.server.ts",
+          "shopify/app/orders/purchases.ts"
+        ],
+        "invariant": "A late uninstall or shop/redact delivery of an earlier installation does not tear down a newer installation, and repeated deliveries are idempotent.",
+        "method": "source",
+        "result": "afterAuth stamps installedAt; both handlers call installedAfter (shop/redact with a 49 hour allowance) and every statement is repeatable. ensureShop revives status without moving installedAt, which only makes the guard more conservative.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%2Fwebhooks.compliance.tsx%23action%2Bshopify%2Fapp%2Froutes%2Fwebhooks.app.uninstalled.tsx%23action::shopify%2Fapp%2Fshopify-webhook.server.ts%23verifyShopifyWebhook::profile%2Fquick%2Fall-in-scope-subsystems::PROTOCOLS-RPC-AND-MESSAGING.md%23Envelope%20and%20payload%20identity%20mismatch",
+    "canonical_refs": {
+      "surface": "shopify/app/routes/webhooks.compliance.tsx#action+shopify/app/routes/webhooks.app.uninstalled.tsx#action",
+      "boundary": "shopify/app/shopify-webhook.server.ts#verifyShopifyWebhook",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "PROTOCOLS-RPC-AND-MESSAGING.md#Envelope and payload identity mismatch"
+    },
+    "surface": "Shopify uninstall and compliance webhooks verified by HMAC alone",
+    "boundary": "HMAC-SHA-256 of the raw body with the app secret",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Envelope and payload identity mismatch",
+    "starting_paths": [
+      "shopify/app/shopify-webhook.server.ts",
+      "shopify/app/routes/webhooks.compliance.tsx",
+      "shopify/app/routes/webhooks.app.uninstalled.tsx"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Envelope and payload identity mismatch",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Universal moves",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/shopify-webhook.server.ts",
+      "shopify/app/routes/webhooks.compliance.tsx",
+      "shopify/app/routes/webhooks.app.uninstalled.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/shopify-webhook.server.ts",
+          "shopify/app/routes/webhooks.compliance.tsx",
+          "shopify/app/routes/webhooks.app.uninstalled.tsx"
+        ],
+        "invariant": "No request without a valid Shopify signature over its body reaches a handler, and a lower-trust principal cannot obtain a signed body to replay under another shop header.",
+        "method": "source",
+        "result": "The signature is verified with crypto.subtle.verify before any header is read; shop, topic and triggered-at come from unsigned headers (same model as Shopify's own library). The only other app-secret HMAC a merchant can obtain is a session-token JWT, whose signed bytes are not valid JSON and are rejected at JSON.parse with 400. No reachable violation found; binding the header shop to the body's shop_domain is recorded as hardening.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "shopify/app/shopify-webhook.server.ts:35-36 take topic and shop from headers the HMAC does not cover. For shop/redact and app/uninstalled, also compare the header shop with the body's shop_domain / myshopify_domain and reject on mismatch, so a signed body can never be replayed under another shop."
+    ],
+    "priority_rationale": "Rank 1: unauthenticated entry that can delete a tenant's data."
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Froutes%2Fwebhooks.compliance.tsx%23action%2Bshopify%2Fworkers%2Fapp.ts%23scheduled::shopify%2Fapp%2Fdata%2Fprivacy.ts%23deleteShopData::profile%2Fquick%2Fall-in-scope-subsystems::DATA-ISOLATION-AND-LIFECYCLE.md%23Retention%20and%20queued-work%20overrun",
+    "canonical_refs": {
+      "surface": "shopify/app/routes/webhooks.compliance.tsx#action+shopify/workers/app.ts#scheduled",
+      "boundary": "shopify/app/data/privacy.ts#deleteShopData",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "DATA-ISOLATION-AND-LIFECYCLE.md#Retention and queued-work overrun"
+    },
+    "surface": "Uninstall, shop/redact, customers/redact and hourly housekeeping",
+    "boundary": "Tokens go at uninstall; everything of the shop goes at shop/redact or after 10 days; queued work stops",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Retention and queued-work overrun",
+    "starting_paths": [
+      "shopify/app/data/privacy.ts",
+      "shopify/app/data/housekeeping.ts",
+      "shopify/app/db/schema.ts",
+      "shopify/workers/app.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Retention and queued-work overrun",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/app/data/privacy.ts",
+      "shopify/app/data/housekeeping.ts",
+      "shopify/app/db/schema.ts",
+      "shopify/workers/app.ts",
+      "shopify/app/schedule/schedule.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/app/data/privacy.ts",
+          "shopify/app/data/housekeeping.ts",
+          "shopify/app/db/schema.ts",
+          "shopify/workers/app.ts",
+          "shopify/app/schedule/schedule.ts"
+        ],
+        "invariant": "After uninstall no stored credential remains and no queued job keeps acting for the shop; after shop/redact no row of the shop remains.",
+        "method": "source",
+        "result": "handleUninstall deletes sessions and the Klaviyo connection in one batch; every merchant table references shops with ON DELETE CASCADE and the session table is deleted explicitly; the gateway, the scan, the schedule and the open-charge query all require an installed shop or a connection. customers/redact removes the purchase hash, unlinks run rows and deletes simulation candidates; rows of a scan in flight (scan_profiles) are not touched and live at most 24 hours.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "customers/redact does not remove the customer's keyed hash from scan_profiles of a scan in flight, so a simulation finished afterwards can list that hash again for up to 7 days. Deleting matching scan_profiles rows in redactCustomer closes the gap."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fapp%2Fscans%2Fengine.ts%23executeScan::packages%2Fcore%2Fsrc%2Frules.ts%23decision%20rules::profile%2Fquick%2Fall-in-scope-subsystems::DATA-ISOLATION-AND-LIFECYCLE.md%23Stale%20authorization%20and%20derived%20copy%20use",
+    "canonical_refs": {
+      "surface": "shopify/app/scans/engine.ts#executeScan",
+      "boundary": "packages/core/src/rules.ts#decision rules",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "DATA-ISOLATION-AND-LIFECYCLE.md#Stale authorization and derived copy use"
+    },
+    "surface": "Scan Workflow: members, protected groups, purchase coverage, evaluation, simulation",
+    "boundary": "Conservative defaults: unknown data protects the profile",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Stale authorization and derived copy use",
+    "starting_paths": [
+      "shopify/app/scans/engine.ts",
+      "shopify/app/klaviyo/signals.ts",
+      "packages/core/src/rules.ts",
+      "packages/core/src/simulation.ts",
+      "shopify/app/scans/view.server.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Stale authorization and derived copy use",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "quick_profile_not_reached: only the load, account, segment and evaluate steps of scans/engine.ts were read; klaviyo/signals.ts, packages/core/src/rules.ts, simulation.ts, schedule.ts, pricing.ts, savings.ts and scans/view.server.ts were not reviewed, so no coverage is claimed."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fscripts%23operator%20scripts::run-metadata.json%23scope_paths::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "shopify/scripts#operator scripts",
+      "boundary": "run-metadata.json#scope_paths",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "Operator scripts (seeding, smoke tests) and test fixtures",
+    "boundary": "Scope of this run",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "shopify/scripts",
+      "shopify/test"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "out_of_scope",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Outside scope_paths: shopify/scripts, shopify/test and shopify/app/klaviyo/testing were not reviewed."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fworkers%2Fapp.ts%23scheduled::shopify%2Fapp%2Fbilling%2Fbilling.ts%23runsWithOpenCharges::profile%2Fquick%2Fall-in-scope-subsystems::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Poison-record%20and%20head-of-line%20blocking",
+    "canonical_refs": {
+      "surface": "shopify/workers/app.ts#scheduled",
+      "boundary": "shopify/app/billing/billing.ts#runsWithOpenCharges",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Poison-record and head-of-line blocking"
+    },
+    "surface": "Hourly cron: retry of open charges",
+    "boundary": "One shop's unsettleable charge must not hold back the charges of other shops",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Poison-record and head-of-line blocking",
+    "starting_paths": [
+      "shopify/workers/app.ts",
+      "shopify/app/billing/billing.ts"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Poison-record and head-of-line blocking",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/workers/app.ts",
+      "shopify/app/billing/billing.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/workers/app.ts",
+          "shopify/app/billing/billing.ts"
+        ],
+        "invariant": "A charge that cannot be settled moves to the back of the retry queue.",
+        "method": "source",
+        "result": "Source trace: runsWithOpenCharges orders by COALESCE(last_attempt_at, 0) then finished_at (billing.ts:355) and the cron handles only the first 5 rows per tick (workers/app.ts:102); the estimated outcome (billing.ts:252) never writes last_attempt_at or attempts, so five or more unconfirmable pending charges stay at the head for up to 30 days and failed charges of other shops are not retried by the cron. Not executed and not independently verified.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "tiersaver/billing/open-charges-head-of-line"
+    ],
+    "unresolved": [
+      "independent_verification_unavailable: no delegation tool in this session, so no fresh verifier re-checked this candidate; it is not a finding.",
+      "sandbox_unavailable: no OS-enforced sandbox, so the ordering could not be observed with a local D1 fixture."
+    ]
+  },
+  {
+    "coverage_id": "shopify%2Fworkers%2Fsuppression-run.ts%23SuppressionRunWorkflow.run::shopify%2Fapp%2Fbilling%2Fbilling.ts%23settleRunCharge::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "shopify/workers/suppression-run.ts#SuppressionRunWorkflow.run",
+      "boundary": "shopify/app/billing/billing.ts#settleRunCharge",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Charge settlement after a cleanup (Workflow and hourly cron)",
+    "boundary": "A cleanup that suppressed profiles is charged once Klaviyo confirms its jobs",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "shopify/workers/suppression-run.ts",
+      "shopify/workers/app.ts",
+      "shopify/app/billing/billing.ts",
+      "shopify/app/runs/confirm.ts",
+      "shopify/app/routes/app._index.tsx",
+      "shopify/app/klaviyo/connection.server.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/workers/suppression-run.ts",
+      "shopify/workers/app.ts",
+      "shopify/app/billing/billing.ts",
+      "shopify/app/runs/confirm.ts",
+      "shopify/app/routes/app._index.tsx",
+      "shopify/app/klaviyo/connection.server.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/workers/suppression-run.ts",
+          "shopify/workers/app.ts",
+          "shopify/app/billing/billing.ts",
+          "shopify/app/runs/confirm.ts",
+          "shopify/app/routes/app._index.tsx",
+          "shopify/app/klaviyo/connection.server.ts"
+        ],
+        "invariant": "A merchant cannot keep a cleanup's suppressions and avoid its charge without uninstalling.",
+        "method": "source",
+        "result": "Source trace: settleRunCharge returns estimated and writes nothing while confirmation is not done (billing.ts:252); confirmation needs a Klaviyo read with the shop's own connection (confirm.ts:49), which throws when the merchant disconnected (app._index.tsx:95, no guard for open runs or charges) or switched account, and the cron maps any failure to null (workers/app.ts:106); the Workflow gives up on the first failed confirm step (suppression-run.ts:67 and :89); for more than 10 jobs the cron never confirms at all (confirm.ts:69). The row leaves the retry window after 30 days. Not executed and not independently verified.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "tiersaver/billing/charge-confirmation-fails-open"
+    ],
+    "unresolved": [
+      "independent_verification_unavailable: no delegation tool in this session, so no fresh verifier re-checked this candidate; it is not a finding.",
+      "sandbox_unavailable: no OS-enforced sandbox, so the existing billing unit tests could not be extended and run to observe the estimated status locally."
+    ],
+    "priority_rationale": "Rank 2: operator revenue control that depends on a merchant-revocable connection."
+  },
+  {
+    "coverage_id": "shopify%2Fworkers%2Fsuppression-run.ts%23SuppressionRunWorkflow.run::shopify%2Fapp%2Fruns%2Fgateway.server.ts%23createSuppressionGateway::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "shopify/workers/suppression-run.ts#SuppressionRunWorkflow.run",
+      "boundary": "shopify/app/runs/gateway.server.ts#createSuppressionGateway",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "Durable execution of suppress and undo batches",
+    "boundary": "Each batch is re-validated against the approved hashes, the current Klaviyo state and the connected account",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Chained vulnerabilities and trust boundaries",
+    "starting_paths": [
+      "shopify/workers/suppression-run.ts",
+      "shopify/app/runs/gateway.server.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/runs/recovery.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/workers/suppression-run.ts",
+      "shopify/app/runs/gateway.server.ts",
+      "shopify/app/runs/engine.ts",
+      "shopify/app/runs/recovery.ts",
+      "shopify/app/klaviyo/connection.server.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/workers/suppression-run.ts",
+          "shopify/app/runs/gateway.server.ts",
+          "shopify/app/runs/engine.ts",
+          "shopify/app/runs/recovery.ts",
+          "shopify/app/klaviyo/connection.server.ts"
+        ],
+        "invariant": "A batch only suppresses profiles the merchant approved, in the account they were evaluated in, and never while the safety switch is off or the connection changed.",
+        "method": "source",
+        "result": "submitBatch refuses unless SUPPRESSION_ENABLED is exactly true, the gateway shop equals the run shop and the connection is connected; the live account id must equal the stored one; each profile must still be a member of the managed segment with the approved keyed email hash and no suppression. After a reconnect to another account the approved profile ids are not members there and are skipped. Undo restores by profile id with timing evidence; consequences of a changed account are confined to the merchant's own accounts.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "shopify%2Fwrangler.jsonc%23vars%2Bbindings%2Btriggers::shopify%2Fapp%2Fruns%2Fgateway.server.ts%23suppressionAllowed::profile%2Fquick%2Fall-in-scope-subsystems::CLOUD-AND-DEPLOYMENT.md%23Security-control%20precedence%20drift",
+    "canonical_refs": {
+      "surface": "shopify/wrangler.jsonc#vars+bindings+triggers",
+      "boundary": "shopify/app/runs/gateway.server.ts#suppressionAllowed",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift"
+    },
+    "surface": "Worker configuration, variables and safety switches",
+    "boundary": "Suppression is off unless SUPPRESSION_ENABLED is exactly true; billing is required except for the seeded test account",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Security-control precedence drift",
+    "starting_paths": [
+      "shopify/wrangler.jsonc",
+      "shopify/shopify.app.toml",
+      "shopify/app/secrets.d.ts",
+      "shopify/app/runs/gateway.server.ts",
+      "shopify/app/routes/app.simulation.tsx"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "shopify/wrangler.jsonc",
+      "shopify/shopify.app.toml",
+      "shopify/app/secrets.d.ts",
+      "shopify/app/runs/gateway.server.ts",
+      "shopify/app/routes/app.simulation.tsx",
+      "shopify/workers/scan.ts",
+      "shopify/app/shopify.server.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "shopify/wrangler.jsonc",
+          "shopify/shopify.app.toml",
+          "shopify/app/secrets.d.ts",
+          "shopify/app/runs/gateway.server.ts",
+          "shopify/app/routes/app.simulation.tsx",
+          "shopify/workers/scan.ts",
+          "shopify/app/shopify.server.ts"
+        ],
+        "invariant": "A missing or misspelled variable fails closed, the requested scopes are minimal, and the test-account exceptions cannot be reached by an ordinary merchant.",
+        "method": "source",
+        "result": "The switch compares with the exact string true in the route, the scan Workflow and the gateway; scopes are read_orders only; the billing exception and seeded metric specs need a connection to the one account id in vars, which requires that account's own Klaviyo consent. The deployed values of secrets and of SUPPRESSION_ENABLED are not visible in source and were not observed.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "site%23published%20pages%20and%20client%20scripts::run-metadata.json%23scope_paths::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "site#published pages and client scripts",
+      "boundary": "run-metadata.json#scope_paths",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "Static site content, pages and client-side scripts",
+    "boundary": "Scope of this run",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "site"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "out_of_scope",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Outside scope_paths: only site/_headers and site/build were in scope; site pages, src and assets were not reviewed."
+    ]
+  },
+  {
+    "coverage_id": "site%2F_headers%23%2F%2A::site%2F_headers%23Content-Security-Policy::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "site/_headers#/*",
+      "boundary": "site/_headers#Content-Security-Policy",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "Static site response headers and local build scripts; committed secrets and debug surfaces across the scope",
+    "boundary": "Restrictive CSP and framing policy; nothing secret committed",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "site/_headers",
+      "site/build/serve.mjs",
+      "site/build/assets.mjs",
+      "shopify/wrangler.jsonc"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "site/_headers",
+      "site/build/serve.mjs",
+      "site/build/assets.mjs",
+      "site/build/check-links.mjs",
+      "shopify/wrangler.jsonc",
+      "shopify/shopify.app.toml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "site/_headers",
+          "site/build/serve.mjs",
+          "site/build/assets.mjs",
+          "site/build/check-links.mjs",
+          "shopify/wrangler.jsonc",
+          "shopify/shopify.app.toml"
+        ],
+        "invariant": "No committed secret, debug endpoint, permissive CORS or framing of the public site.",
+        "method": "source",
+        "result": "CSP default-src none with self-only sources, frame-ancestors none, nosniff, HSTS; no CORS headers anywhere; the local server binds to 127.0.0.1 and serves only files from a precomputed published set; only example env files are tracked; ids in wrangler.jsonc and shopify.app.toml are public identifiers, not secrets.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "site%2Fbuild%2Fbuild.mjs%23loadSiteData::site%2Fbuild%2Fbuild.mjs%23esbuild%20bundle%20of%20repository%20source::profile%2Fquick%2Fall-in-scope-subsystems::SUPPLY-CHAIN-AND-RELEASE.md%23Generated-source%20and%20codegen%20provenance%20gaps",
+    "canonical_refs": {
+      "surface": "site/build/build.mjs#loadSiteData",
+      "boundary": "site/build/build.mjs#esbuild bundle of repository source",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Generated-source and codegen provenance gaps"
+    },
+    "surface": "Site generator evaluating bundled repository code at build time",
+    "boundary": "Only repository-owned source is bundled and evaluated",
+    "subsystem": "All in-scope subsystems (quick profile)",
+    "attack_class": "Generated-source and codegen provenance gaps",
+    "starting_paths": [
+      "site/build/build.mjs",
+      "site/build/images.mjs"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Generated-source and codegen provenance gaps",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model, prompt assembly or tool-calling surface exists in the in-scope source."
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Target is TypeScript on Workers; no native or unsafe code in scope."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC component in scope."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "parent-solo",
+    "reviewed_paths": [
+      "site/build/build.mjs",
+      "site/build/images.mjs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "parent-solo",
+        "reviewed_paths": [
+          "site/build/build.mjs",
+          "site/build/images.mjs"
+        ],
+        "invariant": "The build does not evaluate or embed content from outside the repository.",
+        "method": "source",
+        "result": "new Function at build.mjs:171 runs the esbuild bundle of the repository's own data.ts; no network fetch or child process is started by the build scripts read. Dependency integrity (lockfile, node_modules) is out of scope for this run.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  }
+]

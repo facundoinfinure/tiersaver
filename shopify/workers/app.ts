@@ -95,15 +95,19 @@ export default {
           console.error(`schedule tick failed: ${error instanceof Error ? error.name : "error"}`);
         }
         try {
-          const [{ confirmRunJobs }, { createKlaviyoClient }] = await Promise.all([import("../app/runs/confirm"), import("../app/klaviyo/connection.server")]);
-          // A few per tick: each one reads its jobs from Klaviyo. Runs with more jobs than one invocation can read
-          // are confirmed by their own Workflow.
+          const [{ advanceChargeConfirmation }, { createKlaviyoClient }] = await Promise.all([import("../app/runs/confirm"), import("../app/klaviyo/connection.server")]);
+          // A few per tick: each one reads a page of its jobs from Klaviyo and keeps its place, so a cleanup of any
+          // size is confirmed over a few ticks even if its own Workflow gave up.
           // A charge Klaviyo already confirmed needs no read of Klaviyo, whatever the size of the run.
           for (const open of (await runsWithOpenCharges(db)).slice(0, 5)) {
             try {
               const confirmation = open.confirmed
                 ? null
-                : await confirmRunJobs(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
+                : await (async () => {
+                    // The charge row is created by the first settle; the confirmation keeps its progress on it.
+                    await settleRunCharge({ db, graphql: null }, open.runId);
+                    return advanceChargeConfirmation(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
+                  })();
               const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId, confirmation);
               if (result.status === "failed") {
                 const message = `charge of run ${open.runId} failed (${result.error}), attempt ${open.attempts + 1}`;
