@@ -7,12 +7,12 @@ kicker: Legal · Draft
 layout: doc
 group: legal
 order: 1
-updated: Draft of 2026-11-25
+updated: Draft of 2026-11-26
 -->
-<p><strong>Effective date:</strong> <mark class="placeholder" data-todo="effective-date">[EFFECTIVE DATE]</mark></p>
+<p><strong>Effective date:</strong> November 26, 2026</p>
 
 <h2>1. Who we are</h2>
-<p>TierSaver for Klaviyo ("TierSaver", "the app") is a Shopify app operated by Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131, United States ("we", "us"). You can reach us about privacy at <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>.</p>
+<p>TierSaver for Klaviyo ("TierSaver", "the app") is a Shopify app operated by Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131, United States ("we", "us"). You can reach us about privacy at <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>, and about the app at <a href="mailto:support@tiersaver.com">support@tiersaver.com</a>.</p>
 <p>This policy covers the app and the website at tiersaver.com. TierSaver is an independent product and is not affiliated with Klaviyo, Inc. or Shopify Inc.</p>
 
 <h2>2. The roles involved</h2>
@@ -29,20 +29,21 @@ updated: Draft of 2026-11-25
   <li><strong>Profiles selected for suppression:</strong> for each simulation and each run, the Klaviyo profile ID, the reason the profile was selected, its processing status and, for matching purposes, a SHA-256 hash of the profile's email address.</li>
   <li><strong>Hashed purchase records:</strong> for each buyer found in the store's Shopify orders, a SHA-256 hash of the normalized order email address, the date of the most recent order, and a SHA-256 hash of the Shopify customer ID.</li>
   <li><strong>Activity log:</strong> which action was taken or approved, when, and by whom (a Shopify user ID, the schedule, a webhook or the system). Log details do not contain customer personal data.</li>
-  <li><strong>Billing records:</strong> the price band that applied and the identifiers of the charges created through Shopify.</li>
+  <li><strong>Charge records:</strong> the price band that applied and the identifiers of the charges created through Shopify. Shopify handles payment. We do not receive or store payment details.</li>
 </ul>
 
 <h3>Data we process but do not store</h3>
 <ul>
   <li><strong>Email addresses from Shopify orders</strong> are read in order to compute the hash described above. The address itself is not stored.</li>
-  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo at the moment a batch of profiles is suppressed or restored, because Klaviyo's suppression interface works with email addresses. They are not stored.</li>
-  <li><strong>Klaviyo engagement data</strong> (such as emails received, opens, clicks, purchases, site activity, SMS consent and list membership) is read to evaluate the cleanup criteria.</li>
+  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo at the moment they are needed: when a batch of profiles is suppressed or restored, because Klaviyo's suppression interface works with email addresses, and when the merchant downloads the list of profiles in a simulation as a CSV file to review it before approving. They are not stored and not written to logs.</li>
+  <li><strong>Klaviyo engagement data</strong> (such as emails received, opens, clicks, purchases, site activity, SMS consent and list membership) is read to evaluate the cleanup criteria. While a scan is running, the dates and the consent and suppression status read for each profile are held as working data, without the email address, and are deleted when the scan ends.</li>
 </ul>
 
 <h3>Data we do not collect</h3>
 <p>We do not store customer email addresses in readable form, customer names, postal addresses, phone numbers, payment details, order contents or the content of the merchant's emails.</p>
 
-<p class="note"><mark class="placeholder" data-todo="confirm-notifications">[TO CONFIRM BEFORE PUBLISHING]</mark> The app is designed to email merchants a summary before each scheduled cleanup and a monthly report. This section must state which merchant email address is used for those messages, where it is stored and which email provider sends them, once that part of the app is built.</p>
+<h3>Email from the app</h3>
+<p>On the effective date of this policy the app sends no email, and we do not store a merchant email address for that purpose. We plan to add operational notices for merchants: that a scheduled simulation is ready to approve, the result of a cleanup, and a monthly summary. When we do, they will go to the contact address of the store, they will be about the merchant's own use of the app and not marketing, and we will first update this policy and add the delivery provider to the list in section 6. The app never sends email to a merchant's customers.</p>
 
 <h2>4. Why we process it</h2>
 <ul>
@@ -53,23 +54,34 @@ updated: Draft of 2026-11-25
   <li>To secure the service and to meet legal obligations.</li>
 </ul>
 <p>We do not sell personal data, we do not use it for advertising, and we do not use customers' data to build profiles of our own.</p>
-<p><mark class="placeholder" data-todo="legal-bases">[LEGAL BASES: to be completed by counsel for the jurisdictions that apply, for example performance of a contract and legitimate interests under the GDPR]</mark></p>
+<p>Where a law such as the GDPR requires a legal basis for processing: for the personal data of a merchant's customers we act on the merchant's instructions, and the merchant is responsible for the legal basis. For the data we control, we rely on performing our agreement with the merchant, on our legitimate interests in running, securing and improving the service, and on our legal obligations.</p>
 
 <h2>5. What the app changes in Klaviyo</h2>
-<p>The app changes the email suppression status of the profiles included in a simulation the merchant approved, and can remove that suppression again. It does not delete profiles, and it does not change consent or subscription status.</p>
+<p>The app changes the email suppression status of the profiles included in a simulation the merchant approved, and can remove that suppression again. It also creates and maintains one segment in the merchant's Klaviyo account, which it uses to find the profiles that meet the cleanup criteria. It does not delete profiles, it does not change consent or subscription status, and it does not change the merchant's Klaviyo plan or billing settings.</p>
 
 <h2>6. Who we share data with</h2>
-<p>We use the following service providers to run TierSaver:</p>
+<p>We use one sub-processor to run TierSaver:</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Sub-processors">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Sub-processor</th><th scope="col">Location</th><th scope="col">What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Cloudflare, Inc.</td><td>United States</td><td>Hosts the app and this website (Cloudflare Workers), the app's database (D1) and its background jobs (Workflows), and keeps operational logs</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>We do not use an email delivery provider or an error monitoring provider. We will update this list before we add any sub-processor.</p>
+<p>Two other companies are involved, under their own agreements with the merchant:</p>
 <ul>
-  <li><strong>Cloudflare</strong>, which hosts the app, its database and this website.</li>
-  <li><strong>Shopify</strong>, through which the app is installed and all charges are billed.</li>
+  <li><strong>Shopify</strong> is the platform through which the app is installed and used, and it bills and collects all charges. We do not receive or store payment details.</li>
+  <li><strong>Klaviyo</strong> holds the merchant's profiles. The app exchanges data with the merchant's own Klaviyo account, using the access the merchant granted. Klaviyo processes that data under its agreement with the merchant, and is not our sub-processor.</li>
 </ul>
-<p>The app also exchanges data with the merchant's own <strong>Klaviyo</strong> account, using the access the merchant granted. Klaviyo processes that data under its agreement with the merchant.</p>
-<p><mark class="placeholder" data-todo="subprocessors">[TO CONFIRM BEFORE PUBLISHING: complete list of sub-processors, including any email delivery or error monitoring provider, and their locations]</mark></p>
 <p>We may disclose information if the law requires it, or as part of a merger or sale of the business, in which case this policy continues to apply to the data.</p>
 
 <h2>7. Where data is processed</h2>
-<p><mark class="placeholder" data-todo="data-location">[DATA LOCATION AND INTERNATIONAL TRANSFERS: to be completed. State the region of the database and the transfer mechanism relied on]</mark></p>
+<p>We are a United States company. The app's database is stored with Cloudflare, with its primary region in eastern North America. Cloudflare runs the app and this website on its global network, so a request may be handled at a Cloudflare location close to the person making it.</p>
+<p>If you are outside the United States, your data, and the data of your customers described in section 3, is transferred to and processed in the United States, where data protection law may differ from the law where you are. If the law that applies to you requires a specific agreement for that transfer, write to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>.</p>
 
 <h2>8. Security</h2>
 <ul>
@@ -89,10 +101,11 @@ updated: Draft of 2026-11-25
   <li><strong>When a customer asks a store for their data:</strong> the only data we hold that is derived from a customer is a one-way hash and the date of their last order. There is nothing readable to export.</li>
 </ul>
 <p>Uninstalling the app does not restore suppressed profiles in Klaviyo, and does not delete anything in the merchant's Klaviyo or Shopify accounts.</p>
-<p><mark class="placeholder" data-todo="retention-records">[TO CONFIRM BEFORE PUBLISHING: retention of billing and tax records after uninstall, if any; and whether operational logs without personal data are kept for 365 days]</mark></p>
+<p>We keep no charge records after that deletion. Invoices and charges remain in the merchant's Shopify account, under Shopify's own retention rules.</p>
+<p>Operational logs kept by Cloudflare do not contain email addresses or access tokens. They are kept for the period set by Cloudflare's own log retention.</p>
 
 <h2>10. This website</h2>
-<p>tiersaver.com sets no cookies and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site. The list health check runs in your browser, and the numbers you enter are not sent to us.</p>
+<p>tiersaver.com sets no cookies, has no forms, and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site, and pages make no requests to other sites. The list health check runs in your browser, and the numbers you enter are not sent to us.</p>
 <p>Like any website, the hosting provider processes technical data such as IP addresses to deliver pages and protect the service.</p>
 <p>If you email us, we use your message and address to reply.</p>
 
@@ -100,7 +113,7 @@ updated: Draft of 2026-11-25
 <p>Depending on where you live, you may have the right to access, correct, delete or export your personal data, to object to or restrict its processing, and to complain to a data protection authority. Merchants can exercise these rights by writing to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>. Customers of a store should contact the store first.</p>
 
 <h2>12. Children</h2>
-<p>TierSaver is a business tool and is not directed at children.</p>
+<p>TierSaver is a business tool. It is not directed at children, and we do not knowingly collect personal data from children.</p>
 
 <h2>13. Changes to this policy</h2>
 <p>If we change this policy we will post the new version here with a new effective date. If the change is significant, we will tell merchants in the app or by email before it takes effect.</p>
