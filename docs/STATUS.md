@@ -530,3 +530,9 @@ Pedido de Facundo: que el abogado no tenga que contestar 43 preguntas.
 - Facundo aprobó la migración 0012 (tabla `shop_plans`, aditiva). Aplicada en D1 remoto y app desplegada (Worker `cd72532a`): plan mensual, aviso dentro de la app y textos corregidos. Responde 200 en `/` y rechaza con 401 el webhook de suscripciones con firma inválida.
 - Pendiente de Facundo: `shopify app deploy` para registrar el webhook `app_subscriptions/update` (hasta entonces la app no se entera de cancelaciones por webhook; igual consulta el estado del plan a Shopify antes de cada limpieza).
 - Workers Paid (verificado en developers.cloudflare.com el 2026-11-27): se contrata en el dashboard, página "Workers plans" (https://dash.cloudflare.com/?to=/:account/workers/plans); mínimo US$ 5 por mes, renovación mensual automática, sin reembolso del mes en curso.
+
+## 2026-11-26 · Legales adoptados sin abogado
+
+- Hecho: investigación con fuentes primarias y decisiones en `docs/16-LEGALES.md` (reemplaza a `16-LEGALES-PARA-ABOGADO.md`, que queda como renglón). Entidad cerrada: Digital Solvers LLC (Delaware), 153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA. Términos con arbitraje individual AAA y exclusión a 30 días, tope y exclusión de indirectos mutuos, párrafo de Shopify exigido por sus API Terms 6.1.2 y sin prohibición de competir. DPA con art. 28 completo, Addendum británico con el texto obligatorio, Suiza, CCPA §7051 y APP 8. `LEGAL_DRAFT = false`.
+- Verificado: `npm run build -w @tiersaver/site` y `npm test -w @tiersaver/site` (309 tests) pasan.
+- Pendiente: desplegar el sitio solo después de C2 y C3 (`17-POLITICAS-INTERNAS.md`); brechas de código de `16-LEGALES.md` §4 (casilla del plan, "no se devuelve al cancelar" en la aprobación, borrado completo al desinstalar por el plazo de 30 días de Shopify); decisión C9 (representante del art. 27). `TERMS_VERSION` sigue en 2026-11-27 aunque el contenido cambió, porque ningún merchant real aceptó una versión.

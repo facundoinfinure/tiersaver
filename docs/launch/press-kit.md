@@ -103,7 +103,7 @@ Only if you turn that on. The monthly schedule runs the audit and waits for your
 **Who is behind it?**
 
 ```
-TierSaver is an independent product operated by Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131, United States, and built by Facundo Bonfigli. It is not affiliated with or endorsed by Klaviyo or Shopify.
+TierSaver is an independent product operated by Digital Solvers LLC, a Delaware limited liability company, 153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA, and built by Facundo Bonfigli. It is not affiliated with or endorsed by Klaviyo or Shopify.
 ```
 
 **Is it on the Shopify App Store?**

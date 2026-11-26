@@ -76,10 +76,11 @@ const AUDIT_CTA_NOTE = ` TierSaver is not on the Shopify App Store yet, so the b
 /**
  * The one switch for the legal pages (group "legal": terms, privacy, DPA).
  * While true they carry the draft banner, are left out of the sitemap, have no
- * canonical URL and ask search engines not to index them. Set it to false only
- * when the lawyer has approved the final text.
+ * canonical URL and ask search engines not to index them. Set to false on
+ * 2026-11-26: the owner adopted the texts without outside review
+ * (docs/16-LEGALES.md). Set it back to true only to withdraw them.
  */
-const LEGAL_DRAFT = true;
+const LEGAL_DRAFT = false;
 
 const GROUPS = {
   help: { label: "Help center", crumb: { href: "/help/", text: "Help center" } },

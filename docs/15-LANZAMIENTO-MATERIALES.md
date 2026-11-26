@@ -113,7 +113,7 @@ Pendiente para que estas instrucciones sean verdad: credenciales de una cuenta d
 | Scopes mínimos | `read_orders` hoy; `read_all_orders` y datos protegidos por pedir |
 | Capturas reales | Listas en `launch/screenshots/2026-11-27/listing/` (entorno local, datos de ejemplo, sin precios). Opcional: repetirlas dentro del admin |
 | Video | Guion listo (`launch/video.md`) y borrador mudo (`launch/video-draft.webm`). Falta grabar el screencast del revisor en la tienda de desarrollo |
-| Privacidad y términos publicados | Términos, privacidad y DPA publicados como borrador en el staging, con cartel de borrador y sin indexar; esperan el visto bueno del abogado (`16-LEGALES-PARA-ABOGADO.md`) |
+| Privacidad y términos publicados | Términos, privacidad y DPA publicados como borrador en el staging, con cartel de borrador y sin indexar; esperan el visto bueno del abogado (`16-LEGALES.md`) |
 | Mail y URL de soporte | Las casillas no existen todavía |
 | Monitoreo de errores | Logs de Workers activos; sin alertas |
 | Centro de ayuda | Hecho (17 artículos y 3 guías) |
@@ -124,7 +124,7 @@ Pendiente para que estas instrucciones sean verdad: credenciales de una cuenta d
 Está publicado como **staging, sin indexar**, en https://tiersaver-site.tiersaver.workers.dev. Para la publicación real en tiersaver.com:
 
 1. Dominio: se puede mover a la cuenta TierSaver desde el 2026-12-05.
-2. Términos, privacidad y DPA: ya tienen texto completo (limitación de responsabilidad, ley de Florida, subencargados, retención), pero siguen como borrador hasta el visto bueno del abogado. Las preguntas abiertas están en `16-LEGALES-PARA-ABOGADO.md`, sección 3.
+2. Términos, privacidad y DPA: ya tienen texto completo (limitación de responsabilidad, ley de Florida, subencargados, retención), pero siguen como borrador hasta el visto bueno del abogado. Las preguntas abiertas están en `16-LEGALES.md`, sección 3.
 3. Fecha de vigencia de las tres páginas y `TERMS_VERSION` de la app: hoy dicen 2026-11-27 (el cambio a plan mensual); se vuelven a fijar el día en que se saque el cartel de borrador.
 4. Aviso dentro de la app ("notice banner") para cambios de términos, de política y de subencargados: los textos lo prometen. **Hecho el 2026-11-26** (`shopify/app/notices.ts`; cómo publicar uno: `17-POLITICAS-INTERNAS.md`, sección 9).
 5. URL de la ficha del App Store para el botón "Run my free list audit". Hasta que exista la ficha, el botón abre un mail a hello@tiersaver.com, y el sitio lo dice.

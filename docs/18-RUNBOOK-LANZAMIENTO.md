@@ -100,7 +100,7 @@ Orden por dependencia. "Plazo" es tiempo de espera, no de trabajo. F = Facundo, 
 
 | # | Paso | Quién | Depende de | Plazo | Estado hoy | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Enviar el paquete legal al abogado (`16-LEGALES-PARA-ABOGADO.md`: 6 puntos para firma) y completar estado y domicilio registrado de la LLC | F | — | El más largo y el menos controlable: pedirle fecha, objetivo antes del 2026-12-04 | Memo listo, sin enviar. Domicilio "153 E Flagler St" en los textos, sin confirmar | `16-LEGALES-PARA-ABOGADO.md` §4 |
+| 1 | Textos legales: adoptados por el dueño sin abogado el 2026-11-26 (`16-LEGALES.md`). Antes de desplegar el sitio sin cartel: cumplir los compromisos C2 (DPA de Cloudflare) y C3 (buzones) de `17-POLITICAS-INTERNAS.md` | F | — | Antes del primer merchant real | Entidad cerrada: Digital Solvers LLC (Delaware), 153 E Flagler St, Suite 1640-6389, Miami, FL 33131. `LEGAL_DRAFT = false` en el código, sin desplegar | `16-LEGALES.md` §9 |
 | 2 | Elegir **Public distribution** en el Dev Dashboard (irreversible; puede pedir el pago único de registro del App Store) | F | — | Minutos | Sin elegir. Facundo quería esperar a la landing: la documentación no lo exige, y esto destraba 3, 4, 5 y 6 | [S1, S2] |
 | 3 | Pedir **Read all orders** (texto en la sección 6.2) | F | 2 | Sin verificar; pedirlo hoy | Sin pedir | [S3] |
 | 4 | Guardar el pedido de **Protected customer data**, nivel 2, solo Email (textos en 6.1) | F | 2; respuestas verdaderas dependen de 7 y 8 | Se guarda en minutos; se revisa con la app (sin verificar) | Sin pedir | [S4, S5] |
@@ -110,7 +110,7 @@ Orden por dependencia. "Plazo" es tiempo de espera, no de trabajo. F = Facundo, 
 | 8 | Adoptar las políticas internas (incidentes, accesos, 2FA) | F | — | 1 día | Redactadas, no adoptadas | `17-POLITICAS-INTERNAS.md` |
 | 9 | Contratar Workers Paid | F (gasto) | — | Minutos | Sin contratar | [C6] |
 | 10 | Elegir proveedor de casilla y abrir la cuenta (sección 1.5) | F (gasto) | — | Minutos; los registros DNS van el Día D | Sin elegir | [C4] |
-| 11 | Aviso dentro de la app para cambios de términos ("notice banner"), o que el abogado saque esa promesa de los textos | C (código) o abogado | 1 | 1 día | Pendiente; los textos lo prometen | `16-LEGALES-PARA-ABOGADO.md` §5 |
+| 11 | Aviso dentro de la app para cambios de términos ("notice banner"), o que el abogado saque esa promesa de los textos | C (código) o abogado | 1 | 1 día | Pendiente; los textos lo prometen | `16-LEGALES.md` §5 |
 | 12 | Al aprobarse 3: declarar `read_all_orders`, reactivar `orders/create`, desplegar, y correr el flujo completo en la tienda de desarrollo | C | 3 aprobado, 4 guardado | 1 día | — | [S3] |
 | 13 | **Día D (desde el 2026-12-05)**: mover el dominio, dominios de los Workers, casillas, URLs (sección 4) | F y C | 10 días desde el registro | 1 día | Pasos 1 y 2 del traslado hechos | [C1, C2] |
 | 14 | Publicar legales definitivos (`LEGAL_DRAFT = false`, fechas de vigencia) | C, con OK de F | 1, 11, 13 | Horas | Borrador | `site/build/build.mjs:77` |
@@ -341,7 +341,7 @@ El listado en el marketplace de Klaviyo **no** es condición.
 | El revisor pide pasar a Shopify App Pricing | Es el método por defecto y el modelo de TierSaver entra en él | Plan B ya documentado en `billing.ts`; estimar un día de trabajo y otra ronda de revisión |
 | El formulario de datos protegidos pide algo que no es verdad | Nivel 2: ambientes separados, política de incidentes, registro de accesos | Pasos 7 y 8 antes de enviar; no afirmar nada que no esté hecho |
 | Cero candidatos en una tienda real, aun con el scope | Reglas conservadoras por diseño; el historial de pedidos tarda en leerse en tiendas grandes | La pantalla ya lo explica. En el outreach, apuntar a listas grandes y antiguas (5.000 a 150.000 perfiles) |
-| Cláusula de Klaviyo sobre productos "competitive or substantially similar" y sobre evadir cargos | Klaviyo tiene supresión y recomendaciones nativas; puede revocar la app o no listarla | Decisión ya tomada de seguir (`16-LEGALES-PARA-ABOGADO.md`). No firmar el Technology Partner Agreement sin el abogado. Ningún texto nuevo sobre la factura. El listado no es necesario para operar |
+| Cláusula de Klaviyo sobre productos "competitive or substantially similar" y sobre evadir cargos | Klaviyo tiene supresión y recomendaciones nativas; puede revocar la app o no listarla | Decisión ya tomada de seguir (`16-LEGALES.md`). No firmar el Technology Partner Agreement sin el abogado. Ningún texto nuevo sobre la factura. El listado no es necesario para operar |
 | El aviso "app no revisada por Klaviyo" asusta al merchant | Aparece en el consentimiento hasta que Klaviyo revise [K2] | Una línea antes del botón "Connect Klaviyo" y un artículo de ayuda; decirlo en la llamada |
 | Los mails de outreach no llegan o caen en spam | Dominio nuevo, casilla nueva | Casilla real con SPF, DKIM y DMARC; a mano y pocos; mezclar con formularios y LinkedIn |
 | Outreach antes de la aprobación sin nada para instalar | No existe link de instalación previo | Sección 8: esperar, o cambiar el pedido |

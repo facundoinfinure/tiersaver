@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://tiersaver.com/</loc></url>
+  <url><loc>https://tiersaver.com/dpa</loc></url>
   <url><loc>https://tiersaver.com/guides/how-klaviyo-counts-active-profiles</loc></url>
   <url><loc>https://tiersaver.com/guides/klaviyo-list-hygiene</loc></url>
   <url><loc>https://tiersaver.com/guides/suppress-vs-delete-vs-unsubscribe</loc></url>
@@ -22,4 +23,6 @@
   <url><loc>https://tiersaver.com/help/undo</loc></url>
   <url><loc>https://tiersaver.com/help/uninstalling</loc></url>
   <url><loc>https://tiersaver.com/help/what-suppress-means</loc></url>
+  <url><loc>https://tiersaver.com/privacy</loc></url>
+  <url><loc>https://tiersaver.com/terms</loc></url>
 </urlset>

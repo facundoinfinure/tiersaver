@@ -202,20 +202,20 @@ Un mensaje comercial enviado por formulario también puede contar como publicida
 ```
 --
 TierSaver, a product of Digital Solvers LLC
-[registered address — pending]
+153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA
 TierSaver is not affiliated with or endorsed by Klaviyo.
 If you'd rather not hear from me again, reply "no thanks" and I won't write again.
 ```
 
 - Identidad del remitente: "TierSaver, a product of Digital Solvers LLC". Nunca Infinure, dnuvi ni Alupont, ni en el texto ni en la dirección de envío ni en la firma.
-- Dirección postal: va la real cuando exista. Sin ella el mail no cumple CAN-SPAM.
+- Dirección postal: la del buzón comercial de la LLC (confirmada por Facundo el 2026-11-26). Un buzón privado registrado ante una agencia receptora de correo (CMRA) cuenta como "valid physical postal address" (16 CFR 316.2(p), https://www.law.cornell.edu/cfr/text/16/316.2, leído el 2026-11-26), siempre que esté registrado a nombre de Digital Solvers LLC.
 - Baja en una línea, por respuesta. Toda baja se carga el mismo día.
 - En formulario o LinkedIn se dejan la primera y la última línea.
 
 ## Bloqueos antes de enviar el primer mail
 
 1. **La casilla `hello@tiersaver.com` no existe** hasta que el dominio pase a Cloudflare (desde el 2026-12-05). No se envía desde ninguna dirección de otra marca. Hasta entonces solo se pueden usar formularios de contacto y LinkedIn, y solo en las filas donde ese es el canal.
-2. **La dirección postal está pendiente** (`[registered address — pending]`). Sin dirección no sale ningún mail a Estados Unidos.
+2. ~~La dirección postal está pendiente~~. Resuelto el 2026-11-26: `153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA` (buzón comercial de la LLC). Facundo confirma que el buzón está registrado a nombre de Digital Solvers LLC ante la CMRA (formulario USPS 1583); si no, no cumple 16 CFR 316.2(p).
 3. Cada fila tiene que pasar por la revisión de Facundo (evidencia y contacto abiertos de forma directa).
 4. Antes del primer envío por mail conviene configurar SPF, DKIM y DMARC del dominio (recomendación general, no figura todavía en `docs/10-TAREAS-HUMANAS.md`).
 

@@ -1,8 +1,8 @@
 # Anexo de privacidad al memo para el abogado
 
-Fecha: 2026-11-26. Anexo de `docs/16-LEGALES-PARA-ABOGADO.md`. Lo redactó un revisor de políticas de privacidad, no un abogado. No es asesoramiento legal.
+Fecha: 2026-11-26. Anexo de `docs/16-LEGALES.md`. Lo redactó un revisor de políticas de privacidad, no un abogado. No es asesoramiento legal.
 
-**Cómo usar este anexo (última pasada del 2026-11-26).** Es el detalle técnico de respaldo: qué guarda cada tabla, logs y cookies, comprobado en el código. Ya no contiene preguntas: todas pasaron a la tabla "Posiciones ya tomadas" de `docs/16-LEGALES-PARA-ABOGADO.md` (sección 3), y la sección 3 de este anexo queda solo como tabla de equivalencias con la numeración vieja (`docs/16-historial-legales.md`). Cambio del 2026-11-26 (plan mensual): el registro `unpaid_cleanups` del modelo de cargo por limpieza ya no existe como tratamiento: nada lo escribe ni lo lee, no tiene filas en producción y se quitó de la política, del DPA y de los términos. En su lugar la app guarda el estado del plan de la tienda (`shop_plans`: id de la suscripción de Shopify, precio mensual, tramo, estado, si es de prueba y fechas), que se borra al desinstalar junto con los tokens (`shopify/app/data/privacy.ts`). Ningún dato sobrevive ya a la desinstalación ni al `shop/redact`. Las políticas internas que este anexo daba por faltantes están redactadas en `docs/17-POLITICAS-INTERNAS.md`.
+**Cómo usar este anexo (última pasada del 2026-11-26).** Es el detalle técnico de respaldo: qué guarda cada tabla, logs y cookies, comprobado en el código. Ya no contiene preguntas: todas pasaron a la tabla "Posiciones ya tomadas" de `docs/16-LEGALES.md` (sección 3), y la sección 3 de este anexo queda solo como tabla de equivalencias con la numeración vieja (`docs/16-historial-legales.md`). Cambio del 2026-11-26 (plan mensual): el registro `unpaid_cleanups` del modelo de cargo por limpieza ya no existe como tratamiento: nada lo escribe ni lo lee, no tiene filas en producción y se quitó de la política, del DPA y de los términos. En su lugar la app guarda el estado del plan de la tienda (`shop_plans`: id de la suscripción de Shopify, precio mensual, tramo, estado, si es de prueba y fechas), que se borra al desinstalar junto con los tokens (`shopify/app/data/privacy.ts`). Ningún dato sobrevive ya a la desinstalación ni al `shop/redact`. Las políticas internas que este anexo daba por faltantes están redactadas en `docs/17-POLITICAS-INTERNAS.md`.
 
 Qué es: el resultado de contrastar `site/src/pages/privacy.html` con el código de la app, tabla por tabla y log por log. Las respuestas de la sección 1 salen de leer el código; lo que no se pudo comprobar está en la sección 2.
 
@@ -102,7 +102,7 @@ Requisitos de Shopify (datos protegidos, nivel 2) y de Klaviyo que hoy no se cum
 
 ## 3. Equivalencias con la numeración vieja
 
-Ya no hay preguntas abiertas en este anexo. Cada tema tiene una posición tomada en `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3, columna "Ex" (número de este anexo → número de la lista vieja, que es el de esa columna):
+Ya no hay preguntas abiertas en este anexo. Cada tema tiene una posición tomada en `docs/16-LEGALES.md`, sección 3, columna "Ex" (número de este anexo → número de la lista vieja, que es el de esa columna):
 
 | Anexo | Tema | Lista única |
 | --- | --- | --- |

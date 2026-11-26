@@ -229,7 +229,7 @@ function manualSteps(ctx) {
 function reminders(ctx) {
   const at = (path, pattern) => locate(ctx.root, path, pattern);
   return [
-    `${at("site/build/build.mjs", /^const LEGAL_DRAFT\b/m)} LEGAL_DRAFT = false, con la firma del abogado; el mismo día ${at("shopify/app/legal.ts", /^export const TERMS_VERSION\b/m)} TERMS_VERSION y ${at("site/src/site-config.ts", /^export const TERMS_EFFECTIVE_DATE\b/m)} TERMS_EFFECTIVE_DATE (un test exige que coincidan). Si cambian términos o precios para tiendas ya instaladas: publicar antes el aviso en shopify/app/notices.ts.`,
+    `${at("site/build/build.mjs", /^const LEGAL_DRAFT\b/m)} LEGAL_DRAFT ya está en false desde el 2026-11-26 (textos adoptados por el dueño sin revisión externa, docs/16-LEGALES.md); si cambia el texto, ${at("shopify/app/legal.ts", /^export const TERMS_VERSION\b/m)} TERMS_VERSION y ${at("site/src/site-config.ts", /^export const TERMS_EFFECTIVE_DATE\b/m)} TERMS_EFFECTIVE_DATE (un test exige que coincidan). Si cambian términos o precios para tiendas ya instaladas: publicar antes el aviso en shopify/app/notices.ts.`,
     `${at("site/build/build.mjs", /^const AUDIT_CTA_URL\b/m)} AUDIT_CTA_URL y ${at("site/build/build.mjs", /^const AUDIT_CTA_NOTE\b/m)} AUDIT_CTA_NOTE, cuando la app esté Published: "https://apps.shopify.com/<handle>" y "".`,
     `${at("shopify/shopify.app.toml", /^scopes\s*=/m)} y ${at("shopify/wrangler.jsonc", /"SCOPES"/)} (SCOPES), ${at("site/src/site-config.ts", /^export const SHOPIFY_SCOPES\b/m)} (SHOPIFY_SCOPES): cuando Shopify apruebe read_all_orders.`,
     `${at("shopify/shopify.app.toml", /^\s*# \[\[webhooks\.subscriptions\]\]/m)} webhook orders/create comentado: con el pedido de datos protegidos guardado.`,

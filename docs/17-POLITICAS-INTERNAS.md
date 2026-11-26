@@ -1,6 +1,6 @@
 # Políticas internas de TierSaver
 
-Fecha: 2026-11-26. Versión 1, **redactada y todavía no adoptada**. Las piden los requisitos de datos protegidos de Shopify, los API Terms de Klaviyo y el DPA (`site/src/pages/dpa.html`). No es asesoramiento legal.
+Fecha: 2026-11-26. Versión 2: los textos públicos quedaron adoptados por el dueño sin revisión externa (`docs/16-LEGALES.md`); los compromisos de abajo tienen fecha límite y, hasta cumplirlos, el sitio no se despliega sin cartel. Las piden los requisitos de datos protegidos de Shopify, los API Terms de Klaviyo y el DPA (`site/src/pages/dpa.html`). No es asesoramiento legal.
 
 Alcance: una sola persona opera TierSaver (Facundo, "el operador"), desde Argentina, por cuenta de Digital Solvers LLC. La app corre en Cloudflare Workers, con base D1, Workflows y un cron horario. No hay empleados ni contratistas con acceso.
 
@@ -8,15 +8,19 @@ Alcance: una sola persona opera TierSaver (Facundo, "el operador"), desde Argent
 
 Resumen de compromisos pendientes de adoptar:
 
-| # | Compromiso | Sección |
-| --- | --- | --- |
-| C1 | Activar 2FA en Cloudflare, Shopify Partners, Klaviyo, GitHub, el registrador del dominio y el proveedor de mail | 2 |
-| C2 | Aceptar y archivar el DPA de Cloudflare | 4 |
-| C3 | Crear y atender hello@ y support@ (revisar al menos una vez por día hábil) | 1, 6 |
-| C4 | Guardar una copia de `HASH_PEPPER` y de la clave de cifrado de tokens en un gestor de contraseñas | 2 |
-| C5 | Separar ambiente de prueba y de producción (otra base D1 y otro Worker) | 2 |
-| C6 | Confirmar los canales de aviso de incidentes de Shopify y de Klaviyo antes del lanzamiento | 1 |
-| C7 | Revisar este documento una vez por año y después de cada incidente | todas |
+| # | Compromiso | Sección | Fecha límite |
+| --- | --- | --- | --- |
+| C1 | Activar 2FA en Cloudflare, Shopify Partners, Klaviyo, GitHub, el registrador del dominio y el proveedor de mail | 2 | Antes del primer merchant real |
+| C2 | Aceptar y archivar el DPA de Cloudflare (el Anexo II del DPA dice que el subencargado está obligado por contrato escrito) | 4 | **Antes de desplegar el sitio sin cartel** |
+| C3 | Crear y atender hello@ y support@ (revisar al menos una vez por día hábil). Los términos los usan para reclamos, aviso previo de disputas y exclusión del arbitraje | 1, 6 | **Antes de desplegar el sitio sin cartel** |
+| C4 | Guardar una copia de `HASH_PEPPER` y de la clave de cifrado de tokens en un gestor de contraseñas | 2 | Antes del primer merchant real |
+| C5 | Separar ambiente de prueba y de producción (otra base D1 y otro Worker) | 2 | Antes del primer merchant real |
+| C6 | Confirmar los canales de aviso de incidentes: Shopify, por soporte de partners (https://help.shopify.com/questions/partners, API Terms 6.2.10), dentro de 24 horas; Klaviyo, contacto de los API Terms (legal@klaviyo.com figura en sus API Terms) | 1 | Antes del primer merchant real |
+| C7 | Revisar este documento una vez por año y después de cada incidente | todas | 2027-11-26 |
+| C8 | Confirmar que el buzón de 153 E Flagler St, Suite 1640-6389 está registrado a nombre de Digital Solvers LLC ante la agencia receptora (pie CAN-SPAM, 16 CFR 316.2(p)) | 8 | Antes del primer mail en frío |
+| C9 | Decidir el representante del art. 27 en la UE y en el Reino Unido (`16-LEGALES.md` §2.4) y, si se nombra, agregarlo a privacidad 1 y al Anexo I.A del DPA | 5 | Antes del primer merchant de la UE o el Reino Unido |
+| C10 | Registrar las exclusiones de arbitraje recibidas en hello@ (tienda, fecha, mail) y guardarlas mientras dure la relación más 5 años | 11 | Desde el primer merchant real |
+| C11 | Revisar la inscripción ante la AAIP si ocurre un disparador de la sección 10 | 10 | Cuando ocurra |
 
 ## 1. Respuesta a incidentes
 
@@ -33,8 +37,8 @@ Resumen de compromisos pendientes de adoptar:
    - error de la app: frenar las limpiezas (quitar el trigger del cron y desactivar el modo automático por despliegue) y dejar el deshacer disponible.
 3. **Confirmar** si hubo datos personales afectados, de qué tiendas y cuáles. La base no tiene mails en claro, nombres ni datos de pago: lo expuesto serían ids de perfil de Klaviyo, hashes con clave, fechas, estados y tokens cifrados.
 4. **Avisar a los merchants afectados sin demora indebida y a más tardar 48 horas después de confirmar** (términos 8, privacidad 8, DPA 4). Contenido: qué pasó, cuándo, qué datos, qué se hizo, qué puede hacer el merchant y contacto. Canal: mail al contacto que el merchant haya usado con nosotros y, si afecta a todas las tiendas, aviso dentro de la app de tipo `service` (sección 9). El aviso de la app es el mismo para todas las tiendas: no sirve para un incidente que toca solo a algunas, porque se lo mostraría también a las demás. El mail es un borrador que el operador revisa y envía en persona.
-5. **Avisar a Klaviyo y a Shopify** al mismo tiempo que a los merchants, si el incidente toca datos obtenidos por sus APIs. Klaviyo exige además coordinar con ellos cualquier **comunicado público** antes de publicarlo: no se publica nada sin eso. **[COMPROMISO]** confirmar antes del lanzamiento por qué canal recibe cada uno estos avisos (soporte de partners de Shopify; contacto que indiquen los API Terms o el soporte de desarrolladores de Klaviyo) y anotarlo acá.
-6. **Evaluar otros avisos**: si TierSaver es responsable de los datos afectados (cuenta del merchant, prospectos), el aviso a una autoridad lo decide el operador con el abogado. Para los datos de clientes, el aviso a la autoridad es del merchant.
+5. **Avisar a Shopify dentro de las 24 horas de conocer** un incidente real o sospechado que toque datos de merchants obtenidos de Shopify (API Terms 6.2.10 y Partner Program Agreement: "immediately upon, but no later than twenty-four (24) hours of, becoming aware"), por el soporte de partners, aunque todavía no esté confirmado; después, informar el avance. **Avisar a Klaviyo** de inmediato si toca datos de Klaviyo, trabajar con ellos para remediar y avisar a los usuarios en lo que la ley exija (Klaviyo API Terms, "Privacy and Security"). Klaviyo exige además coordinar con ellos cualquier **comunicado público** antes de publicarlo: no se publica nada sin eso. **[COMPROMISO]** confirmar antes del lanzamiento por qué canal recibe cada uno estos avisos (soporte de partners de Shopify; contacto que indiquen los API Terms o el soporte de desarrolladores de Klaviyo) y anotarlo acá.
+6. **Evaluar otros avisos**: si TierSaver es responsable de los datos afectados (cuenta del merchant, prospectos), el aviso a una autoridad lo decide el operador; en ese caso conviene consultar a un abogado (`16-LEGALES.md` §7). Para los datos de clientes, el aviso a la autoridad es del merchant.
 7. **Cerrar**: causa, corrección, fecha, y qué cambia en este documento. Guardar el registro 3 años.
 
 Las copias de D1 ("Time Travel") permiten restaurar la base a un punto anterior. Si se restaura, se vuelven a borrar los datos que ya se habían borrado (privacidad 9).
@@ -75,6 +79,7 @@ Ya no hay ningún registro que sobreviva a la desinstalación. La tabla `unpaid_
 | Datos de prospectos (nombre, cargo, mail laboral, empresa) | Hasta que la persona se opone; como máximo 24 meses desde el último contacto | **[COMPROMISO]** revisión manual cada 6 meses |
 | Correspondencia de hello@ y support@ | 24 meses desde el último mensaje, salvo reclamo abierto | **[COMPROMISO]** revisión manual cada 6 meses |
 | Registros de incidentes | 3 años | Manual |
+| Exclusiones del arbitraje (tienda, fecha, mail) | Mientras dure la relación y 5 años más (plazo de prescripción de contratos escritos en Florida, Fla. Stat. 95.11, de memoria) | Manual |
 
 Borrado anticipado a pedido de un merchant (privacidad 9): el operador desinstala o borra la tienda de la base con el procedimiento documentado (`DELETE FROM shops WHERE shop = ?`, que borra en cascada, más las filas de `session`), y responde por mail.
 
@@ -92,9 +97,9 @@ Alta o cambio de un subencargado: actualizar privacidad 6 y el Anexo III del DPA
 
 | Campo | Contenido |
 | --- | --- |
-| Encargado | Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131, Estados Unidos (domicilio a confirmar por el dueño). Contacto: hello@tiersaver.com |
+| Encargado | Digital Solvers LLC, LLC de Delaware, 153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA. Contacto: hello@tiersaver.com |
 | Responsables por cuenta de quienes se trata | Cada merchant con la app instalada, identificado por su dominio `myshopify.com`. La lista vigente es la tabla `shops` |
-| Representante en la UE / Reino Unido | Sin nombrar (ver `docs/16-LEGALES-PARA-ABOGADO.md`, punto 4) |
+| Representante en la UE / Reino Unido | Sin nombrar; decisión pendiente C9 (`docs/16-LEGALES.md` §2.4) |
 | DPO | No hay; no es obligatorio |
 | Categorías de tratamiento | (a) Auditoría de la lista de Klaviyo; (b) reconocimiento de compradores con los pedidos de Shopify; (c) simulación; (d) supresión de los perfiles aprobados y deshacer; (e) comprobación del plan de la tienda antes de cada limpieza; (f) atención de pedidos de acceso y borrado recibidos de Shopify |
 | Titulares | Clientes, suscriptores y contactos del merchant con perfil en Klaviyo o pedido en Shopify |
@@ -135,7 +140,7 @@ No es una evaluación de impacto formal (art. 35 GDPR). Es la nota que respalda 
 
 ## 8. Regla de prospección
 
-Hasta que un abogado revise otra cosa: mails en frío solo a empresas de EE.UU.; cada mensaje lleva el nombre legal, el domicilio postal y cómo dejar de recibirlos; lista propia de no contactar; nada a Canadá, la UE ni el Reino Unido. Todo mail a terceros sale como borrador que el operador revisa y envía. Los datos de prospectos nunca salen de las cuentas de Shopify o de Klaviyo de un merchant.
+Regla adoptada (`16-LEGALES.md`): mails en frío solo a empresas de EE.UU.; cada mensaje lleva el nombre legal, el domicilio postal y cómo dejar de recibirlos; lista propia de no contactar; nada a Canadá, la UE ni el Reino Unido. Todo mail a terceros sale como borrador que el operador revisa y envía. Los datos de prospectos nunca salen de las cuentas de Shopify o de Klaviyo de un merchant.
 
 ## 9. Avisos dentro de la app (cómo publicar uno)
 
@@ -143,7 +148,7 @@ Los términos (8, 14, 16 y 17), la privacidad (6 y 13) y el DPA (5) prometen "a 
 
 **Publicar un aviso es un cambio de código y un despliegue de la app.** No hay panel ni base de datos.
 
-1. Redactar el texto en inglés, texto plano: `title` (una línea, con la fecha en que rige el cambio) y `body` (qué cambia y qué puede hacer el merchant). Sin datos personales y sin cifras que no estén ya en los términos o precios publicados. Lo aprueba Facundo; si es legal, también el abogado.
+1. Redactar el texto en inglés, texto plano: `title` (una línea, con la fecha en que rige el cambio) y `body` (qué cambia y qué puede hacer el merchant). Sin datos personales y sin cifras que no estén ya en los términos o precios publicados. Lo aprueba Facundo.
 2. Agregar la entrada **arriba** de `NOTICES` (la más nueva primero), con un `id` nuevo que no se reutiliza ni se renombra (por ejemplo `2027-02-terms`), `publishedAt` con la fecha del despliegue (día calendario UTC), `kind` (`terms`, `privacy`, `subprocessor`, `pricing` o `service`) y, si corresponde, `linkLabel` y `linkUrl` a la página publicada. Hay un ejemplo comentado en el archivo.
 3. Publicar primero la página nueva en el sitio (términos, privacidad o DPA, con su fecha de vigencia futura) y después desplegar la app. Tests: `npm test` en `shopify/`.
 4. Anotar en `STATUS.md` la fecha de publicación y la fecha en que rige el cambio.
@@ -162,4 +167,23 @@ Reglas:
 - Una entrada con `publishedAt` futuro no se muestra hasta ese día. Cambiar el `id` de una entrada la vuelve a mostrar a todas las tiendas.
 - El aviso nunca bloquea la app: informa. No reemplaza pedir de nuevo la aceptación de los términos, que sigue ocurriendo al aprobar una limpieza (`TERMS_VERSION`).
 - **Registro:** cada "Got it" queda en `events_log` (acción `notice.dismissed`, tienda, usuario de Shopify, fecha, id del aviso), una fila por tienda y aviso. Se borra con el resto de los datos de la tienda al desinstalar. La app **no** registra cuándo vio el aviso cada tienda; la prueba de que se mostró es la fecha del despliegue y `publishedAt` en el historial de git.
-- **Límites conocidos:** el aviso es igual para todas las tiendas (no se puede dirigir a una sola) y solo lo ve quien abre la app. Una tienda que no abre la app en esos 90 días no lo ve en Home; le queda la lista de Settings. Los términos (17, Notices) dicen que el aviso se da "when it is first shown there": punto para confirmar con el abogado.
+- **Límites conocidos:** el aviso es igual para todas las tiendas (no se puede dirigir a una sola) y solo lo ve quien abre la app. Una tienda que no abre la app en esos 90 días no lo ve en Home; le queda la lista de Settings. Los términos (17, Notices) dicen que el aviso se da "when it is first shown there"; se acepta así (`16-LEGALES.md`).
+
+## 10. Inscripción ante la AAIP (solo si ocurre un disparador)
+
+Decisión del 2026-11-26 (`16-LEGALES.md` §2.5): no se inscribe ahora. Se revisa si la LLC obtiene CUIT o se registra en Argentina por otro motivo, si se suma un merchant argentino, si TierSaver contrata personal en Argentina o si la AAIP consulta. Las bases de los merchants **nunca** se inscriben: son de ellos. Lo que se inscribiría es la base propia de la LLC (cuentas de merchants, prospectos, correspondencia).
+
+Pasos (fuente: https://www.argentina.gob.ar/servicio/inscribir-un-responsable-de-bases-de-datos-personales-privadas, leída el 2026-11-26; trámite gratuito, sin vencimiento):
+
+1. Conseguir la CUIT de Digital Solvers LLC como sujeto del exterior y la clave fiscal nivel 2 de su representante, o apoderar a una persona en Trámites a Distancia (TAD). Esto lo hace un contador; tiene costo y consecuencias fiscales que hay que evaluar antes.
+2. En TAD, iniciar "Inscripción del Responsable al Registro Nacional de Bases de Datos", tipo "privado", con los datos del responsable y copia digital del contrato social o certificado de constitución de la LLC.
+3. Guardar el código de registro del responsable que llega por mail.
+4. Con ese código, inscribir la base: nombre que describa contenido y finalidad ("Clientes y contactos comerciales de TierSaver"), datos que contiene (sin datos sensibles ni antecedentes), forma de recolección, destino y cesiones (Cloudflare como proveedor de alojamiento), medidas de seguridad (sección 2).
+5. Anotar acá la fecha y los números de registro, y actualizar el registro si cambian los datos.
+
+Consultas: registrobasesdedatos@aaip.gob.ar (según los instructivos de la AAIP encontrados por búsqueda, sin verificar).
+
+## 11. Exclusiones del arbitraje
+
+Términos 15 permite que un merchant se excluya del arbitraje dentro de los 30 días de aceptar los términos, por mail a hello@. Cada exclusión se registra (tienda `myshopify.com`, fecha de recepción, mail de origen) en un archivo fuera del repo, se responde con un acuse y se guarda mientras dure la relación y 5 años más. Una tienda excluida litiga en los tribunales de Miami-Dade, con las renuncias a jurado y a acciones colectivas.
+

@@ -543,18 +543,16 @@ describe("copy rules (brand/messaging.md)", () => {
     }
   });
 
-  it("legal pages carry the draft banner and stay out of search engines while they are drafts (one switch)", () => {
-    expect(LEGAL_DRAFT).toBe(true);
+  it("legal pages are published as final: no draft banner, indexable, in the sitemap with a canonical URL (one switch)", () => {
+    expect(LEGAL_DRAFT).toBe(false);
     const sitemap = generated.get("sitemap.xml")!;
     for (const [path, html] of pages) {
-      const draft = isLegal(path);
-      expect(html.includes("<strong>Draft under legal review.</strong>"), `${path}: banner`).toBe(draft);
-      expect(/<meta name="robots" content="noindex">/.test(html), `${path}: noindex`).toBe(draft);
-      if (!draft) continue;
-      expect(html, path).toContain("The final version will replace this page before TierSaver is publicly available.");
-      expect(html, path).not.toMatch(/BRACKETS|is not in effect/);
-      expect(html, path).not.toContain('rel="canonical"');
-      expect(sitemap, path).not.toContain(`/${path.replace(/\.html$/, "")}<`);
+      expect(html.includes("Draft under legal review"), `${path}: banner`).toBe(false);
+      expect(/<meta name="robots" content="noindex">/.test(html), `${path}: noindex`).toBe(false);
+      if (!isLegal(path)) continue;
+      expect(html, path).not.toMatch(/BRACKETS|is not in effect|\(draft\)|Legal · Draft/);
+      expect(html, path).toContain('rel="canonical"');
+      expect(sitemap, path).toContain(`/${path.replace(/\.html$/, "")}<`);
     }
   });
 

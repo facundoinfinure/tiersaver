@@ -159,7 +159,7 @@ Los dominios todavía no existen: son los definitivos, y cada uno corresponde a 
 | Support email | `support@tiersaver.com` | casilla todavía sin crear |
 | App submission email | `hello@tiersaver.com` (o la que Facundo lea a diario) | casilla todavía sin crear |
 
-Términos, privacidad y DPA siguen como borrador hasta el visto bueno del abogado (`docs/16-LEGALES-PARA-ABOGADO.md`).
+Términos, privacidad y DPA adoptados por el dueño sin revisión externa el 2026-11-26 (`docs/16-LEGALES.md`); sin cartel de borrador desde el próximo despliegue del sitio.
 
 ## 6. Requisitos de instalación
 
