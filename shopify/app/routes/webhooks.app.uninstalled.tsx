@@ -1,7 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { env } from "cloudflare:workers";
 import { db } from "../db.server";
-import { recordUnpaidCleanups } from "../billing/unpaid";
 import { handleUninstall, installedAfter } from "../data/privacy";
 import { disconnect } from "../klaviyo/connection.server";
 import { verifyShopifyWebhook } from "../shopify-webhook.server";
@@ -19,12 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Webhooks can arrive more than once, and after the session is already gone:
   // every statement here is safe to repeat.
-  try {
-    // A cleanup still waiting to be charged can never be charged now: leave the minimal record (billing/unpaid.ts).
-    if (await recordUnpaidCleanups(db, shop)) console.log("uninstall left a cleanup unpaid: recorded for its Klaviyo account");
-  } catch (error) {
-    console.error(`unpaid cleanup not recorded: ${error instanceof Error ? error.name : "error"}`);
-  }
+  // Shopify cancels the app's subscription when the app is uninstalled; nothing is charged or recorded here.
   try {
     // Revoke TierSaver's access at Klaviyo before the stored tokens are deleted.
     await disconnect({ db, env }, shop);

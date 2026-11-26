@@ -214,6 +214,7 @@ export const simulations = sqliteTable(
     tierBeforeMax: integer("tier_before_max"),
     tierAfterMax: integer("tier_after_max"),
     estimatedMonthlySavingsCents: integer("estimated_monthly_savings_cents").notNull().default(0),
+    /** Monthly price of the TierSaver plan a list of this size needs (0: nothing to suppress, or above the plans on sale). Until 2026-11-26: the estimated per-cleanup charge. */
     estimatedFeeCents: integer("estimated_fee_cents").notNull().default(0),
     priceTableId: text("price_table_id").notNull(),
     approvedAt: timestamp("approved_at"),
@@ -466,10 +467,10 @@ export const ordersSync = sqliteTable("orders_sync", {
 export const USAGE_CHARGE_STATUSES =["pending", "charged", "not_charged", "failed"] as const;
 
 /**
- * TierSaver's fee for one cleanup: a flat price by list size, created only
- * when the run suppressed profiles. It never depends on the merchant's
- * Klaviyo invoice. One per run; the one-per-cycle rule (28 days) is enforced
- * by `quoteCharge` in @tiersaver/core.
+ * UNUSED SINCE 2026-11-26, kept as history (never dropped: migrations are additive only).
+ * Until that day TierSaver charged one usage record per cleanup and this table held one row per run. The price
+ * is now a flat monthly plan (`shop_plans`, app/billing/billing.ts): nothing is charged per cleanup, and no
+ * code reads or writes this table any more.
  */
 export const usageCharges = sqliteTable(
   "usage_charges",
@@ -488,10 +489,10 @@ export const usageCharges = sqliteTable(
     profilesSuppressed: integer("profiles_suppressed").notNull(),
     feeCents: integer("fee_cents").notNull(),
     capApplied: integer("cap_applied", { mode: "boolean" }).notNull().default(false),
-    /** NoChargeReason from @tiersaver/core when nothing was charged. */
+    /** Why nothing was charged (per-cleanup model). */
     noChargeReason: text("no_charge_reason"),
     status: text("status", { enum: USAGE_CHARGE_STATUSES }).notNull().default("pending"),
-    /** `chargeIdempotencyKey(shop, runId)`; also sent to Shopify. */
+    /** Idempotency key that was also sent to Shopify. */
     idempotencyKey: text("idempotency_key").notNull(),
     shopifyUsageRecordId: text("shopify_usage_record_id"),
     createdAt: timestamp("created_at").notNull().default(now),
@@ -553,13 +554,41 @@ export const privacyRequests = sqliteTable(
 );
 
 /**
- * Cleanups that could not be charged because the store uninstalled inside the undo window. Keyed by a keyed hash
- * of the Klaviyo account id and deliberately NOT tied to `shops`: it survives uninstall and shop/redact. Holds no
- * customer data. See billing/unpaid.ts.
+ * UNUSED SINCE 2026-11-26, kept as history (never dropped: migrations are additive only).
+ * It recorded cleanups left unpaid by an uninstall inside the 72-hour hold of the per-cleanup charge. With the
+ * monthly plan there is no hold and no per-cleanup charge, so nothing writes or reads it. The housekeeping
+ * job still deletes rows older than 400 days, so what is left expires on its own. Keyed by a keyed hash of
+ * the Klaviyo account id; holds no customer data.
  */
 export const unpaidCleanups = sqliteTable("unpaid_cleanups", {
   accountKey: text("account_key").primaryKey(),
   cleanedAt: timestamp("cleaned_at").notNull(),
   feeCents: integer("fee_cents").notNull(),
   createdAt: timestamp("created_at").notNull().default(now),
+});
+
+export const PLAN_STATUSES = ["active", "frozen", "cancelled", "declined"] as const;
+
+/**
+ * The app's copy of the shop's TierSaver plan (monthly subscription through Shopify's Billing API), as last
+ * seen. Shopify is the source of truth: every cleanup asks Shopify itself (app/billing/billing.ts,
+ * `planGate`). This row exists so pages that must not call Shopify on every load (the home page) can say that
+ * cleanups are off because the plan was cancelled, declined or frozen. No row: the shop never had a plan.
+ */
+export const shopPlans = sqliteTable("shop_plans", {
+  shop: text("shop")
+    .primaryKey()
+    .references(() => shops.shop, { onDelete: "cascade" }),
+  status: text("status", { enum: PLAN_STATUSES }).notNull(),
+  /** Shopify's AppSubscription id (gid). */
+  subscriptionId: text("subscription_id"),
+  monthlyCents: integer("monthly_cents").notNull().default(0),
+  /** Upper bound of the price tier of the plan; NULL when the price is not one of the public tiers. */
+  tierMaxProfiles: integer("tier_max_profiles"),
+  /** Test subscription (development stores): never charged by Shopify. */
+  test: integer("test", { mode: "boolean" }).notNull().default(false),
+  currentPeriodEnd: timestamp("current_period_end"),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  updatedAt: timestamp("updated_at").notNull().default(now),
 });

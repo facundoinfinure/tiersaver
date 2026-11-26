@@ -2,15 +2,7 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloud
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../app/db/schema";
 import { executeRun, type RunOutcome, type StepConfig } from "../app/runs/engine";
-import { settleRunCharge } from "../app/billing/billing";
-import { offlineAdminGraphql } from "../app/billing/billing.server";
-import { createKlaviyoClient } from "../app/klaviyo/connection.server";
-import { confirmJobsPage } from "../app/runs/confirm";
 import { createSuppressionGateway } from "../app/runs/gateway.server";
-
-/** Klaviyo jobs read per step, and how many times the run waits for them (30 s, 1, 2, 4, 8, then 15 minutes each: about 2 hours). */
-const JOBS_PER_CONFIRM_STEP = 25;
-const CONFIRM_ATTEMPTS = 12;
 
 /** Only the run id travels in the payload: Workflow payloads are persisted, so no personal data goes in. */
 export interface SuppressionRunParams {
@@ -45,51 +37,8 @@ export class SuppressionRunWorkflow extends WorkflowEntrypoint<Env, SuppressionR
       runId,
     );
 
-    // TierSaver's own charge. First an estimate from what the run sent; the real charge only once Klaviyo's
-    // jobs confirm what they processed. A failure here never changes the outcome of the run: the charge stays
-    // open and the hourly cron tries again.
-    if (run?.shop && outcome.submitted > 0 && outcome.status !== "not_found") {
-      const shop = run.shop;
-      const stepConfig = { retries: { limit: 2, delay: "30 seconds" as const, backoff: "exponential" as const }, timeout: "2 minutes" as const };
-      try {
-        await step.do("estimate charge", stepConfig, async () => (await settleRunCharge({ db, graphql: null }, runId)).status);
-        const kind = await db.query.runs.findFirst({ where: (r, { eq }) => eq(r.id, runId), columns: { kind: true } });
-        if (kind?.kind === "suppress") {
-          const client = () => createKlaviyoClient({ db, env: this.env }, shop, { subrequestBudget: 30 });
-          for (let attempt = 0; attempt < CONFIRM_ATTEMPTS; attempt++) {
-            await step.sleep(`wait for klaviyo jobs ${attempt}`, Math.min(30_000 * 2 ** attempt, 15 * 60_000));
-            let offset = 0;
-            let complete = true;
-            let suppressed = 0;
-            for (;;) {
-              const pageOffset = offset;
-              const page = await step.do(`confirm jobs ${attempt} at ${pageOffset}`, stepConfig, () =>
-                confirmJobsPage(db, client(), { runId, offset: pageOffset, limit: JOBS_PER_CONFIRM_STEP }),
-              );
-              complete = complete && page.complete;
-              suppressed += page.suppressed;
-              offset += page.checked;
-              if (!complete || page.checked === 0 || offset >= page.jobs) break;
-            }
-            if (!complete) continue;
-            const settle = (name: string) =>
-              step.do(name, stepConfig, async () => {
-                const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(shop) }, runId, { done: true, suppressed });
-                return { status: result.status, chargeAt: result.status === "held" ? result.chargeAt : null };
-              });
-            const settled = await settle(`settle charge ${attempt}`);
-            // Confirmed, but held for the undo window: sleep through it and charge what is still suppressed then.
-            if (settled.status === "held" && settled.chargeAt) {
-              await step.sleep("undo window", Math.max(1_000, new Date(settled.chargeAt).getTime() - Date.now() + 60_000));
-              await settle("settle charge after undo window");
-            }
-            break;
-          }
-        }
-      } catch {
-        // See above.
-      }
-    }
+    // Nothing is charged here: TierSaver's price is a monthly plan (app/billing/billing.ts), checked before the
+    // run was created. Klaviyo's jobs are read on request from the cleanup's page (app/runs/confirm.ts).
     return outcome;
   }
 }

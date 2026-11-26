@@ -19,6 +19,8 @@ export async function handleUninstall(db: Db, shop: string, now = new Date()): P
   await db.batch([
     db.delete(schema.sessionTable).where(eq(schema.sessionTable.shop, shop)),
     db.delete(schema.klaviyoConnections).where(eq(schema.klaviyoConnections.shop, shop)),
+    // Shopify cancels the subscription on uninstall: a later reinstall starts with no plan.
+    db.delete(schema.shopPlans).where(eq(schema.shopPlans.shop, shop)),
     db
       .update(schema.shops)
       .set({ status: "uninstalled", uninstalledAt: now, updatedAt: now })

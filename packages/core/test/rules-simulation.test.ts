@@ -3,7 +3,6 @@ import {
   DEFAULT_RULE_SETTINGS,
   PURCHASE_DATA_MAX_AGE_HOURS,
   evaluateProfile,
-  finalChargeForRun,
   simulate,
   validateRuleSettings,
   whyNotExecutable,
@@ -237,19 +236,13 @@ describe("simulate", () => {
     expect(result.candidates).toHaveLength(3_000);
     expect(result.candidates.every((c) => c.id.startsWith("never_"))).toBe(true);
   });
-  it("quotes the flat fee for the list size, independent of any plan change", () => {
+  it("quotes the monthly plan for the list size, independent of any Klaviyo plan change", () => {
     expect(result.savings.profilesAfter).toBe(9_400);
-    expect(result.charge).toMatchObject({ activeProfiles: 12_400, feeCents: 2_900, noChargeReason: null });
+    expect(result.plan).toEqual({ activeProfiles: 12_400, tier: { maxProfiles: 25_000, monthlyCents: 1_900 }, monthlyCents: 1_900 });
   });
-  it("a simulation with no candidates quotes no charge", () => {
+  it("the plan depends on the list size only, not on how many profiles a cleanup suppresses", () => {
     const empty = simulate({ profiles: [], settings: DEFAULT_RULE_SETTINGS, coverage: FULL_COVERAGE, activeProfiles: 12_400, table: TEST_TABLE, now: NOW });
-    expect(empty.charge).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
-  });
-
-  it("the final charge is the approved price, or nothing if nobody was suppressed", () => {
-    expect(finalChargeForRun({ simulated: result, actuallySuppressed: 1_000, now: NOW }).feeCents).toBe(2_900);
-    expect(finalChargeForRun({ simulated: result, actuallySuppressed: 99_999, now: NOW }).feeCents).toBe(result.charge.feeCents);
-    expect(finalChargeForRun({ simulated: result, actuallySuppressed: 0, now: NOW })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
+    expect(empty.plan).toEqual(result.plan);
   });
 });
 

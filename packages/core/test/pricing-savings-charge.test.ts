@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertValidPriceTable,
-  chargeIdempotencyKey,
+  DEFAULT_FEE_POLICY,
   FLAT_PRICE_TIERS,
   flatTierFor,
   estimateSavings,
@@ -12,7 +12,9 @@ import {
   isTableFullyVerified,
   PriceTableError,
   profilesToDropOneTier,
-  quoteCharge,
+  planCoverage,
+  quotePlan,
+  flatTierForPrice,
   tierFor,
   tierProximity,
   type PriceTable,
@@ -110,66 +112,66 @@ describe("profilesToDropOneTier", () => {
   });
 });
 
-describe("quoteCharge (flat price by list size)", () => {
-  it("prices by list size at the tier boundaries", () => {
-    expect(flatTierFor(1)?.monthlyCents).toBe(1_500);
-    expect(flatTierFor(10_000)?.monthlyCents).toBe(1_500);
-    expect(flatTierFor(10_001)?.monthlyCents).toBe(2_900);
-    expect(flatTierFor(25_000)?.monthlyCents).toBe(2_900);
-    expect(flatTierFor(25_001)?.monthlyCents).toBe(7_900);
-    expect(flatTierFor(75_000)?.monthlyCents).toBe(7_900);
-    expect(flatTierFor(75_001)?.monthlyCents).toBe(14_900);
-    expect(flatTierFor(150_000)?.monthlyCents).toBe(14_900);
+describe("monthly plan by list size (owner's decision of 2026-11-26)", () => {
+  it("prices by list size at the tier boundaries: $9 / $19 / $39 / $79 per month", () => {
+    expect(flatTierFor(0)?.monthlyCents).toBe(900);
+    expect(flatTierFor(1)?.monthlyCents).toBe(900);
+    expect(flatTierFor(10_000)?.monthlyCents).toBe(900);
+    expect(flatTierFor(10_001)?.monthlyCents).toBe(1_900);
+    expect(flatTierFor(25_000)?.monthlyCents).toBe(1_900);
+    expect(flatTierFor(25_001)?.monthlyCents).toBe(3_900);
+    expect(flatTierFor(75_000)?.monthlyCents).toBe(3_900);
+    expect(flatTierFor(75_001)?.monthlyCents).toBe(7_900);
+    expect(flatTierFor(150_000)?.monthlyCents).toBe(7_900);
     expect(flatTierFor(150_001)).toBeNull();
-    expect(FLAT_PRICE_TIERS.map((t) => t.monthlyCents)).toEqual([1_500, 2_900, 7_900, 14_900]);
+    expect(FLAT_PRICE_TIERS).toEqual([
+      { maxProfiles: 10_000, monthlyCents: 900 },
+      { maxProfiles: 25_000, monthlyCents: 1_900 },
+      { maxProfiles: 75_000, monthlyCents: 3_900 },
+      { maxProfiles: 150_000, monthlyCents: 7_900 },
+    ]);
   });
-  it("charges the tier price when a cleanup suppressed profiles", () => {
-    expect(quoteCharge({ activeProfiles: 8_000, profilesSuppressed: 200 }).feeCents).toBe(1_500);
-    const q = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 3_500 });
-    expect(q).toMatchObject({ feeCents: 2_900, listFeeCents: 2_900, capApplied: false, noChargeReason: null });
+  it("the plan is charged every 30 days and has no per-cleanup concepts left", () => {
+    expect(DEFAULT_FEE_POLICY).toEqual({ tiers: FLAT_PRICE_TIERS, billingIntervalDays: 30 });
+    expect(Object.keys(DEFAULT_FEE_POLICY)).not.toContain("minDaysBetweenCharges");
+    expect(Object.keys(DEFAULT_FEE_POLICY)).not.toContain("windowCapCents");
   });
-  it("the fee does not depend on how many profiles were suppressed", () => {
-    const few = quoteCharge({ activeProfiles: 60_000, profilesSuppressed: 1 });
-    const many = quoteCharge({ activeProfiles: 60_000, profilesSuppressed: 40_000 });
-    expect(few.feeCents).toBe(7_900);
-    expect(many.feeCents).toBe(7_900);
+  it("quotes the plan a list needs, and nothing above the public tiers", () => {
+    expect(quotePlan(8_000)).toEqual({ activeProfiles: 8_000, tier: FLAT_PRICE_TIERS[0], monthlyCents: 900 });
+    expect(quotePlan(60_000.2)).toMatchObject({ activeProfiles: 60_001, monthlyCents: 3_900 });
+    expect(quotePlan(150_001)).toEqual({ activeProfiles: 150_001, tier: null, monthlyCents: 0 });
   });
-  it("charges nothing for a cycle without a cleanup", () => {
-    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 0 })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
-    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: -3 })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
-    expect(quoteCharge({ activeProfiles: 12_400, profilesSuppressed: Number.NaN })).toMatchObject({ feeCents: 0, noChargeReason: "no_cleanup" });
+  it("finds the tier of a plan by its price", () => {
+    expect(flatTierForPrice(1_900)?.maxProfiles).toBe(25_000);
+    expect(flatTierForPrice(1_500)).toBeNull();
   });
-  it("never charges automatically above the public tiers", () => {
-    expect(quoteCharge({ activeProfiles: 150_001, profilesSuppressed: 10 })).toMatchObject({
-      feeCents: 0,
-      tier: null,
-      noChargeReason: "above_price_tiers",
-    });
+  it("no plan: no cleanup", () => {
+    expect(planCoverage(null, 8_000)).toEqual({ covered: false, reason: "no_plan", requiredCents: 900 });
+    expect(planCoverage(Number.NaN, 8_000)).toMatchObject({ covered: false, reason: "no_plan" });
   });
-  it("respects what was already charged in the window", () => {
-    const q = quoteCharge({ activeProfiles: 100_000, profilesSuppressed: 10, chargedInWindowCents: 10_000 });
-    expect(q).toMatchObject({ feeCents: 4_900, capApplied: true });
-    const full = quoteCharge({ activeProfiles: 100_000, profilesSuppressed: 10, chargedInWindowCents: 14_900 });
-    expect(full).toMatchObject({ feeCents: 0, noChargeReason: "cap_reached" });
+  it("a plan covers a list when its price is at least the price of the list's tier", () => {
+    expect(planCoverage(900, 10_000)).toEqual({ covered: true, overpaying: false, requiredCents: 900 });
+    expect(planCoverage(1_900, 12_400)).toEqual({ covered: true, overpaying: false, requiredCents: 1_900 });
   });
-  it("charges at most once per cycle", () => {
-    const q = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 10, lastChargeAt: daysAgo(10), now: NOW });
-    expect(q).toMatchObject({ feeCents: 0, noChargeReason: "already_charged_this_cycle" });
-    const later = quoteCharge({ activeProfiles: 12_400, profilesSuppressed: 10, lastChargeAt: daysAgo(29), now: NOW });
-    expect(later.feeCents).toBe(2_900);
+  it("the list moved to a higher tier: the plan no longer covers it", () => {
+    expect(planCoverage(900, 10_001)).toEqual({ covered: false, reason: "plan_price_too_low", requiredCents: 1_900 });
+    expect(planCoverage(3_900, 75_001)).toEqual({ covered: false, reason: "plan_price_too_low", requiredCents: 7_900 });
+  });
+  it("the list moved to a lower tier: covered, and flagged so the merchant is told", () => {
+    expect(planCoverage(1_900, 9_000)).toEqual({ covered: true, overpaying: true, requiredCents: 900 });
+  });
+  it("above the public tiers nothing covers the list, whatever the plan", () => {
+    expect(planCoverage(7_900, 150_001)).toEqual({ covered: false, reason: "above_price_tiers", requiredCents: null });
+    expect(planCoverage(null, 150_001)).toEqual({ covered: false, reason: "above_price_tiers", requiredCents: null });
   });
 });
 
-describe("formatting and keys", () => {
+describe("formatting", () => {
   it("formats cents", () => {
+    expect(formatUsd(900)).toBe("$9");
     expect(formatUsd(2_500)).toBe("$25");
     expect(formatUsd(123_450)).toBe("$1,234.50");
     expect(formatUsd(-5)).toBe("-$0.05");
-  });
-  it("builds deterministic idempotency keys under 255 chars", () => {
-    const k = chargeIdempotencyKey("shop.myshopify.com", "run_123");
-    expect(k).toBe(chargeIdempotencyKey("shop.myshopify.com", "run_123"));
-    expect(k.length).toBeLessThanOrEqual(255);
   });
 });
 

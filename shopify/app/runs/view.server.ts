@@ -6,8 +6,6 @@ import type { RuleSettings } from "@tiersaver/core";
 import { isKlaviyoRecommended } from "../settings/settings";
 import { NO_JOB_ID } from "./gateway.server";
 import { MAYBE_CHANGED_SQL, renewalSince } from "./engine";
-import { chargedWithoutWindow } from "../billing/unpaid";
-import { CHARGE_HOLD_HOURS } from "./labels";
 
 /** What the history and run screens show. Ids, counts and dates only: no profile data. */
 export interface RunListItem {
@@ -65,8 +63,7 @@ export interface RunDetail {
   /**
    * Cleanups: what a restore would do. `restorable`: profiles a restore started now would send. `leftAlone`:
    * profiles the latest restore checked and left as they are, with the reasons; they are not offered again.
-   * `fullyRestored`: no profile Klaviyo accepted is left unrestored, which is what makes a pending charge void
-   * (same condition as billing/billing.ts).
+   * `fullyRestored`: no profile Klaviyo accepted is left unrestored.
    */
   undo: {
     restorable: number;
@@ -78,8 +75,6 @@ export interface RunDetail {
     inProgress: boolean;
   } | null;
   undoRuns: RunListItem[];
-  /** `sendAt`: when a charge that is not out yet goes to Shopify (end of the restore window). */
-  charge: { status: string; feeCents: number; reason: string | null; chargedAt: string | null; sendAt: string | null } | null;
   /** Cleanups: who approved the simulation, when, and with which rules. Null when the simulation is gone. */
   approval: { by: string | null; automatic: boolean; at: string | null; recommendedRules: boolean; windows: RuleWindows } | null;
   /** Cleanups: profiles by the reason they were candidates (CandidateReason). */
@@ -117,7 +112,6 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
 
   let undo: RunDetail["undo"] = null;
   let undoRuns: RunListItem[] = [];
-  let charge: RunDetail["charge"] = null;
   let approval: RunDetail["approval"] = null;
   let candidateReasons: RunDetail["candidateReasons"] = [];
   if (run.kind === "suppress") {
@@ -147,11 +141,10 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       .from(schema.runProfiles)
       .where(and(eq(schema.runProfiles.runId, runId), sql.raw(MAYBE_CHANGED_SQL)));
     const restored = changed?.restored ?? 0;
-    const [settings, audits, children, chargeRow] = await Promise.all([
+    const [settings, audits, children] = await Promise.all([
       db.query.settings.findFirst({ where: eq(schema.settings.shop, shop), columns: { billingDay: true } }),
       db.query.audits.findMany({ where: eq(schema.audits.shop, shop), columns: { periodEnd: true }, orderBy: desc(schema.audits.createdAt), limit: 24 }),
       db.query.runs.findMany({ where: and(eq(schema.runs.undoOfRunId, runId), eq(schema.runs.shop, shop)), orderBy: desc(schema.runs.createdAt), limit: 10 }),
-      db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }),
     ]);
     undoRuns = children.map(toItem);
     // Profiles the latest finished restore checked and left as they are (provably not this cleanup's suppression,
@@ -183,23 +176,9 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       }),
       inProgress: children.some((c) => c.status === "queued" || c.status === "running"),
     };
-    const noWindow = chargeRow ? await chargedWithoutWindow(db, shop) : false;
-    charge = chargeRow
-      ? {
-          status: chargeRow.status,
-          feeCents: chargeRow.feeCents,
-          reason: chargeRow.noChargeReason,
-          chargedAt: chargeRow.chargedAt?.toISOString() ?? null,
-          // Same instant as billing/billing.ts: the end of the restore window.
-          sendAt:
-            chargeRow.status === "pending" || chargeRow.status === "failed"
-              ? new Date((run.finishedAt ?? chargeRow.createdAt).getTime() + (noWindow ? 0 : CHARGE_HOLD_HOURS) * 60 * 60 * 1000).toISOString()
-              : null,
-        }
-      : null;
   }
 
-  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, skipReasons, stop, undo, undoRuns, charge, approval, candidateReasons, jobCount: jobs?.n ?? 0 };
+  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, skipReasons, stop, undo, undoRuns, approval, candidateReasons, jobCount: jobs?.n ?? 0 };
 }
 
 /** Jobs read from Klaviyo per request: one page of the run's jobs, inside a Worker invocation's subrequest budget. */

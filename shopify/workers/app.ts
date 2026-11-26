@@ -20,17 +20,16 @@ export default {
   fetch(request, env, ctx) {
     return requestHandler(request, { cloudflare: { env, ctx } });
   },
-  // Hourly Cron Trigger: the monthly schedule and open charges. Never suppresses anything by itself.
+  // Hourly Cron Trigger: housekeeping, run recovery, the orders sync and the monthly schedule. Never suppresses
+  // anything by itself, and charges nothing: the monthly plan is charged by Shopify (app/billing/billing.ts).
   scheduled(_controller, env, ctx) {
     ctx.waitUntil(
       (async () => {
-        const [{ drizzle }, schema, { runScheduleTick }, { startScan }, { CHARGE_ATTEMPTS_BEFORE_ALERT, runsWithOpenCharges, settleRunCharge }, { offlineAdminGraphql }] = await Promise.all([
+        const [{ drizzle }, schema, { runScheduleTick }, { startScan }] = await Promise.all([
           import("drizzle-orm/d1"),
           import("../app/db/schema"),
           import("../app/schedule/schedule"),
           import("../app/scans/start.server"),
-          import("../app/billing/billing"),
-          import("../app/billing/billing.server"),
         ]);
         const db = drizzle(env.DB, { schema });
         try {
@@ -93,33 +92,6 @@ export default {
           if (tick.due > 0) console.log(`schedule: ${tick.started.length} of ${tick.due} scans started`);
         } catch (error) {
           console.error(`schedule tick failed: ${error instanceof Error ? error.name : "error"}`);
-        }
-        try {
-          const [{ advanceChargeConfirmation }, { createKlaviyoClient }] = await Promise.all([import("../app/runs/confirm"), import("../app/klaviyo/connection.server")]);
-          // A few per tick: each one reads a page of its jobs from Klaviyo and keeps its place, so a cleanup of any
-          // size is confirmed over a few ticks even if its own Workflow gave up.
-          // A charge Klaviyo already confirmed needs no read of Klaviyo, whatever the size of the run.
-          for (const open of (await runsWithOpenCharges(db)).slice(0, 5)) {
-            try {
-              const confirmation = open.confirmed
-                ? null
-                : await (async () => {
-                    // The charge row is created by the first settle; the confirmation keeps its progress on it.
-                    await settleRunCharge({ db, graphql: null }, open.runId);
-                    return advanceChargeConfirmation(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
-                  })();
-              const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId, confirmation);
-              if (result.status === "failed") {
-                const message = `charge of run ${open.runId} failed (${result.error}), attempt ${open.attempts + 1}`;
-                if (open.attempts + 1 >= CHARGE_ATTEMPTS_BEFORE_ALERT) console.error(`NEEDS ATTENTION: ${message}`);
-                else console.warn(message);
-              }
-            } catch (error) {
-              console.error(`charge retry of run ${open.runId} threw: ${error instanceof Error ? error.name : "error"}`);
-            }
-          }
-        } catch (error) {
-          console.error(`charge retry failed: ${error instanceof Error ? error.name : "error"}`);
         }
       })(),
     );

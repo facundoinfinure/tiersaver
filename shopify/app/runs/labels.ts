@@ -54,15 +54,3 @@ export const RUN_ERROR_LABELS: Record<string, string> = {
   klaviyo_account_changed: "The connected Klaviyo account changed.",
 };
 export const OTHER_RUN_ERROR_LABEL = "Something went wrong while talking to Klaviyo.";
-
-/** Why a finished cleanup was not charged (`usage_charges.no_charge_reason`). */
-export const NO_CHARGE_LABELS: Record<string, string> = {
-  no_cleanup: "Not charged: no profile was suppressed.",
-  already_charged_this_cycle: "Not charged: a cleanup was already charged in the last 28 days.",
-  cleanup_undone: "Not charged: this cleanup was restored.",
-  cap_reached: "Not charged: the monthly maximum was already reached.",
-  above_price_tiers: "Not charged automatically: lists above 150,000 active profiles are priced by agreement.",
-};
-
-/** Hours a confirmed charge waits before it is sent to Shopify, so a full undo inside the window is free. */
-export const CHARGE_HOLD_HOURS = 72;

@@ -2,11 +2,9 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloud
 import { NonRetryableError } from "cloudflare:workflows";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { getBillingStatus } from "../app/billing/billing";
 import { offlineAdminGraphql } from "../app/billing/billing.server";
-import { createSuppressionRun } from "../app/runs/engine";
 import { suppressionAllowed } from "../app/runs/gateway.server";
-import { approveAutomatically, decideAutomatic } from "../app/schedule/automatic";
+import { runAutomaticMode } from "../app/schedule/automatic";
 import * as schema from "../app/db/schema";
 import { createKlaviyoClient } from "../app/klaviyo/connection.server";
 import { executeScan, type ScanOutcome, type StepConfig } from "../app/scans/engine";
@@ -50,18 +48,19 @@ export class ScanWorkflow extends WorkflowEntrypoint<Env, ScanParams> {
         await step.do("automatic mode", { retries: { limit: 1, delay: "30 seconds" }, timeout: "1 minute" }, async () => {
           const scan = await db.query.scans.findFirst({ where: (s, { eq }) => eq(s.id, event.payload.scanId), columns: { shop: true, origin: true } });
           if (!scan || scan.origin !== "scheduled") return "not_scheduled";
-          const decision = await decideAutomatic(db, { shop: scan.shop, simulationId });
-          if (!decision.run) return decision.reason;
-          const connection = await db.query.klaviyoConnections.findFirst({ where: (k, { eq }) => eq(k.shop, scan.shop), columns: { klaviyoAccountId: true } });
-          if (!suppressionAllowed(this.env, connection?.klaviyoAccountId)) return "suppression_disabled";
-          const billing = await getBillingStatus(offlineAdminGraphql(scan.shop));
-          if (!billing.subscription) return "billing_required";
-          if (!(await approveAutomatically(db, { shop: scan.shop, simulationId }))) return "not_open";
-          const created = await createSuppressionRun(db, { shop: scan.shop, simulationId, createdBy: "schedule", origin: "scheduled" });
-          if (!created.ok) return created.reason;
-          const instance = await this.env.SUPPRESSION_RUN.create({ id: created.runId, params: { runId: created.runId } });
-          await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, created.runId));
-          return "started";
+          return runAutomaticMode(
+            {
+              db,
+              // The cron cannot act as the merchant: Shopify is asked about the plan with the shop's offline token.
+              graphql: offlineAdminGraphql(scan.shop),
+              suppressionAllowed: (klaviyoAccountId) => suppressionAllowed(this.env, klaviyoAccountId),
+              launch: async (runId) => {
+                const instance = await this.env.SUPPRESSION_RUN.create({ id: runId, params: { runId } });
+                await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, runId));
+              },
+            },
+            { shop: scan.shop, simulationId },
+          );
         });
       } catch {
         // The scan itself succeeded; its simulation stays open for the merchant.

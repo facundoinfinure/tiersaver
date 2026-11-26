@@ -1,4 +1,4 @@
-import { quoteCharge, type ChargeQuote, type FeePolicy } from "./charge.js";
+import { quotePlan, type FeePolicy, type PlanQuote } from "./charge.js";
 import type { PriceTable } from "./pricing.js";
 import {
   evaluateProfile,
@@ -31,7 +31,8 @@ export interface SimulationResult {
   candidates: { id: string; reason: CandidateReason }[];
   /** Informational only: which Klaviyo list-price plan size the remaining count corresponds to. Never used for the fee. */
   savings: SavingsEstimate;
-  charge: ChargeQuote;
+  /** The monthly TierSaver plan a list of this size needs. Nothing is charged per cleanup. */
+  plan: PlanQuote;
 }
 
 export interface SimulationInput {
@@ -44,8 +45,6 @@ export interface SimulationInput {
   onFreePlan?: boolean;
   now: Date;
   feePolicy?: FeePolicy;
-  chargedInWindowCents?: number;
-  lastChargeAt?: Date | null;
 }
 
 export function simulate(input: SimulationInput): SimulationResult {
@@ -90,16 +89,9 @@ export function simulate(input: SimulationInput): SimulationResult {
     onFreePlan: input.onFreePlan,
   });
 
-  const charge = quoteCharge({
-    activeProfiles: input.activeProfiles,
-    profilesSuppressed: summary.candidates,
-    chargedInWindowCents: input.chargedInWindowCents,
-    lastChargeAt: input.lastChargeAt,
-    now: input.now,
-    policy: input.feePolicy,
-  });
+  const plan = quotePlan(input.activeProfiles, input.feePolicy);
 
-  return { summary, candidates, savings, charge };
+  return { summary, candidates, savings, plan };
 }
 
 export type SimulationState = {
@@ -123,27 +115,4 @@ export function whyNotExecutable(sim: SimulationState, now: Date): NotExecutable
   if (now.getTime() - sim.createdAt.getTime() >= SIMULATION_TTL_MS) return "expired";
   if (sim.approvedAt.getTime() < sim.createdAt.getTime()) return "not_approved";
   return null;
-}
-
-/**
- * After a run, the fee is quoted on what was actually suppressed: a run that
- * suppressed nobody is not charged. The list size is the one the merchant saw
- * in the simulation, so the price never differs from what was approved.
- */
-export function finalChargeForRun(args: {
-  simulated: SimulationResult;
-  actuallySuppressed: number;
-  now: Date;
-  feePolicy?: FeePolicy;
-  chargedInWindowCents?: number;
-  lastChargeAt?: Date | null;
-}): ChargeQuote {
-  return quoteCharge({
-    activeProfiles: args.simulated.charge.activeProfiles,
-    profilesSuppressed: Math.max(0, Math.min(args.actuallySuppressed, args.simulated.summary.candidates)),
-    chargedInWindowCents: args.chargedInWindowCents,
-    lastChargeAt: args.lastChargeAt,
-    now: args.now,
-    policy: args.feePolicy,
-  });
 }

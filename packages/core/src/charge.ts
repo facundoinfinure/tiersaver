@@ -1,11 +1,16 @@
 /**
- * TierSaver's own fee: a flat monthly price by list size, charged only for a
- * billing cycle in which a cleanup actually suppressed profiles.
+ * TierSaver's own price: a flat MONTHLY plan by list size.
  *
- * The fee never depends on the merchant's Klaviyo invoice or on any saving
- * (decided on 2026-11-25; see docs/12-CUMPLIMIENTO-KLAVIYO.md).
+ * Decided by the owner on 2026-11-26 (docs/04-PRECIO-Y-COBRO.md); replaces the per-cleanup charge of 2026-11-25:
+ * - free until the first cleanup: connecting, the audit and the simulation need no plan;
+ * - the plan starts when the merchant approves their first cleanup and is then charged by Shopify every
+ *   30 days, whether or not a cleanup runs that month, until the merchant cancels;
+ * - a cleanup may start only with an active plan whose monthly price is at least the price of the tier of the
+ *   list size shown in the simulation being approved;
+ * - above the last tier the product is not sold automatically.
  *
- * All money in integer US cents.
+ * The price never depends on the merchant's Klaviyo invoice or on any saving
+ * (docs/12-CUMPLIMIENTO-KLAVIYO.md). All money in integer US cents.
  */
 
 export interface FlatPriceTier {
@@ -15,28 +20,25 @@ export interface FlatPriceTier {
 }
 
 /**
- * Prices and list-size boundaries, confirmed by the owner on 2026-11-25.
+ * Monthly prices and list-size boundaries, decided by the owner on 2026-11-26.
  * Above the last tier there is no public price.
  */
 export const FLAT_PRICE_TIERS: readonly FlatPriceTier[] = Object.freeze([
-  { maxProfiles: 10_000, monthlyCents: 1_500 },
-  { maxProfiles: 25_000, monthlyCents: 2_900 },
-  { maxProfiles: 75_000, monthlyCents: 7_900 },
-  { maxProfiles: 150_000, monthlyCents: 14_900 },
+  { maxProfiles: 10_000, monthlyCents: 900 },
+  { maxProfiles: 25_000, monthlyCents: 1_900 },
+  { maxProfiles: 75_000, monthlyCents: 3_900 },
+  { maxProfiles: 150_000, monthlyCents: 7_900 },
 ]);
 
 export interface FeePolicy {
   tiers: readonly FlatPriceTier[];
-  /** Maximum TierSaver charges in one Shopify 30-day billing window (the subscription's capped amount). */
-  windowCapCents: number;
-  /** Minimum days between two charges: at most one per Klaviyo billing cycle. */
-  minDaysBetweenCharges: number;
+  /** Days between two charges of the plan (Shopify's EVERY_30_DAYS interval). */
+  billingIntervalDays: number;
 }
 
 export const DEFAULT_FEE_POLICY: FeePolicy = Object.freeze({
   tiers: FLAT_PRICE_TIERS,
-  windowCapCents: 14_900,
-  minDaysBetweenCharges: 28,
+  billingIntervalDays: 30,
 });
 
 /** The price tier for a list size, or null when the list is larger than every tier. */
@@ -45,72 +47,47 @@ export function flatTierFor(activeProfiles: number, tiers: readonly FlatPriceTie
   return tiers.find((t) => n <= t.maxProfiles) ?? null;
 }
 
-export type NoChargeReason =
-  /** No cleanup ran, or it suppressed nobody: nothing is charged for that cycle. */
-  | "no_cleanup"
-  | "already_charged_this_cycle"
-  | "cap_reached"
-  /** The whole cleanup was undone before its charge went out: nothing stayed suppressed, nothing is charged. */
-  | "cleanup_undone"
-  /** List larger than the public tiers: priced by agreement, never charged automatically. */
-  | "above_price_tiers";
+/** The tier whose monthly price is exactly `monthlyCents`, or null (a plan that is not one of ours). */
+export function flatTierForPrice(monthlyCents: number, tiers: readonly FlatPriceTier[] = FLAT_PRICE_TIERS): FlatPriceTier | null {
+  return tiers.find((t) => t.monthlyCents === monthlyCents) ?? null;
+}
 
-export interface ChargeQuote {
-  /** List size the price is based on. */
+export interface PlanQuote {
+  /** List size the plan is chosen for. */
   activeProfiles: number;
+  /** Null above the public tiers: not sold automatically. */
   tier: FlatPriceTier | null;
-  /** The tier's price, before the "no cleanup", one-per-cycle and cap rules. */
-  listFeeCents: number;
-  /** What we would actually charge. */
-  feeCents: number;
-  capApplied: boolean;
-  noChargeReason: NoChargeReason | null;
+  /** The tier's monthly price; 0 when there is no tier. */
+  monthlyCents: number;
 }
 
-export interface ChargeInput {
-  /** Active profiles before the cleanup (from the audit behind the simulation). */
-  activeProfiles: number;
-  /** Profiles the cleanup suppressed (or, for a quote shown before approval, would suppress). */
-  profilesSuppressed: number;
-  /** Sum of TierSaver usage charges already created in the current Shopify window. */
-  chargedInWindowCents?: number;
-  /** When the last charge was created, if any. */
-  lastChargeAt?: Date | null;
-  now?: Date;
-  policy?: FeePolicy;
+/** The monthly plan a list of this size needs. */
+export function quotePlan(activeProfiles: number, policy: FeePolicy = DEFAULT_FEE_POLICY): PlanQuote {
+  const n = Math.max(0, Math.ceil(activeProfiles));
+  const tier = flatTierFor(n, policy.tiers);
+  return { activeProfiles: n, tier, monthlyCents: tier?.monthlyCents ?? 0 };
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export type PlanCoverage =
+  /** The active plan is the one for this list size. */
+  | { covered: true; overpaying: false; requiredCents: number }
+  /** The active plan costs more than this list size needs: the merchant must be told and offered the lower plan. */
+  | { covered: true; overpaying: true; requiredCents: number }
+  | { covered: false; reason: "no_plan" | "plan_price_too_low"; requiredCents: number }
+  /** List larger than the public tiers: no plan covers it. */
+  | { covered: false; reason: "above_price_tiers"; requiredCents: null };
 
-export function quoteCharge(input: ChargeInput): ChargeQuote {
-  const policy = input.policy ?? DEFAULT_FEE_POLICY;
-  const activeProfiles = Math.max(0, Math.ceil(input.activeProfiles));
+/**
+ * Whether a plan of `planMonthlyCents` (null: no active plan) allows a cleanup of a list of `activeProfiles`.
+ * The rule: the plan's monthly price must be at least the price of the list's tier.
+ */
+export function planCoverage(planMonthlyCents: number | null, activeProfiles: number, policy: FeePolicy = DEFAULT_FEE_POLICY): PlanCoverage {
   const tier = flatTierFor(activeProfiles, policy.tiers);
-  const listFeeCents = tier?.monthlyCents ?? 0;
-
-  const result = (feeCents: number, capApplied: boolean, noChargeReason: NoChargeReason | null): ChargeQuote => ({
-    activeProfiles,
-    tier,
-    listFeeCents,
-    feeCents,
-    capApplied,
-    noChargeReason,
-  });
-
-  if (!(input.profilesSuppressed > 0)) return result(0, false, "no_cleanup");
-  if (!tier) return result(0, false, "above_price_tiers");
-
-  if (input.lastChargeAt) {
-    const now = input.now ?? new Date();
-    const elapsedDays = (now.getTime() - input.lastChargeAt.getTime()) / DAY_MS;
-    if (elapsedDays < policy.minDaysBetweenCharges) return result(0, false, "already_charged_this_cycle");
-  }
-
-  const remaining = Math.max(0, policy.windowCapCents - Math.max(0, input.chargedInWindowCents ?? 0));
-  if (remaining === 0) return result(0, true, "cap_reached");
-
-  const feeCents = Math.min(listFeeCents, remaining);
-  return result(feeCents, feeCents < listFeeCents, null);
+  if (!tier) return { covered: false, reason: "above_price_tiers", requiredCents: null };
+  const requiredCents = tier.monthlyCents;
+  if (planMonthlyCents === null || !Number.isFinite(planMonthlyCents)) return { covered: false, reason: "no_plan", requiredCents };
+  if (planMonthlyCents < requiredCents) return { covered: false, reason: "plan_price_too_low", requiredCents };
+  return planMonthlyCents > requiredCents ? { covered: true, overpaying: true, requiredCents } : { covered: true, overpaying: false, requiredCents };
 }
 
 /** "$1,234.50" style formatting for cents. */
@@ -121,12 +98,4 @@ export function formatUsd(cents: number): string {
   const rest = abs % 100;
   const dollarsStr = dollars.toLocaleString("en-US");
   return rest === 0 ? `${sign}$${dollarsStr}` : `${sign}$${dollarsStr}.${String(rest).padStart(2, "0")}`;
-}
-
-/**
- * Deterministic idempotency key for the usage charge of a run.
- * One run can only ever produce one charge.
- */
-export function chargeIdempotencyKey(shopDomain: string, runId: string): string {
-  return `tiersaver:${shopDomain}:run:${runId}`;
 }

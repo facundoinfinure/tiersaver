@@ -1,23 +1,62 @@
-import { chargeIdempotencyKey, DEFAULT_FEE_POLICY, FLAT_PRICE_TIERS, formatUsd, quoteCharge } from "@tiersaver/core";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { FLAT_PRICE_TIERS, DEFAULT_FEE_POLICY, flatTierFor, flatTierForPrice, formatUsd, planCoverage, type FlatPriceTier, type PlanCoverage } from "@tiersaver/core";
+import { and, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
-import { CHARGE_HOLD_HOURS } from "../runs/labels";
-import { chargedWithoutWindow, clearUnpaidCleanup } from "./unpaid";
 
 /**
- * TierSaver's own charge, through Shopify's Billing API ("Manual Pricing"):
- * one usage-based subscription with a capped amount, and one usage record per
- * cleanup that suppressed profiles. Checked against shopify.dev on 2026-11-25
- * (API 2026-10): appSubscriptionCreate with `appUsagePricingDetails { terms,
- * cappedAmount }`, appUsageRecordCreate with `idempotencyKey`.
+ * TierSaver's plan: ONE flat monthly subscription by list size, through Shopify's Billing API.
+ * This file is the only place that knows how the plan is sold; everything else asks it.
  *
- * Rules (docs/00-HANDOVER.md, docs/04-PRECIO-Y-COBRO.md):
- * - flat price by list size; the list size is the one shown in the approved simulation;
- * - a cleanup that suppressed nobody is not charged;
- * - at most one charge every 28 days and never above the cap;
- * - above the public tiers nothing is charged automatically;
- * - the amount never depends on the merchant's Klaviyo invoice.
+ * Rules (owner's decision of 2026-11-26, docs/04-PRECIO-Y-COBRO.md):
+ * - free until the first cleanup: connecting, the audit and the simulation need no plan;
+ * - the plan starts when the merchant approves their first cleanup and Shopify then charges it every 30 days,
+ *   whether or not a cleanup runs that month, until the merchant cancels (uninstalling cancels it);
+ * - a cleanup, manual or automatic, starts only with an ACTIVE plan whose monthly price is at least the price
+ *   of the tier of the list size in the simulation being approved (`planGate`);
+ * - nothing is charged per cleanup; restoring a cleanup refunds nothing;
+ * - development stores get test subscriptions (`test: true`), which Shopify never charges.
+ *
+ * What Shopify's documentation says (read on 2026-11-26, GraphQL Admin API 2026-10):
+ * - `appSubscriptionCreate` with `appRecurringPricingDetails { price, interval }`; `interval` is
+ *   `EVERY_30_DAYS` (the default) or `ANNUAL`. The merchant approves on Shopify's `confirmationUrl` and is sent
+ *   back to `returnUrl`. A subscription not approved within two days becomes EXPIRED; a declined one DECLINED.
+ *   https://shopify.dev/docs/apps/launch/billing/manual-pricing/subscription-billing/create-time-based-subscriptions
+ *   https://shopify.dev/docs/api/admin-graphql/latest/mutations/appSubscriptionCreate
+ *   https://shopify.dev/docs/api/admin-graphql/latest/enums/AppSubscriptionStatus
+ * - "An app can have only one active subscription for each merchant. The existing subscription is canceled and
+ *   replaced by the new subscription after the merchant approves it." With the default replacement behaviour
+ *   (STANDARD) a change between two 30-day plans applies at once and is prorated by Shopify: an upgrade charges
+ *   the difference for the days left in the cycle, a downgrade gives the merchant a prorated credit.
+ *   https://shopify.dev/docs/apps/launch/billing/manual-pricing/subscription-billing
+ *   https://shopify.dev/docs/api/admin-graphql/latest/enums/AppSubscriptionReplacementBehavior
+ *   This is also why the usage subscription of the old model needs no cleanup: the first plan replaces it.
+ * - `appSubscriptionCancel(id, prorate)`: "Cancels an active app subscription, stopping future billing cycles";
+ *   `prorate` defaults to false (no credit for the days left). Uninstalling cancels the subscription.
+ *   https://shopify.dev/docs/api/admin-graphql/latest/mutations/appSubscriptionCancel
+ * - `APP_SUBSCRIPTIONS_UPDATE` webhook: "Triggered when the status, or capped amount, of an AppSubscription
+ *   object is changed" (app/routes/webhooks.app.subscriptions_update.tsx).
+ *   https://shopify.dev/docs/apps/launch/billing/manual-pricing
+ *
+ * ALTERNATIVE PATH, not implemented: Shopify App Pricing (formerly "managed pricing").
+ * Shopify's documentation calls it "the default option when you submit a new public app for approval" and the
+ * Billing API ("Manual Pricing") the legacy method, "still supported for existing apps and outlier pricing
+ * models Shopify App Pricing doesn't cover". App Store requirement 1.2.1 accepts either: "Your app must use
+ * Shopify App Pricing or the Shopify Billing API for any app charges."
+ * https://shopify.dev/docs/apps/launch/billing/shopify-app-pricing (also served at /billing/managed-pricing)
+ * https://shopify.dev/docs/apps/launch/shopify-app-store/app-store-requirements
+ * If the owner switches the app to Shopify App Pricing in the Partner Dashboard, only this file changes:
+ * - the four plans are defined in the Partner Dashboard, with the prices of FLAT_PRICE_TIERS (the App Store
+ *   listing shows them from there) and no trial;
+ * - `requestPlan` stops calling `appSubscriptionCreate` (Shopify refuses it once the app has opted in) and
+ *   returns Shopify's hosted plan page instead:
+ *   https://admin.shopify.com/store/<store handle>/charges/<app handle>/pricing_plans
+ *   That page cannot be opened on one given plan, so the merchant picks the plan and `planGate` checks the pick;
+ * - `getBillingStatus` reads the Partner API's `activeSubscription(appId, shopId)` (the documented way; it needs
+ *   a Partner API credential as a secret) instead of `currentAppInstallation.activeSubscriptions`;
+ * - `cancelPlan` sends the merchant to the same hosted page, and the `APP_SUBSCRIPTIONS_UPDATE` webhook is
+ *   replaced by the redirect parameters and Partner API queries (Shopify App Pricing sends no webhooks since
+ *   2026-04-28);
+ * - `planCoversList`, `planGate`, the copy in `shop_plans` and every caller stay as they are.
  *
  * No Cloudflare or Shopify imports: the Admin API is a function passed in.
  */
@@ -25,19 +64,68 @@ import { chargedWithoutWindow, clearUnpaidCleanup } from "./unpaid";
 export type Db = DrizzleD1Database<typeof schema> & { $client: D1Database };
 export type AdminGraphql = <T>(query: string, variables: Record<string, unknown>) => Promise<T>;
 
-export const SUBSCRIPTION_NAME = "TierSaver list hygiene";
-export const CAPPED_AMOUNT_CENTS = DEFAULT_FEE_POLICY.windowCapCents;
-/**
- * (Defined in runs/labels.ts, which the browser can load.) A confirmed charge waits this long after the cleanup finished before it is sent to Shopify, so a merchant
- * who undoes the whole cleanup inside the window is not charged (decided 2026-11-26).
- */
-export { CHARGE_HOLD_HOURS };
-const CHARGE_HOLD_MS = CHARGE_HOLD_HOURS * 60 * 60 * 1000;
+/** Shopify's name for "charged every 30 days". The only interval TierSaver sells. */
+export const PLAN_INTERVAL = "EVERY_30_DAYS";
+export const PLAN_INTERVAL_DAYS = DEFAULT_FEE_POLICY.billingIntervalDays;
 
-/** Shown by Shopify on the approval screen. Built from the price table, so it cannot drift from what is charged. */
-export function subscriptionTerms(): string {
-  const tiers = FLAT_PRICE_TIERS.map((t) => `${formatUsd(t.monthlyCents)} up to ${t.maxProfiles.toLocaleString("en-US")} active profiles`).join(", ");
-  return `Flat monthly price by list size: ${tiers}. Charged only in a month when a cleanup suppresses profiles, at most once every ${DEFAULT_FEE_POLICY.minDaysBetweenCharges} days. The audit is free.`;
+/** "US$9": the way a price is written to the merchant. */
+export const usd = (cents: number) => `US${formatUsd(cents)}`;
+const count = (n: number) => n.toLocaleString("en-US");
+
+export interface Plan {
+  monthlyCents: number;
+  /** Largest list (active profiles) the plan covers. */
+  maxProfiles: number;
+  /** The subscription's name, as Shopify shows it on its approval page and in the merchant's bills. */
+  name: string;
+  /** "US$9/month". */
+  price: string;
+  /** One sentence with everything the merchant agrees to. Built here so no page writes a price by hand. */
+  terms: string;
+}
+
+function planOf(tier: FlatPriceTier): Plan {
+  const price = `${usd(tier.monthlyCents)}/month`;
+  return {
+    monthlyCents: tier.monthlyCents,
+    maxProfiles: tier.maxProfiles,
+    name: `TierSaver list hygiene: up to ${count(tier.maxProfiles)} active profiles`,
+    price,
+    terms: `${price} for lists up to ${count(tier.maxProfiles)} active profiles, charged by Shopify every ${PLAN_INTERVAL_DAYS} days until you cancel.`,
+  };
+}
+
+/** Every plan on sale, smallest first. */
+export const PLANS: readonly Plan[] = FLAT_PRICE_TIERS.map(planOf);
+/** Above this many active profiles TierSaver is not sold automatically. */
+export const LARGEST_PLAN_PROFILES = FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!.maxProfiles;
+
+/** The plan for a list of this size, or null above the largest plan (not sold automatically). */
+export function planForListSize(activeProfiles: number): Plan | null {
+  const tier = flatTierFor(activeProfiles);
+  return tier ? planOf(tier) : null;
+}
+
+export interface ActivePlan {
+  /** Shopify's AppSubscription id. */
+  id: string;
+  name: string;
+  monthlyCents: number;
+  /** Largest list the plan covers; null when its price is not one of the plans on sale. */
+  maxProfiles: number | null;
+  /** Test subscription (development stores): Shopify never charges it. */
+  test: boolean;
+  /** ISO date and time the current 30-day period ends, when Shopify reports it. */
+  currentPeriodEnd: string | null;
+}
+
+export interface BillingStatus {
+  /** Development stores can only take test charges. */
+  developmentStore: boolean;
+  /** The ACTIVE 30-day subscription in USD, if the merchant approved one. Nothing else counts as a plan. */
+  plan: ActivePlan | null;
+  /** A plan exists but Shopify put it on hold for non-payment; it comes back when payments resume. */
+  frozen: boolean;
 }
 
 const STATUS_QUERY = `#graphql
@@ -46,14 +134,16 @@ const STATUS_QUERY = `#graphql
     currentAppInstallation {
       activeSubscriptions {
         id
+        name
         status
         test
+        currentPeriodEnd
         lineItems {
           id
           plan {
             pricingDetails {
               __typename
-              ... on AppUsagePricing { cappedAmount { amount currencyCode } balanceUsed { amount } }
+              ... on AppRecurringPricing { interval price { amount currencyCode } }
             }
           }
         }
@@ -66,45 +156,59 @@ interface StatusData {
   currentAppInstallation?: {
     activeSubscriptions?: {
       id: string;
+      name?: string;
       status: string;
       test: boolean;
-      lineItems?: { id: string; plan?: { pricingDetails?: { __typename?: string; cappedAmount?: { amount: string; currencyCode: string }; balanceUsed?: { amount: string } } } }[];
+      currentPeriodEnd?: string | null;
+      lineItems?: { id: string; plan?: { pricingDetails?: { __typename?: string; interval?: string; price?: { amount: string; currencyCode: string } } } }[];
     }[];
   };
 }
 
-export interface BillingStatus {
-  /** Development stores can only take test charges. */
-  developmentStore: boolean;
-  /** The active subscription with a usage line item in USD, if the merchant accepted one. */
-  subscription: { id: string; usageLineItemId: string; cappedCents: number; balanceUsedCents: number; test: boolean } | null;
-}
-
 const cents = (amount: string | undefined) => Math.round(Number(amount ?? 0) * 100);
 
+/**
+ * The shop's plan as Shopify reports it right now. Only a subscription with a recurring 30-day price in USD is
+ * a plan: the usage subscription of the per-cleanup model (it may still exist on the development store) has no
+ * such line item and does not count.
+ */
 export async function getBillingStatus(graphql: AdminGraphql): Promise<BillingStatus> {
   const data = await graphql<StatusData>(STATUS_QUERY, {});
-  let subscription: BillingStatus["subscription"] = null;
+  let plan: ActivePlan | null = null;
+  let frozen = false;
   for (const sub of data.currentAppInstallation?.activeSubscriptions ?? []) {
-    if (sub.status !== "ACTIVE") continue;
-    const usage = (sub.lineItems ?? []).find(
-      (li) => li.plan?.pricingDetails?.__typename === "AppUsagePricing" && li.plan.pricingDetails.cappedAmount?.currencyCode === "USD",
-    );
-    if (!usage) continue;
-    subscription = {
+    const recurring = (sub.lineItems ?? []).find((li) => {
+      const details = li.plan?.pricingDetails;
+      return details?.__typename === "AppRecurringPricing" && details.interval === PLAN_INTERVAL && details.price?.currencyCode === "USD";
+    });
+    if (!recurring) continue;
+    if (sub.status === "FROZEN") frozen = true;
+    if (sub.status !== "ACTIVE" || plan) continue;
+    const monthlyCents = cents(recurring.plan?.pricingDetails?.price?.amount);
+    if (!(monthlyCents > 0)) continue;
+    plan = {
       id: sub.id,
-      usageLineItemId: usage.id,
-      cappedCents: cents(usage.plan?.pricingDetails?.cappedAmount?.amount),
-      balanceUsedCents: cents(usage.plan?.pricingDetails?.balanceUsed?.amount),
+      name: sub.name ?? "",
+      monthlyCents,
+      maxProfiles: flatTierForPrice(monthlyCents)?.maxProfiles ?? null,
       test: sub.test === true,
+      currentPeriodEnd: sub.currentPeriodEnd ?? null,
     };
-    break;
   }
-  return { developmentStore: data.shop?.plan?.partnerDevelopment === true, subscription };
+  return { developmentStore: data.shop?.plan?.partnerDevelopment === true, plan, frozen: frozen && !plan };
+}
+
+/**
+ * Whether `plan` allows a cleanup of a list of `activeProfiles`: its monthly price must be at least the price
+ * of the list's tier. `overpaying` marks a plan that costs more than the list needs (the list moved to a lower
+ * tier): the merchant is told and offered the lower plan.
+ */
+export function planCoversList(plan: Pick<ActivePlan, "monthlyCents"> | null, activeProfiles: number): PlanCoverage {
+  return planCoverage(plan?.monthlyCents ?? null, activeProfiles);
 }
 
 const CREATE_MUTATION = `#graphql
-  mutation TierSaverSubscribe($name: String!, $returnUrl: URL!, $test: Boolean, $lineItems: [AppSubscriptionLineItemInput!]!) {
+  mutation TierSaverPlanCreate($name: String!, $returnUrl: URL!, $test: Boolean, $lineItems: [AppSubscriptionLineItemInput!]!) {
     appSubscriptionCreate(name: $name, returnUrl: $returnUrl, test: $test, lineItems: $lineItems) {
       confirmationUrl
       appSubscription { id }
@@ -112,253 +216,246 @@ const CREATE_MUTATION = `#graphql
     }
   }`;
 
-/** Asks Shopify for the approval page of the usage subscription. Nothing is charged by accepting it. */
-export async function requestSubscription(
-  graphql: AdminGraphql,
-  args: { returnUrl: string; test: boolean },
-): Promise<{ ok: true; confirmationUrl: string } | { ok: false; error: string }> {
+export type RequestPlanResult = { ok: true; confirmationUrl: string; plan: Plan } | { ok: false; error: "above_price_tiers" | "plan_not_created" };
+
+/**
+ * Asks Shopify for the approval page of the plan for a list of `activeProfiles`. Nothing is charged until the
+ * merchant approves there; Shopify then sends them to `returnUrl`. Approving replaces any subscription the shop
+ * already has (a smaller or larger plan, or the old usage subscription), with Shopify's own proration.
+ */
+export async function requestPlan(graphql: AdminGraphql, args: { activeProfiles: number; returnUrl: string; test: boolean }): Promise<RequestPlanResult> {
+  const plan = planForListSize(args.activeProfiles);
+  if (!plan) return { ok: false, error: "above_price_tiers" };
   const data = await graphql<{ appSubscriptionCreate?: { confirmationUrl?: string | null; userErrors?: { message: string }[] } }>(CREATE_MUTATION, {
-    name: SUBSCRIPTION_NAME,
+    name: plan.name,
     returnUrl: args.returnUrl,
+    // Development stores cannot be charged: Shopify only accepts test subscriptions there.
     test: args.test,
-    lineItems: [
-      {
-        plan: {
-          appUsagePricingDetails: {
-            terms: subscriptionTerms(),
-            cappedAmount: { amount: CAPPED_AMOUNT_CENTS / 100, currencyCode: "USD" },
-          },
-        },
-      },
-    ],
+    lineItems: [{ plan: { appRecurringPricingDetails: { price: { amount: plan.monthlyCents / 100, currencyCode: "USD" }, interval: PLAN_INTERVAL } } }],
   });
   const result = data.appSubscriptionCreate;
-  if (!result?.confirmationUrl || (result.userErrors?.length ?? 0) > 0) return { ok: false, error: "subscription_not_created" };
-  return { ok: true, confirmationUrl: result.confirmationUrl };
+  if (!result?.confirmationUrl || (result.userErrors?.length ?? 0) > 0) return { ok: false, error: "plan_not_created" };
+  return { ok: true, confirmationUrl: result.confirmationUrl, plan };
 }
 
-const USAGE_MUTATION = `#graphql
-  mutation TierSaverUsage($subscriptionLineItemId: ID!, $price: MoneyInput!, $description: String!, $idempotencyKey: String) {
-    appUsageRecordCreate(subscriptionLineItemId: $subscriptionLineItemId, price: $price, description: $description, idempotencyKey: $idempotencyKey) {
-      appUsageRecord { id }
+const CANCEL_MUTATION = `#graphql
+  mutation TierSaverPlanCancel($id: ID!) {
+    appSubscriptionCancel(id: $id, prorate: false) {
+      appSubscription { id status }
       userErrors { field message }
     }
   }`;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export type CancelPlanResult = { ok: true; cancelled: ActivePlan | null } | { ok: false; error: "plan_not_cancelled" };
 
 /**
- * The price of one cleanup given what the shop was already CHARGED. Only charges that reached Shopify count:
- * a pending or failed one must not make the next cleanup free. The 28 days are counted in whole UTC days from
- * the day of the charged cleanup, so a monthly schedule is not skipped in a 28-day February by a few minutes.
+ * Cancels the shop's plan at Shopify: no further 30-day charge is made. The days left of the current period are
+ * not credited (`prorate: false`), as the terms say. `cancelled: null` means there was no plan to cancel.
  */
-async function quoteForRun(db: Db, run: { id: string; shop: string; processedCount: number }, activeProfiles: number, now: Date) {
-  const charged = await db.query.usageCharges.findMany({
-    where: and(eq(schema.usageCharges.shop, run.shop), eq(schema.usageCharges.status, "charged"), ne(schema.usageCharges.runId, run.id)),
-    orderBy: desc(schema.usageCharges.createdAt),
-    limit: 10,
-  });
-  const billable = charged.filter((c) => c.feeCents > 0);
-  const windowStart = now.getTime() - 30 * DAY_MS;
-  const last = billable[0]?.createdAt ?? null;
-  return quoteCharge({
-    activeProfiles,
-    profilesSuppressed: run.processedCount,
-    lastChargeAt: last ? new Date(Math.floor(last.getTime() / DAY_MS) * DAY_MS) : null,
-    chargedInWindowCents: billable.filter((c) => c.createdAt.getTime() >= windowStart).reduce((sum, c) => sum + c.feeCents, 0),
-    now,
-  });
+export async function cancelPlan(graphql: AdminGraphql): Promise<CancelPlanResult> {
+  const { plan } = await getBillingStatus(graphql);
+  if (!plan) return { ok: true, cancelled: null };
+  const data = await graphql<{ appSubscriptionCancel?: { appSubscription?: { id: string; status: string } | null; userErrors?: { message: string }[] } }>(CANCEL_MUTATION, { id: plan.id });
+  const result = data.appSubscriptionCancel;
+  if (!result?.appSubscription?.id || (result.userErrors?.length ?? 0) > 0) return { ok: false, error: "plan_not_cancelled" };
+  return { ok: true, cancelled: plan };
 }
 
-export type SettleResult =
-  | { status: "charged"; feeCents: number }
-  /** Quoted from what the run sent; waiting for Klaviyo's jobs to confirm before anything is charged. */
-  | { status: "estimated"; feeCents: number }
-  /** Confirmed by Klaviyo, waiting out the undo window; `chargeAt` is when it goes to Shopify. */
-  | { status: "held"; feeCents: number; chargeAt: string }
-  | { status: "not_charged"; reason: string }
-  | { status: "failed"; error: string }
-  | { status: "skipped"; reason: "run_not_found" | "not_a_cleanup" | "not_finished" };
+// ---- The app's copy of the plan (`shop_plans`) ---------------------------------------------------------------
 
-const FINISHED = ["completed", "completed_with_errors", "failed", "cancelled"] as const;
+export type PlanEnd = "cancelled" | "declined";
 
 /**
- * Settles the charge of one cleanup. Safe to call any number of times: there
- * is one `usage_charges` row per run, and Shopify gets the same idempotency
- * key every time. A failed attempt stays "failed" and is tried again later.
- * Three stages: first an ESTIMATE from what the run sent; once Klaviyo's jobs
- * are complete the amount is confirmed but HELD for the undo window; after the
- * window, the real charge for what Klaviyo confirmed.
+ * Brings `shop_plans` in line with what Shopify just reported, and writes the audit trail (product rule 3):
+ * `plan.started` when a plan becomes active (first plan, or a change of plan) and `plan.ended` when it stops.
+ * `endedAs` says why a plan that is no longer there ended; `declined` is also recorded for a shop that never
+ * had a plan (the merchant said no on Shopify's approval page).
  */
-export async function settleRunCharge(
-  deps: { db: Db; graphql: AdminGraphql | null; now?: () => Date },
-  runId: string,
-  /**
-   * What Klaviyo's jobs report for the run (app/runs/confirm.ts). Until it is
-   * `done` the charge is only an estimate and nothing is sent to Shopify.
-   */
-  confirmation: { done: boolean; suppressed: number } | null = null,
-): Promise<SettleResult> {
-  const { db } = deps;
-  const now = (deps.now ?? (() => new Date()))();
-  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId) });
-  if (!run) return { status: "skipped", reason: "run_not_found" };
-  if (run.kind !== "suppress" || !run.simulationId) return { status: "skipped", reason: "not_a_cleanup" };
-  if (!(FINISHED as readonly string[]).includes(run.status)) return { status: "skipped", reason: "not_finished" };
+export async function syncPlanState(db: Db, shop: string, status: BillingStatus, opts: { actor?: string; endedAs?: PlanEnd; now?: Date } = {}): Promise<void> {
+  const now = opts.now ?? new Date();
+  const actor = opts.actor ?? "system";
+  const previous = await db.query.shopPlans.findFirst({ where: eq(schema.shopPlans.shop, shop) });
 
-  let charge = await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) });
-  if (charge?.status === "charged") return { status: "charged", feeCents: charge.feeCents };
-  if (charge?.status === "not_charged") return { status: "not_charged", reason: charge.noChargeReason ?? "no_cleanup" };
+  if (status.plan) {
+    const plan = status.plan;
+    const fresh = previous?.status !== "active" || previous.subscriptionId !== plan.id;
+    const values = {
+      status: "active" as const,
+      subscriptionId: plan.id,
+      monthlyCents: plan.monthlyCents,
+      tierMaxProfiles: plan.maxProfiles,
+      test: plan.test,
+      currentPeriodEnd: plan.currentPeriodEnd ? new Date(plan.currentPeriodEnd) : null,
+      startedAt: fresh ? now : (previous?.startedAt ?? now),
+      endedAt: null,
+      updatedAt: now,
+    };
+    await db.insert(schema.shopPlans).values({ shop, ...values }).onConflictDoUpdate({ target: schema.shopPlans.shop, set: values });
+    if (fresh) {
+      await db
+        .insert(schema.eventsLog)
+        .values({
+          id: `plan:${shop}:${plan.id}:started`,
+          shop,
+          at: now,
+          actor,
+          action: "plan.started",
+          detail: { subscriptionId: plan.id, monthlyCents: plan.monthlyCents, tierMaxProfiles: plan.maxProfiles, test: plan.test, previousMonthlyCents: previous?.status === "active" ? previous.monthlyCents : null },
+        })
+        .onConflictDoNothing();
+    }
+    return;
+  }
 
-  if (!charge) {
-    const simulation = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId) });
-    if (!simulation) return { status: "skipped", reason: "not_a_cleanup" };
-    const quote = await quoteForRun(db, run, simulation.activeProfiles, now);
-    await db
-      .insert(schema.usageCharges)
-      .values({
-        id: crypto.randomUUID(),
-        shop: run.shop,
-        runId,
-        activeProfiles: quote.activeProfiles,
-        priceTierMax: quote.tier?.maxProfiles ?? null,
-        profilesSuppressed: run.processedCount,
-        feeCents: quote.feeCents,
-        capApplied: quote.capApplied,
-        noChargeReason: quote.noChargeReason,
-        status: quote.feeCents > 0 ? "pending" : "not_charged",
-        idempotencyKey: chargeIdempotencyKey(run.shop, runId),
-        createdAt: now,
-      })
-      .onConflictDoNothing();
-    charge = await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) });
-    if (!charge) return { status: "failed", error: "charge_not_recorded" };
-    await db
+  if (status.frozen) {
+    if (previous && previous.status !== "frozen") {
+      await db.update(schema.shopPlans).set({ status: "frozen", updatedAt: now }).where(eq(schema.shopPlans.shop, shop));
+      await db.insert(schema.eventsLog).values({ id: crypto.randomUUID(), shop, at: now, actor, action: "plan.frozen", detail: { subscriptionId: previous.subscriptionId } });
+    } else if (!previous) {
+      await db.insert(schema.shopPlans).values({ shop, status: "frozen", updatedAt: now }).onConflictDoNothing();
+    }
+    return;
+  }
+
+  // No plan at Shopify.
+  if (previous && (previous.status === "active" || previous.status === "frozen")) {
+    const endedAs = opts.endedAs ?? "cancelled";
+    await db.batch([
+      db.update(schema.shopPlans).set({ status: endedAs, endedAt: now, currentPeriodEnd: null, updatedAt: now }).where(eq(schema.shopPlans.shop, shop)),
+      db.insert(schema.eventsLog).values({ id: crypto.randomUUID(), shop, at: now, actor, action: "plan.ended", detail: { subscriptionId: previous.subscriptionId, monthlyCents: previous.monthlyCents, endedAs } }),
+    ]);
+    return;
+  }
+  if (!previous && opts.endedAs === "declined") {
+    await db.insert(schema.shopPlans).values({ shop, status: "declined", endedAt: now, updatedAt: now }).onConflictDoNothing();
+  }
+}
+
+/** The app's copy of the plan: for pages that must not ask Shopify on every load. Null: the shop never had a plan. */
+export async function storedPlanState(db: Db, shop: string): Promise<{ status: (typeof schema.PLAN_STATUSES)[number]; monthlyCents: number; tierMaxProfiles: number | null } | null> {
+  const row = await db.query.shopPlans.findFirst({ where: eq(schema.shopPlans.shop, shop), columns: { status: true, monthlyCents: true, tierMaxProfiles: true } });
+  return row ?? null;
+}
+
+// ---- The gate ------------------------------------------------------------------------------------------------
+
+export type PlanGateRefusal =
+  /** No active plan: the merchant has to approve one in Shopify. */
+  | "plan_required"
+  /** The plan is on hold at Shopify for non-payment. */
+  | "plan_frozen"
+  /** The list moved to a higher tier: the merchant has to approve the new price in Shopify. */
+  | "plan_price_too_low"
+  /** List above the largest plan: not sold automatically. */
+  | "above_price_tiers"
+  /** Shopify could not be asked. Nothing is started on a guess. */
+  | "billing_unavailable"
+  | "not_found";
+
+export type PlanGateResult = { ok: true; plan: ActivePlan; overpaying: boolean; requiredCents: number } | { ok: false; reason: PlanGateRefusal; requiredCents: number | null };
+
+/**
+ * THE gate of every cleanup, manual or automatic (runs/start.server.ts, schedule/automatic.ts): asks Shopify
+ * itself, at that moment, whether the shop has an active plan that covers the list size of the simulation.
+ * Never answered from the stored copy, and a failed question is a refusal.
+ */
+export async function planGate(deps: { db: Db; graphql: AdminGraphql; actor?: string; now?: Date }, args: { shop: string; simulationId: string }): Promise<PlanGateResult> {
+  const simulation = await deps.db.query.simulations.findFirst({
+    where: and(eq(schema.simulations.id, args.simulationId), eq(schema.simulations.shop, args.shop)),
+    columns: { activeProfiles: true },
+  });
+  if (!simulation) return { ok: false, reason: "not_found", requiredCents: null };
+  let status: BillingStatus;
+  try {
+    status = await getBillingStatus(deps.graphql);
+  } catch {
+    return { ok: false, reason: "billing_unavailable", requiredCents: null };
+  }
+  // Keeping the copy current must never decide a cleanup.
+  await syncPlanState(deps.db, args.shop, status, { actor: deps.actor, now: deps.now }).catch(() => {});
+  const coverage = planCoversList(status.plan, simulation.activeProfiles);
+  if (coverage.covered && status.plan) return { ok: true, plan: status.plan, overpaying: coverage.overpaying, requiredCents: coverage.requiredCents };
+  if (coverage.covered) return { ok: false, reason: "plan_required", requiredCents: coverage.requiredCents };
+  if (coverage.reason === "no_plan") return { ok: false, reason: status.frozen ? "plan_frozen" : "plan_required", requiredCents: coverage.requiredCents };
+  return { ok: false, reason: coverage.reason, requiredCents: coverage.requiredCents };
+}
+
+// ---- Actions a merchant takes ----------------------------------------------------------------------------------
+
+/** Asks Shopify for the plan and brings the stored copy in line. For pages that show the plan. Throws when Shopify cannot be asked. */
+export async function refreshPlan(deps: { db: Db; graphql: AdminGraphql; actor?: string; endedAs?: PlanEnd; now?: Date }, shop: string): Promise<BillingStatus> {
+  const status = await getBillingStatus(deps.graphql);
+  await syncPlanState(deps.db, shop, status, { actor: deps.actor, endedAs: deps.endedAs, now: deps.now }).catch(() => {});
+  return status;
+}
+
+export type PlanRequest =
+  /** The shop already has exactly the plan this list size needs. */
+  | { ok: true; next: "ready" }
+  /** Send the merchant to Shopify's approval page. */
+  | { ok: true; next: "approve_in_shopify"; confirmationUrl: string; plan: Plan }
+  | { ok: false; reason: "above_price_tiers" | "billing_unavailable" };
+
+/**
+ * Starts, or changes to, the plan for a list of `activeProfiles`. With `keepLargerPlan` a plan that already
+ * covers the list is left alone even if it costs more (approving a cleanup never changes a plan that is
+ * enough); without it the request is for exactly the list's plan (the merchant asked to switch to the lower one).
+ * The request and the terms version shown are written to the audit trail; the plan itself only exists once the
+ * merchant approves it at Shopify.
+ */
+export async function requestPlanFor(
+  deps: { db: Db; graphql: AdminGraphql; now?: Date },
+  args: { shop: string; activeProfiles: number; returnUrl: string; actor: string; termsVersion?: string; simulationId?: string | null; keepLargerPlan?: boolean },
+): Promise<PlanRequest> {
+  const wanted = planForListSize(args.activeProfiles);
+  if (!wanted) return { ok: false, reason: "above_price_tiers" };
+  try {
+    const status = await refreshPlan({ db: deps.db, graphql: deps.graphql, actor: args.actor, now: deps.now }, args.shop);
+    const current = status.plan?.monthlyCents ?? null;
+    if (current !== null && (current === wanted.monthlyCents || (args.keepLargerPlan && current > wanted.monthlyCents))) return { ok: true, next: "ready" };
+    const requested = await requestPlan(deps.graphql, { activeProfiles: args.activeProfiles, returnUrl: args.returnUrl, test: status.developmentStore });
+    if (!requested.ok) return { ok: false, reason: requested.error === "above_price_tiers" ? "above_price_tiers" : "billing_unavailable" };
+    await deps.db
       .insert(schema.eventsLog)
       .values({
-        id: `run:${runId}:charge-quoted`,
-        shop: run.shop,
-        at: now,
-        actor: "system",
-        action: charge.feeCents > 0 ? "charge.quoted" : "charge.not_charged",
-        runId,
-        detail: { feeCents: charge.feeCents, activeProfiles: charge.activeProfiles, profilesSuppressed: charge.profilesSuppressed, reason: charge.noChargeReason },
+        id: crypto.randomUUID(),
+        shop: args.shop,
+        at: deps.now ?? new Date(),
+        actor: args.actor,
+        action: "plan.requested",
+        simulationId: args.simulationId ?? null,
+        detail: { monthlyCents: wanted.monthlyCents, tierMaxProfiles: wanted.maxProfiles, activeProfiles: Math.ceil(args.activeProfiles), previousMonthlyCents: current, test: status.developmentStore, termsVersion: args.termsVersion ?? null },
       })
-      .onConflictDoNothing();
-    if (charge.status === "not_charged") return { status: "not_charged", reason: charge.noChargeReason ?? "no_cleanup" };
-  }
-
-  // The amount is an estimate until Klaviyo confirms how many profiles its jobs processed. Once confirmed, the
-  // count is kept on the charge, so a later call (the cron, after the undo window) needs no read of Klaviyo.
-  if (!confirmation?.done && !charge.confirmedAt) return { status: "estimated", feeCents: charge.feeCents };
-  const confirmed = confirmation?.done ? Math.max(0, Math.min(Math.trunc(confirmation.suppressed), run.processedCount)) : charge.profilesSuppressed;
-  if (confirmed === 0) {
-    await db
-      .update(schema.usageCharges)
-      .set({ status: "not_charged", feeCents: 0, profilesSuppressed: 0, noChargeReason: "no_cleanup" })
-      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
-    return { status: "not_charged", reason: "no_cleanup" };
-  }
-  // "No cleanup, no charge" also covers a cleanup that was undone in full before its charge went out
-  // (decided 2026-11-25). An undo after the charge does not refund it. The hold below is what gives the
-  // merchant time to do that.
-  const [remaining] = await db
-    .select({ n: sql<number>`COUNT(*)` })
-    .from(schema.runProfiles)
-    .where(and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
-  if ((remaining?.n ?? 0) === 0) {
-    await db
-      .update(schema.usageCharges)
-      .set({ status: "not_charged", feeCents: 0, noChargeReason: "cleanup_undone" })
-      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
-    return { status: "not_charged", reason: "cleanup_undone" };
-  }
-  if (confirmed !== charge.profilesSuppressed || !charge.confirmedAt) {
-    const confirmedAt = charge.confirmedAt ?? now;
-    await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed, confirmedAt }).where(eq(schema.usageCharges.id, charge.id));
-    charge = { ...charge, profilesSuppressed: confirmed, confirmedAt };
-  }
-
-  // An account that left a cleanup unpaid by uninstalling inside the window gets no window (billing/unpaid.ts).
-  const noWindow = await chargedWithoutWindow(db, run.shop);
-  const chargeAt = (run.finishedAt ?? charge.createdAt).getTime() + (noWindow ? 0 : CHARGE_HOLD_MS);
-  if (now.getTime() < chargeAt) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(chargeAt).toISOString() };
-  // A restore that is still running when the window ends decides the charge: wait for it (an hour at a time).
-  const undoing = await db.query.runs.findFirst({
-    where: and(eq(schema.runs.undoOfRunId, runId), inArray(schema.runs.status, ["queued", "running"])),
-    columns: { id: true },
-  });
-  if (undoing) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(now.getTime() + 60 * 60 * 1000).toISOString() };
-
-  // Priced again at the moment of charging, against what was really charged by now: of two cleanups inside
-  // 28 days the first to be charged is the one that pays, and one that was undone does not block the other.
-  const simulation = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId), columns: { activeProfiles: true } });
-  const finalQuote = await quoteForRun(db, run, simulation?.activeProfiles ?? charge.activeProfiles, now);
-  if (finalQuote.feeCents <= 0) {
-    await db
-      .update(schema.usageCharges)
-      .set({ status: "not_charged", feeCents: 0, noChargeReason: finalQuote.noChargeReason ?? "no_cleanup" })
-      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
-    return { status: "not_charged", reason: finalQuote.noChargeReason ?? "no_cleanup" };
-  }
-  if (finalQuote.feeCents !== charge.feeCents) {
-    await db.update(schema.usageCharges).set({ feeCents: finalQuote.feeCents, capApplied: finalQuote.capApplied }).where(eq(schema.usageCharges.id, charge.id));
-    charge = { ...charge, feeCents: finalQuote.feeCents };
-  }
-
-  const fail = async (error: string): Promise<SettleResult> => {
-    await db.update(schema.usageCharges).set({ status: "failed", attempts: sql`${schema.usageCharges.attempts} + 1`, lastAttemptAt: now }).where(and(eq(schema.usageCharges.id, charge!.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
-    return { status: "failed", error };
-  };
-  if (!deps.graphql) return fail("shopify_unavailable");
-
-  try {
-    const billing = await getBillingStatus(deps.graphql);
-    if (!billing.subscription) return fail("no_active_subscription");
-    const data = await deps.graphql<{ appUsageRecordCreate?: { appUsageRecord?: { id: string } | null; userErrors?: { message: string }[] } }>(USAGE_MUTATION, {
-      subscriptionLineItemId: billing.subscription.usageLineItemId,
-      price: { amount: charge.feeCents / 100, currencyCode: "USD" },
-      description: `List cleanup: ${charge.profilesSuppressed.toLocaleString("en-US")} profiles suppressed${charge.priceTierMax ? ` (list of up to ${charge.priceTierMax.toLocaleString("en-US")} active profiles)` : ""}`,
-      idempotencyKey: charge.idempotencyKey,
-    });
-    const record = data.appUsageRecordCreate?.appUsageRecord;
-    if (!record?.id || (data.appUsageRecordCreate?.userErrors?.length ?? 0) > 0) return fail("usage_record_rejected");
-    await db.batch([
-      db.update(schema.usageCharges).set({ status: "charged", chargedAt: now, shopifyUsageRecordId: record.id }).where(eq(schema.usageCharges.id, charge.id)),
-      db
-        .insert(schema.eventsLog)
-        .values({ id: `run:${runId}:charged`, shop: run.shop, at: now, actor: "system", action: "charge.created", runId, detail: { feeCents: charge.feeCents, test: billing.subscription.test } })
-        .onConflictDoNothing(),
-    ]);
-    await clearUnpaidCleanup(db, run.shop).catch(() => {});
-    return { status: "charged", feeCents: charge.feeCents };
+      .catch(() => {});
+    return { ok: true, next: "approve_in_shopify", confirmationUrl: requested.confirmationUrl, plan: requested.plan };
   } catch {
-    return fail("shopify_request_failed");
+    return { ok: false, reason: "billing_unavailable" };
   }
 }
 
-/** After this many failed tries a charge is still retried, but each try is logged as needing a person. */
-export const CHARGE_ATTEMPTS_BEFORE_ALERT = 24;
-
 /**
- * Runs whose charge still has to be created or retried (cron). A charge that is waiting out the undo window is
- * left alone until the window ends. The least recently tried come first, so a charge that keeps failing cannot
- * hold back the others. Thirty days back: an older failure needs a person.
+ * "Cancel plan" in Settings. Cancels the subscription at Shopify and, as its consequences: cleanups can no longer
+ * start (`planGate`), and automatic cleanups are turned off, so that starting a plan again later does not bring
+ * them back without the merchant asking. Recorded with who did it. Nothing is restored and nothing is refunded.
  */
-export async function runsWithOpenCharges(db: Db, now = new Date(), limit = 20): Promise<{ runId: string; shop: string; confirmed: boolean; attempts: number }[]> {
-  const since = new Date(now.getTime() - 30 * DAY_MS);
-  const holdEnded = now.getTime() - CHARGE_HOLD_MS;
-  const rows = await db.$client
-    .prepare(
-      `SELECT r.id AS runId, r.shop AS shop, c.confirmed_at IS NOT NULL AS confirmed, COALESCE(c.attempts, 0) AS attempts FROM runs r
-       JOIN shops s ON s.shop = r.shop AND s.status = 'installed'
-       LEFT JOIN usage_charges c ON c.run_id = r.id
-       WHERE r.kind = 'suppress' AND r.status IN ('completed', 'completed_with_errors', 'failed', 'cancelled')
-         AND r.processed_count > 0 AND r.finished_at >= ?1
-         AND (c.id IS NULL OR c.status = 'failed' OR (c.status = 'pending' AND (r.finished_at <= ?3 OR c.confirmed_at IS NULL)))
-       ORDER BY COALESCE(c.last_attempt_at, 0), r.finished_at LIMIT ?2`,
-    )
-    .bind(since.getTime(), limit, holdEnded)
-    .all<{ runId: string; shop: string; confirmed: number; attempts: number }>();
-  return rows.results.map((r) => ({ runId: r.runId, shop: r.shop, confirmed: Boolean(r.confirmed), attempts: r.attempts }));
+export async function cancelPlanForShop(deps: { db: Db; graphql: AdminGraphql; now?: Date }, args: { shop: string; actor: string }): Promise<{ ok: true; hadPlan: boolean; automaticTurnedOff: boolean } | { ok: false; reason: "billing_unavailable" | "plan_not_cancelled" }> {
+  const now = deps.now ?? new Date();
+  let cancelled: ActivePlan | null;
+  try {
+    const result = await cancelPlan(deps.graphql);
+    if (!result.ok) return { ok: false, reason: "plan_not_cancelled" };
+    cancelled = result.cancelled;
+  } catch {
+    return { ok: false, reason: "billing_unavailable" };
+  }
+  await syncPlanState(deps.db, args.shop, { developmentStore: false, plan: null, frozen: false }, { actor: args.actor, endedAs: "cancelled", now });
+  const settings = await deps.db.query.settings.findFirst({ where: eq(schema.settings.shop, args.shop), columns: { mode: true, version: true } });
+  const automaticTurnedOff = settings?.mode === "automatic";
+  if (automaticTurnedOff) {
+    await deps.db.batch([
+      deps.db.update(schema.settings).set({ mode: "approval", updatedAt: now }).where(eq(schema.settings.shop, args.shop)),
+      deps.db.insert(schema.eventsLog).values({ id: crypto.randomUUID(), shop: args.shop, at: now, actor: args.actor, action: "automatic_mode.disabled", detail: { reason: "plan_cancelled", settingsVersion: settings?.version ?? null } }),
+    ]);
+  }
+  return { ok: true, hadPlan: Boolean(cancelled), automaticTurnedOff };
 }

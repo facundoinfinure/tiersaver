@@ -4,7 +4,7 @@ import {
   evaluateProfile,
   isKnownTierBoundary,
   purchaseDataIsFresh,
-  quoteCharge,
+  quotePlan,
   validateRuleSettings,
   type CandidateReason,
   type ProtectionReason,
@@ -474,15 +474,9 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
       const savingsCents = unknownTier ? 0 : savings.monthlySavingsCents;
       const savingsReason = unknownTier ? "unknown_tier" : savings.unavailableReason;
 
-      const charges = await db.query.usageCharges.findMany({
-        where: and(eq(schema.usageCharges.shop, plan.shop), eq(schema.usageCharges.status, "charged")),
-        orderBy: desc(schema.usageCharges.createdAt),
-        limit: 5,
-      });
-      const lastChargeAt = charges[0]?.chargedAt ?? charges[0]?.createdAt ?? null;
-      const windowStart = finishedAt.getTime() - 30 * 24 * 60 * 60 * 1000;
-      const chargedInWindowCents = charges.filter((c) => c.createdAt.getTime() >= windowStart).reduce((sum, c) => sum + c.feeCents, 0);
-      const charge = quoteCharge({ activeProfiles, profilesSuppressed: totals.candidateCount, lastChargeAt, chargedInWindowCents, now: finishedAt });
+      // The monthly plan a list of this size needs (0 above the plans on sale, or when there is nothing to
+      // suppress). Informational: what a cleanup may start with is decided at Shopify (billing/billing.ts).
+      const planCents = totals.candidateCount > 0 ? quotePlan(activeProfiles).monthlyCents : 0;
 
       const summary: ScanSummary = {
         evaluated: memberCount,
@@ -553,7 +547,7 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
           tierBeforeMax: savings.tierBefore?.maxProfiles ?? null,
           tierAfterMax: savings.tierAfter?.maxProfiles ?? null,
           estimatedMonthlySavingsCents: savingsCents,
-          estimatedFeeCents: charge.feeCents,
+          estimatedFeeCents: planCents,
           priceTableId: table.id,
           // Rules changed while the scan ran: the result is kept for the record but cannot be approved.
           supersededAt: superseded ? finishedAt : null,

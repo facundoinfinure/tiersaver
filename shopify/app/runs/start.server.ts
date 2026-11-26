@@ -1,20 +1,27 @@
 import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { db, schema } from "../db.server";
-import { createSuppressionRun, createUndoRun, type CreateRunResult, type CreateUndoResult } from "./engine";
+import type { AdminGraphql } from "../billing/billing";
+import { createUndoRun, type CreateUndoResult } from "./engine";
+import { createCleanupWithPlan, type GatedRunResult } from "./gated";
 
 /**
  * Creates the run for an approved simulation and hands it to the Workflow.
  * The Workflow instance id is the run id, so calling this twice for the same
  * run cannot start a second execution.
+ *
+ * Refused, with nothing changed, unless Shopify confirms an active plan that covers the list (runs/gated.ts).
  */
 export async function startSuppressionRun(args: {
   shop: string;
   simulationId: string;
   createdBy: string;
   origin?: "manual" | "scheduled";
-}): Promise<CreateRunResult> {
-  const created = await createSuppressionRun(db, args);
+  /** Admin API of the shop, to ask Shopify about the plan. */
+  graphql: AdminGraphql;
+}): Promise<GatedRunResult> {
+  const { graphql, ...run } = args;
+  const created = await createCleanupWithPlan({ db, graphql }, run);
   if (!created.ok) return created;
   await launchRun(created.runId);
   return created;
@@ -36,7 +43,7 @@ export async function launchRun(runId: string): Promise<boolean> {
   }
 }
 
-/** Creates the undo of a cleanup and hands it to the same Workflow. Not gated by SUPPRESSION_ENABLED. */
+/** Creates the undo of a cleanup and hands it to the same Workflow. Not gated by SUPPRESSION_ENABLED nor by the plan: restoring always works. */
 export async function startUndoRun(args: {
   shop: string;
   runId: string;
