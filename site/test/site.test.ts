@@ -418,9 +418,11 @@ describe("numbers on the pages come from core", () => {
     for (const path of ["help/simulation-and-approval.html", "help/history.html", "help/troubleshooting.html", "terms.html"]) {
       expect(textOf(generated.get(path)!), path).toContain("up to 100 profiles");
     }
+    // Deletion happens at uninstall (shopify/app/data/privacy.ts handleUninstall); no page may promise a later date.
     for (const path of ["index.html", "help/uninstalling.html", "help/data-and-privacy.html", "privacy.html", "dpa.html"]) {
-      expect(textOf(generated.get(path)!), path).toMatch(/10 days after (the|you) uninstall/);
+      expect(textOf(generated.get(path)!), path).not.toMatch(/10 days after (the|you) uninstall|48 hours after (an app is |you )?uninstall/);
     }
+    expect(await appSource("app/data/privacy.ts")).toMatch(/db\.delete\(schema\.shops\)/);
     for (const path of ["help/settings.html", "help/data-and-privacy.html", "privacy.html", "dpa.html", "terms.html"]) {
       expect(textOf(generated.get(path)!), path).toContain("for 90 days");
     }

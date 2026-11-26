@@ -78,13 +78,15 @@ describe("privacy", () => {
     await deleteShopData(db, a.shop);
   });
 
-  it("uninstall removes tokens right away and keeps the run history until shop/redact", async () => {
+  it("uninstall deletes everything of the shop at once, leaving only a marker row", async () => {
     const a = await seedEverything();
+    const b = await seedEverything();
+    const otherBefore = await rowCounts(b.shop, b.simulationId);
     await handleUninstall(db, a.shop);
     const after = await rowCounts(a.shop, a.simulationId);
-    expect(after.session).toBe(0);
-    expect(after.klaviyo_connections).toBe(0);
-    expect(after.runs).toBe(1);
+    expect(after.shops).toBe(1);
+    expect(Object.entries(after).filter(([table, n]) => table !== "shops" && n !== 0), JSON.stringify(after)).toEqual([]);
+    expect(await rowCounts(b.shop, b.simulationId)).toEqual(otherBefore);
     const shop = await db.query.shops.findFirst({ where: eq(schema.shops.shop, a.shop) });
     expect(shop?.status).toBe("uninstalled");
     await handleUninstall(db, a.shop);

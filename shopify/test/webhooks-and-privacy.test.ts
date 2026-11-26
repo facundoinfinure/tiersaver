@@ -121,6 +121,6 @@ describe("housekeeping of uninstalled shops", () => {
     const count = async (shop: string) => (await env.DB.prepare("SELECT (SELECT COUNT(*) FROM shops WHERE shop = ?1) + (SELECT COUNT(*) FROM simulations WHERE shop = ?1) AS n").bind(shop).first<{ n: number }>())!.n;
     expect(await count(gone.shop)).toBe(0);
     expect(await count(kept.shop)).toBe(2);
-    expect(await count(recent.shop)).toBe(2);
+    expect(await count(recent.shop)).toBe(1); // data deleted at uninstall; only the marker row waits for housekeeping
   });
 });

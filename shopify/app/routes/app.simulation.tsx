@@ -537,7 +537,10 @@ export default function Simulation() {
                     </s-list-item>
                   ) : null}
                   {plan.standing === "none" ? (
-                    <s-list-item>You can cancel the plan at any time in Settings. Uninstalling the app also cancels it.</s-list-item>
+                    <s-list-item>
+                      You can cancel the plan at any time in Settings. Uninstalling the app also cancels it. The period already paid is not
+                      refunded, except where the law requires it.
+                    </s-list-item>
                   ) : null}
                   {plan.standing === "frozen" ? (
                     <s-list-item>
@@ -582,7 +585,11 @@ export default function Simulation() {
                   <s-checkbox
                     name="acknowledged"
                     value="yes"
-                    label={`I have read the notices above, I accept the TierSaver Terms of Service, and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`}
+                    label={
+                      needsPlan && plan.required
+                        ? `I have read the notices above, I accept the TierSaver Terms of Service, I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo, and I agree to the ${plan.required.price}/month plan, which renews every ${plan.intervalDays} days until I cancel it.`
+                        : `I have read the notices above, I accept the TierSaver Terms of Service, and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`
+                    }
                     error={notAcknowledged ? ERRORS.not_acknowledged : undefined}
                     {...errorFocus(notAcknowledged)}
                   />

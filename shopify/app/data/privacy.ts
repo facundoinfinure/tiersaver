@@ -11,20 +11,19 @@ export async function hashCustomerId(shop: string, customerId: string | number):
 }
 
 /**
- * app/uninstalled: tokens go immediately. The rest of the shop's data stays
- * until Shopify sends shop/redact (48 hours later), which removes everything.
- * Profiles stay suppressed in Klaviyo; the app never unsuppresses on uninstall.
+ * app/uninstalled: everything stored for the shop is deleted at once (Shopify's API terms ask for deletion,
+ * backups included, within 30 days; the database's point-in-time copies keep deleted rows up to 30 days, so
+ * waiting for shop/redact 48 hours later would overrun it). Only a marker row stays — shop, status and dates,
+ * no other data — so a late webhook of this installation can be told apart from a new one; housekeeping removes
+ * it after 10 days. Profiles stay suppressed in Klaviyo: the app never unsuppresses on uninstall.
  */
 export async function handleUninstall(db: Db, shop: string, now = new Date()): Promise<void> {
+  const previous = await db.query.shops.findFirst({ where: eq(schema.shops.shop, shop), columns: { installedAt: true } });
   await db.batch([
     db.delete(schema.sessionTable).where(eq(schema.sessionTable.shop, shop)),
-    db.delete(schema.klaviyoConnections).where(eq(schema.klaviyoConnections.shop, shop)),
-    // Shopify cancels the subscription on uninstall: a later reinstall starts with no plan.
-    db.delete(schema.shopPlans).where(eq(schema.shopPlans.shop, shop)),
-    db
-      .update(schema.shops)
-      .set({ status: "uninstalled", uninstalledAt: now, updatedAt: now })
-      .where(eq(schema.shops.shop, shop)),
+    // Child tables cascade from `shops`.
+    db.delete(schema.shops).where(eq(schema.shops.shop, shop)),
+    db.insert(schema.shops).values({ shop, status: "uninstalled", installedAt: previous?.installedAt ?? now, uninstalledAt: now, updatedAt: now }),
   ]);
 }
 
