@@ -23,6 +23,11 @@ const HELP_ARTICLES = {
   audit: "how-the-audit-works",
   dataAndPrivacy: "data-and-privacy",
   uninstalling: "uninstalling",
+  gettingStarted: "getting-started",
+  afterACleanup: "after-a-cleanup",
+  billing: "billing",
+  troubleshooting: "troubleshooting",
+  contact: "contact",
 } as const;
 
 export type HelpArticle = keyof typeof HELP_ARTICLES;
