@@ -38,6 +38,11 @@ export interface KlaviyoClientOptions {
   subrequestBudget?: number;
   /** Per-request timeout. Default 30 s. */
   timeoutMs?: number;
+  /**
+   * How profile emails become stored hashes (keyed per store: app/email-hash.ts). A client without one cannot
+   * read profiles that have an email: there is no unkeyed fallback.
+   */
+  hashEmail?: (email: string) => Promise<string>;
 }
 
 export type QueryValue = string | number | readonly string[] | null | undefined;
@@ -71,6 +76,8 @@ export class KlaviyoClient {
   private readonly budget: number;
   private readonly buckets = new Map<EndpointName, TokenBucket>();
   private sent = 0;
+  /** See KlaviyoClientOptions.hashEmail. */
+  readonly hashEmail: (email: string) => Promise<string>;
 
   constructor(options: KlaviyoClientOptions) {
     this.getAccessToken = options.getAccessToken;
@@ -85,6 +92,11 @@ export class KlaviyoClient {
     this.maxWaitMs = options.maxWaitMs ?? 20_000;
     this.timeoutMs = options.timeoutMs ?? 30_000;
     this.budget = options.subrequestBudget ?? Number.POSITIVE_INFINITY;
+    this.hashEmail =
+      options.hashEmail ??
+      (async () => {
+        throw new Error("this Klaviyo client has no email hasher");
+      });
   }
 
   /** HTTP requests sent so far, retries included (token refreshes are not counted). */

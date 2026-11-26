@@ -17,6 +17,7 @@
     "SHOPIFY_API_KEY": "preview-api-key",
     "SHOPIFY_API_SECRET": "preview-api-secret",
     "TOKEN_ENCRYPTION_KEY": "cHJldmlldy1vbmx5LWtleS1ub3QtYS1zZWNyZXQtMDE=",
+    "HASH_PEPPER": "preview-only-pepper-not-a-secret-0123456789",
     "KLAVIYO_CLIENT_ID": "fake-client-id",
     "KLAVIYO_CLIENT_SECRET": "fake-client-secret-0123456789abcdef",
     "KLAVIYO_SEEDED_ACCOUNT_ID": "",

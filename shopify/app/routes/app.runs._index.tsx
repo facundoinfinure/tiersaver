@@ -37,7 +37,7 @@ export default function Runs() {
                     {run.origin === "scheduled" ? ", scheduled" : ""}
                   </s-table-cell>
                   <s-table-cell>
-                    <s-badge tone={STATUS_LABELS[run.status]?.tone ?? "info"}>{STATUS_LABELS[run.status]?.label ?? run.status}</s-badge>
+                    <s-badge tone={STATUS_LABELS[run.status]?.tone ?? "info"}>{run.stopping ? "Stopping" : (STATUS_LABELS[run.status]?.label ?? run.status)}</s-badge>
                   </s-table-cell>
                   <s-table-cell>
                     {number(run.submitted)} of {number(run.total)}

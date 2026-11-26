@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -38,7 +38,7 @@ async function world(candidates: number) {
   const s = await seedSimulation({ candidates });
   for (const id of s.profileIds) {
     fake.profiles.set(id, { id, email: emailOf(id) });
-    await db.update(schema.simulationCandidates).set({ emailHash: await hashEmail(emailOf(id)) }).where(eq(schema.simulationCandidates.profileId, id));
+    await db.update(schema.simulationCandidates).set({ emailHash: await hashShopEmail(s.shop, emailOf(id)) }).where(eq(schema.simulationCandidates.profileId, id));
   }
   const created = await createSuppressionRun(db, { shop: s.shop, simulationId: s.simulationId, createdBy: "user:1" });
   if (!created.ok) throw new Error(created.reason);
@@ -258,7 +258,7 @@ describe("A1 + S-07: every batch is validated again right before it is sent", ()
 
   it("an order that was recorded before the scan began does not block anybody (it was already evaluated)", async () => {
     const w = await world(2);
-    await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashEmail(emailOf(w.profileIds[0]!)), lastOrderAt: new Date(Date.now() - 400 * 24 * HOUR), updatedAt: new Date(Date.now() - 2 * HOUR) });
+    await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashShopEmail(w.shop, emailOf(w.profileIds[0]!)), lastOrderAt: new Date(Date.now() - 400 * 24 * HOUR), updatedAt: new Date(Date.now() - 2 * HOUR) });
     const outcome = await executeRun({ db, gateway: w.gateway, step: new FakeSteps() }, w.runId);
     expect(outcome).toMatchObject({ status: "completed", submitted: 2, skipped: 0 });
   });

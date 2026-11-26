@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { env } from "cloudflare:workers";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -64,7 +64,7 @@ describe("customer data requests", () => {
     const { shop, simulationId, profileIds } = await seedSimulation({ candidates: 2 });
     const created = await createSuppressionRun(db, { shop, simulationId, createdBy: "user:1" });
     if (!created.ok) throw new Error(created.reason);
-    const emailHash = await hashEmail("ana@example.com");
+    const emailHash = await hashShopEmail(shop, "ana@example.com");
     await db.update(schema.runProfiles).set({ emailHash }).where(and(eq(schema.runProfiles.runId, created.runId), eq(schema.runProfiles.profileId, profileIds[0]!)));
     await db.insert(schema.purchaseHashes).values({ shop, emailHash, lastOrderAt: new Date("2026-01-02T00:00:00Z") });
 
@@ -90,7 +90,7 @@ describe("customer data requests", () => {
     const { shop, simulationId, profileIds } = await seedSimulation({ candidates: 2 });
     const created = await createSuppressionRun(db, { shop, simulationId, createdBy: "user:1" });
     if (!created.ok) throw new Error(created.reason);
-    const emailHash = await hashEmail("ana@example.com");
+    const emailHash = await hashShopEmail(shop, "ana@example.com");
     await db.update(schema.runProfiles).set({ emailHash }).where(and(eq(schema.runProfiles.runId, created.runId), eq(schema.runProfiles.profileId, profileIds[0]!)));
     await recordDataRequest(db, shop, { id: 7, email: "ana@example.com", requestId: 5 });
 

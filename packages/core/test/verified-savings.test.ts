@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KLAVIYO_EMAIL_2026_11, hashEmail, normalizeEmail, verifiedSavings } from "../src/index.js";
+import { KLAVIYO_EMAIL_2026_11, hashEmail, importHashKey, normalizeEmail, verifiedSavings } from "../src/index.js";
 
 const t = KLAVIYO_EMAIL_2026_11;
 
@@ -22,7 +22,16 @@ describe("verifiedSavings", () => {
 describe("hashEmail", () => {
   it("normalizes before hashing", async () => {
     expect(normalizeEmail("  Jane.Doe@Example.COM ")).toBe("jane.doe@example.com");
-    expect(await hashEmail("  Jane.Doe@Example.COM ")).toBe(await hashEmail("jane.doe@example.com"));
-    expect(await hashEmail("a@b.co")).toMatch(/^[0-9a-f]{64}$/);
+    const key = await importHashKey("a-test-key-of-enough-length");
+    expect(await hashEmail("  Jane.Doe@Example.COM ", key)).toBe(await hashEmail("jane.doe@example.com", key));
+    expect(await hashEmail("a@b.co", key)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("depends on the key, and refuses a missing or short one", async () => {
+    const a = await importHashKey("a-test-key-of-enough-length");
+    const b = await importHashKey("another-key-of-enough-length");
+    expect(await hashEmail("a@b.co", a)).not.toBe(await hashEmail("a@b.co", b));
+    await expect(importHashKey("")).rejects.toThrow();
+    await expect(importHashKey("short")).rejects.toThrow();
   });
 });

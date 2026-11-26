@@ -1,4 +1,4 @@
-import { EMAILS_RECEIVED_WINDOW_DAYS, hashEmail, type RuleSettings, type Window } from "@tiersaver/core";
+import { EMAILS_RECEIVED_WINDOW_DAYS, type RuleSettings, type Window } from "@tiersaver/core";
 import { filterDate, filterString, nextCursor, type JsonApiLinks, type KlaviyoClient } from "./client";
 import {
   BILLING_USAGE,
@@ -233,7 +233,11 @@ const PROFILE_FIELDS = [
   "subscriptions.sms.marketing.consent",
 ] as const;
 
-async function toProfileRecord(item: Resource<ProfileAttributes>, testProperty?: string): Promise<KlaviyoProfileRecord | null> {
+async function toProfileRecord(
+  item: Resource<ProfileAttributes>,
+  hashEmail: (email: string) => Promise<string>,
+  testProperty?: string,
+): Promise<KlaviyoProfileRecord | null> {
   if (!item?.id) return null;
   const a = item.attributes ?? {};
   const email = typeof a.email === "string" && a.email.trim() !== "" ? a.email : null;
@@ -312,7 +316,7 @@ async function readProfileRecords(
   });
   const items: KlaviyoProfileRecord[] = [];
   for (const item of body?.data ?? []) {
-    const record = await toProfileRecord(item, opts.testCreatedAtProperty);
+    const record = await toProfileRecord(item, client.hashEmail, opts.testCreatedAtProperty);
     if (record) items.push(record);
   }
   return { items, nextCursor: nextCursor(body?.links) };

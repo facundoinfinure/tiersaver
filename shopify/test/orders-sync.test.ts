@@ -1,4 +1,5 @@
-import { PURCHASE_DATA_MAX_AGE_HOURS, hashEmail, purchaseDataIsFresh } from "@tiersaver/core";
+import { PURCHASE_DATA_MAX_AGE_HOURS, purchaseDataIsFresh } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deleteShopData } from "../app/data/privacy";
@@ -53,7 +54,7 @@ async function world(opts: { orders?: FakeOrder[]; scope?: string; pageSize?: nu
     shopRow: async () => (await db.query.shops.findFirst({ where: eq(schema.shops.shop, shop) }))!,
     pass: () => db.query.ordersSync.findFirst({ where: eq(schema.ordersSync.shop, shop) }),
     has: async (email) => {
-      const hash = await hashEmail(email);
+      const hash = await hashShopEmail(shop, email);
       const row = await db.query.purchaseHashes.findFirst({ where: (p, { and, eq }) => and(eq(p.shop, shop), eq(p.emailHash, hash)) });
       return row?.lastOrderAt ?? null;
     },

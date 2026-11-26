@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { KLAVIYO_REQUIRED_SCOPES, KLAVIYO_SCOPES } from "../app/klaviyo/config";
@@ -158,7 +158,7 @@ describe("scan: audit and simulation in one resumable pass", () => {
     const w = await world({ profiles, members: (all) => all.slice(0, 230).map((p) => p.id), protectedGroupIds: ["list:VIP"] });
     w.fake.lists = [{ id: "VIP", name: "VIP", members: ["P00006", "P00240", "NOT_IN_SEGMENT"] }];
     // P7 bought in the Shopify store; P8 was restored by an earlier undo.
-    await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashEmail("p7@shop.test"), lastOrderAt: new Date(T0 - 900 * DAY) });
+    await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashShopEmail(w.shop, "p7@shop.test"), lastOrderAt: new Date(T0 - 900 * DAY) });
     await db.insert(schema.runs).values({ id: `undo-${w.scanId}`, shop: w.shop, kind: "undo", undoOfRunId: "earlier", createdBy: "user:7" });
     await db.insert(schema.runProfiles).values({
       runId: `undo-${w.scanId}`,
@@ -166,7 +166,7 @@ describe("scan: audit and simulation in one resumable pass", () => {
       shop: w.shop,
       batchIndex: 0,
       reason: "never_engaged",
-      emailHash: await hashEmail("p8@shop.test"),
+      emailHash: await hashShopEmail(w.shop, "p8@shop.test"),
       status: "submitted",
       reactivatedAt: new Date(T0 - 40 * DAY),
     });
@@ -203,7 +203,7 @@ describe("scan: audit and simulation in one resumable pass", () => {
     expect(r.candidates).toHaveLength(224);
     const ids = new Set(r.candidates.map((c) => c.profileId));
     for (const safe of ["P00003", "P00004", "P00005", "P00006", "P00007", "P00008", "P00240"]) expect(ids.has(safe)).toBe(false);
-    expect(r.candidates.find((c) => c.profileId === "P00000")).toMatchObject({ reason: "never_engaged", emailHash: await hashEmail("p0@shop.test") });
+    expect(r.candidates.find((c) => c.profileId === "P00000")).toMatchObject({ reason: "never_engaged", emailHash: await hashShopEmail(w.shop, "p0@shop.test") });
     expect(r.audit).toMatchObject({ activeProfiles: 5000, inactiveProfiles: 224, usageUsed: 5000, usageMax: 5500, activeProfilesSource: "klaviyo_usage" });
 
     const old = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, `old-${w.scanId}`) });
@@ -430,7 +430,7 @@ describe("scan: cycle detector (guardrail 6)", () => {
     const runId = crypto.randomUUID();
     await db.insert(schema.runs).values({ id: runId, shop: w.shop, kind: "suppress", simulationId, status: "completed", createdBy: "user:7", createdAt: at, finishedAt: at });
     for (const n of profileNumbers) {
-      await db.insert(schema.runProfiles).values({ runId, profileId: `P${String(n).padStart(5, "0")}`, shop: w.shop, batchIndex: 0, reason: "never_engaged", emailHash: await hashEmail(`p${n}@shop.test`), status: "submitted", updatedAt: at });
+      await db.insert(schema.runProfiles).values({ runId, profileId: `P${String(n).padStart(5, "0")}`, shop: w.shop, batchIndex: 0, reason: "never_engaged", emailHash: await hashShopEmail(w.shop, `p${n}@shop.test`), status: "submitted", updatedAt: at });
     }
     return runId;
   }
@@ -518,7 +518,7 @@ describe("scan: Shopify purchase data must be current (C1)", () => {
     for (const purchasesCoveredUntil of [null, new Date(T0 - 300 * DAY), new Date(T0 - 7 * HOUR)]) {
       const w = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil });
       // The one buyer the stale data does know about keeps the more specific reason.
-      await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashEmail("p7@shop.test"), lastOrderAt: new Date(T0 - 900 * DAY) });
+      await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashShopEmail(w.shop, "p7@shop.test"), lastOrderAt: new Date(T0 - 900 * DAY) });
       expect(await w.run()).toMatchObject({ status: "completed", candidates: 0 });
       expect(await reasonsOf(w)).toEqual({ insufficient_purchase_history: 39, recent_purchase: 1 });
       expect((await results(w)).summary).toMatchObject({ purchaseDataStale: true });

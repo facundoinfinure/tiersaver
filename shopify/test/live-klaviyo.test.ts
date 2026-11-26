@@ -67,6 +67,8 @@ describe.skipIf(!relay)("live: audit, cleanup, jobs and undo on the Klaviyo test
         KLAVIYO_CLIENT_SECRET: "unused",
         SUPPRESSION_ENABLED: "true",
         SUPPRESSION_ALLOWED_ACCOUNT_ID: ACCOUNT,
+        // The gateway re-checks the candidate segment with the same metric specs the scan used for this account.
+        KLAVIYO_SEEDED_ACCOUNT_ID: ACCOUNT,
       };
       await db.insert(schema.shops).values({ shop });
       await db.insert(schema.settings).values({ shop });

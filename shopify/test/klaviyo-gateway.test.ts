@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -24,7 +24,7 @@ async function setup(opts: { candidates?: number; enabled?: string | null; conne
     // The simulation stored the hash of the email it evaluated.
     await db
       .update(schema.simulationCandidates)
-      .set({ emailHash: await hashEmail(emailOf(id)) })
+      .set({ emailHash: await hashShopEmail(shop, emailOf(id)) })
       .where(eq(schema.simulationCandidates.profileId, id));
   }
   const created = await createSuppressionRun(db, { shop, simulationId, createdBy: "user:1" });

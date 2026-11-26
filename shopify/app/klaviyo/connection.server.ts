@@ -1,3 +1,4 @@
+import { hashShopEmail } from "../email-hash";
 import { decryptToken, encryptToken, importTokenKey } from "@tiersaver/core";
 import { and, eq, isNull, lte, or } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
@@ -333,6 +334,7 @@ export function createKlaviyoClient(
     // Pacing uses the same clock as the caller, so a test that controls time controls the rate limiter too.
     now: deps.now ? () => deps.now!().getTime() : undefined,
     subrequestBudget: options.subrequestBudget,
+    hashEmail: (email) => hashShopEmail(shop, email),
   });
 }
 

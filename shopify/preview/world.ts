@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { FakeKlaviyo, type FakeProfile } from "../app/klaviyo/testing/fake-klaviyo";
 
 /**
@@ -58,7 +58,7 @@ seedKlaviyo();
 
 /** Hashes of the sample buyers, for `purchase_hashes`. */
 export async function buyerHashes(): Promise<string[]> {
-  return Promise.all(buyerEmails.map((e) => hashEmail(e)));
+  return Promise.all(buyerEmails.map((e) => hashShopEmail(PREVIEW_SHOP, e)));
 }
 
 const realFetch = globalThis.fetch.bind(globalThis);

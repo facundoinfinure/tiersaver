@@ -11,7 +11,7 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: "./test/wrangler.jsonc" },
         // LIVE_KLAVIYO_RELAY is only set for the live integration test (see test/live-klaviyo.test.ts); empty skips it.
-        miniflare: { bindings: { TEST_MIGRATIONS: migrations, LIVE_KLAVIYO_RELAY: process.env.LIVE_KLAVIYO_RELAY ?? "" } },
+        miniflare: { bindings: { TEST_MIGRATIONS: migrations, HASH_PEPPER: "test-only-pepper-not-a-secret-0123456789", LIVE_KLAVIYO_RELAY: process.env.LIVE_KLAVIYO_RELAY ?? "" } },
       }),
     ],
     test: {

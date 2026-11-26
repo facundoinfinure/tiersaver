@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -31,7 +31,7 @@ async function seedEverything() {
   });
   await db.insert(schema.purchaseHashes).values({
     shop,
-    emailHash: await hashEmail("buyer@example.com"),
+    emailHash: await hashShopEmail(shop, "buyer@example.com"),
     customerIdHash: await hashCustomerId(shop, 42),
     lastOrderAt: new Date(),
   });
@@ -91,7 +91,7 @@ describe("privacy", () => {
 
   it("customers/redact removes the customer's hashes by email or by customer id", async () => {
     const a = await seedEverything();
-    const emailHash = await hashEmail("buyer@example.com");
+    const emailHash = await hashShopEmail(a.shop, "buyer@example.com");
     await db.update(schema.runProfiles).set({ emailHash }).where(eq(schema.runProfiles.profileId, a.profileIds[0]!));
     await db.update(schema.simulationCandidates).set({ emailHash }).where(eq(schema.simulationCandidates.profileId, a.profileIds[0]!));
 

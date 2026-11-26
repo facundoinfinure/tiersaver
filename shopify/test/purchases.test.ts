@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -42,7 +42,7 @@ describe("recordPurchases", () => {
     const stored = await rows(shop);
     expect(stored).toHaveLength(2);
     const ana = stored.find((r) => r.lastOrderAt.toISOString() === "2026-11-01T10:00:00.000Z");
-    expect(ana?.emailHash).toBe(await hashEmail("ana@example.com"));
+    expect(ana?.emailHash).toBe(await hashShopEmail(shop, "ana@example.com"));
     expect(ana?.customerIdHash).toBe(await hashCustomerId(shop, 7));
 
     const dump = JSON.stringify(
@@ -96,7 +96,7 @@ describe("recordPurchases: the customer's email", () => {
     ]);
     const stored = await rows(shop);
     expect(stored.map((r) => r.emailHash).sort()).toEqual(
-      [await hashEmail("pos@example.com"), await hashEmail("gift@example.com"), await hashEmail("buyer@example.com")].sort(),
+      [await hashShopEmail(shop, "pos@example.com"), await hashShopEmail(shop, "gift@example.com"), await hashShopEmail(shop, "buyer@example.com")].sort(),
     );
     expect(stored.every((r) => r.customerIdHash !== null)).toBe(true);
   });

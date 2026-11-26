@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createSuppressionRun, executeRun, RUN_BATCH_SIZE } from "../app/runs/engine";
+import { createSuppressionRun, createUndoRun, executeRun, markNotSent, RUN_BATCH_SIZE } from "../app/runs/engine";
 import { Crash, db, FakeGateway, FakeSteps, profileStatuses, schema, seedSimulation } from "./helpers";
 
 const HOUR = 60 * 60 * 1000;
@@ -169,28 +169,42 @@ describe("run execution", () => {
   it("stops at a batch that keeps failing and leaves the rest untouched", async () => {
     const { runId } = await createRun(250);
     const gateway = new FakeGateway();
-    gateway.failWhen = (req) => (req.batchIndex === 1 ? new Error("Klaviyo 500: upstream") : undefined);
+    // The gateway says the request never left (or was rejected): those profiles are untouched for certain.
+    gateway.failWhen = (req) => (req.batchIndex === 1 ? markNotSent(new Error("Klaviyo 500: upstream")) : undefined);
     const outcome = await executeRun({ db, gateway, step: new FakeSteps() }, runId);
     expect(outcome).toMatchObject({
       status: "completed_with_errors",
       submitted: 100,
       failed: 100,
+      unknown: 0,
       untouched: 50,
       error: "klaviyo_500_upstream",
     });
     expect(gateway.calls.some((c) => c.batchIndex === 2)).toBe(false);
     const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId) });
-    expect(run).toMatchObject({ status: "completed_with_errors", lastError: "klaviyo_500_upstream", failedCount: 100 });
+    expect(run).toMatchObject({ status: "completed_with_errors", lastError: "klaviyo_500_upstream", failedCount: 100, unknownCount: 0 });
+  });
+
+  it("a batch that fails without saying whether it left is 'outcome unknown', and undo covers it (M3)", async () => {
+    const { shop, runId } = await createRun(250);
+    const gateway = new FakeGateway();
+    gateway.failWhen = (req) => (req.batchIndex === 1 ? new Error("klaviyo_network_error") : undefined);
+    const outcome = await executeRun({ db, gateway, step: new FakeSteps() }, runId);
+    expect(outcome).toMatchObject({ status: "completed_with_errors", submitted: 100, failed: 0, unknown: 100, untouched: 50, error: "klaviyo_network_error" });
+    const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId) });
+    expect(run).toMatchObject({ failedCount: 0, unknownCount: 100, processedCount: 100 });
+    // Everything that may be suppressed is restorable: the 100 confirmed and the 100 unknown, not the 50 never reached.
+    expect(await createUndoRun(db, { shop, runId, createdBy: "user:1", confirmAfterRenewal: true })).toMatchObject({ ok: true, totalCount: 200 });
   });
 
   it("fails without touching anyone when the first batch cannot be sent", async () => {
     const { runId } = await createRun(30);
     const gateway = new FakeGateway();
-    const err = new Error("klaviyo_gateway_not_implemented");
+    const err = markNotSent(new Error("klaviyo_gateway_not_implemented"));
     err.name = "NonRetryableError";
     gateway.failWhen = () => err;
     const outcome = await executeRun({ db, gateway, step: new FakeSteps() }, runId);
-    expect(outcome).toMatchObject({ status: "failed", submitted: 0, failed: 30 });
+    expect(outcome).toMatchObject({ status: "failed", submitted: 0, failed: 30, unknown: 0 });
     expect(gateway.calls).toHaveLength(1);
   });
 

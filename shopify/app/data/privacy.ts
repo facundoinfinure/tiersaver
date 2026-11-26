@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../email-hash";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
@@ -63,7 +63,7 @@ export async function redactCustomer(
   shop: string,
   customer: { id?: string | number | null; email?: string | null },
 ): Promise<void> {
-  const emailHash = customer.email ? await hashEmail(customer.email) : null;
+  const emailHash = customer.email ? await hashShopEmail(shop, customer.email) : null;
   const customerIdHash = customer.id != null ? await hashCustomerId(shop, customer.id) : null;
   if (!emailHash && !customerIdHash) return;
 
@@ -125,7 +125,7 @@ export async function recordDataRequest(
       shop,
       shopifyRequestId: request.requestId != null ? String(request.requestId) : null,
       shopifyCustomerId: request.id != null ? String(request.id) : null,
-      emailHash: request.email ? await hashEmail(request.email) : null,
+      emailHash: request.email ? await hashShopEmail(shop, request.email) : null,
       receivedAt: now,
     })
     .onConflictDoNothing();

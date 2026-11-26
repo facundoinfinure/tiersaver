@@ -1,4 +1,4 @@
-import { hashEmail } from "@tiersaver/core";
+import { hashShopEmail } from "../email-hash";
 import { sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { hashCustomerId } from "../data/privacy";
@@ -71,7 +71,7 @@ export async function recordPurchases(db: Db, shop: string, orders: readonly Ord
     const customerIdHash = order.customerId != null ? await hashCustomerId(shop, customerNumericId(order.customerId)) : null;
     for (const email of emails) {
       // The one place order emails are hashed: every lookup must use the same helper.
-      const emailHash = await hashEmail(email);
+      const emailHash = await hashShopEmail(shop, email);
       const seen = latest.get(emailHash);
       if (!seen || at > seen.at) latest.set(emailHash, { at, customerIdHash: customerIdHash ?? seen?.customerIdHash ?? null });
       else if (!seen.customerIdHash && customerIdHash) seen.customerIdHash = customerIdHash;

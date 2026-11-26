@@ -1,5 +1,6 @@
 import { NonRetryableError } from "cloudflare:workflows";
-import { chunk, hashEmail, validateRuleSettings } from "@tiersaver/core";
+import { chunk, validateRuleSettings } from "@tiersaver/core";
+import { hashShopEmail } from "../email-hash";
 import { and, eq, gte, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
@@ -172,6 +173,22 @@ async function usableCandidateSegment(db: Db, client: KlaviyoClient, env: Gatewa
   return segment.id;
 }
 
+/**
+ * The instant from which a recorded order counts as "since the simulation": the start of the scan that
+ * produced it. Orders were matched while the scan ran, so anything recorded from its start on was possibly
+ * not seen by it.
+ */
+async function ordersSeenUntil(db: Db, runId: string): Promise<Date> {
+  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId), columns: { simulationId: true } });
+  if (!run?.simulationId) refuse("simulation_missing");
+  const [simulation, scan] = await Promise.all([
+    db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId), columns: { createdAt: true } }),
+    db.query.scans.findFirst({ where: eq(schema.scans.simulationId, run.simulationId), columns: { startedAt: true, createdAt: true } }),
+  ]);
+  if (!simulation) refuse("simulation_missing");
+  return scan?.startedAt ?? scan?.createdAt ?? simulation.createdAt;
+}
+
 /** Suppress: decides, for each profile of the batch, whether it is still exactly what the merchant approved. */
 async function revalidateForSuppress(
   db: Db,
@@ -179,19 +196,10 @@ async function revalidateForSuppress(
   request: BatchRequest,
   profileIds: string[],
   segmentId: string,
+  since: Date,
   skip: (id: string, reason: SkipReason) => void,
   confirm: (id: string) => void,
 ): Promise<string[]> {
-  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, request.runId), columns: { simulationId: true } });
-  if (!run?.simulationId) refuse("simulation_missing");
-  const [simulation, scan] = await Promise.all([
-    db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId), columns: { createdAt: true } }),
-    db.query.scans.findFirst({ where: eq(schema.scans.simulationId, run.simulationId), columns: { startedAt: true, createdAt: true } }),
-  ]);
-  if (!simulation) refuse("simulation_missing");
-  // Orders were matched while the scan ran; anything recorded from its start on was possibly not seen by it.
-  const since = scan?.startedAt ?? scan?.createdAt ?? simulation.createdAt;
-
   const rows = await db
     .select({ profileId: schema.runProfiles.profileId, emailHash: schema.runProfiles.emailHash, attemptedAt: schema.runProfiles.attemptedAt })
     .from(schema.runProfiles)
@@ -210,7 +218,7 @@ async function revalidateForSuppress(
   // (a) Local checks: no Klaviyo request is spent on a profile that is already out.
   const hashes = [...new Set(profileIds.flatMap((id) => approvedHash.get(id) ?? []))];
   const bought = new Set<string>();
-  for (const part of chunk(hashes, 40)) {
+  for (const part of chunk(hashes, 90)) {
     const found = await db
       .select({ emailHash: schema.purchaseHashes.emailHash })
       .from(schema.purchaseHashes)
@@ -249,7 +257,7 @@ async function revalidateForSuppress(
     if (appliedByEarlierAttempt(id, state ?? direct.get(id))) confirm(id);
     else if (!state) skip(id, "not_in_candidate_segment");
     else if (!state.email) skip(id, "no_email");
-    else if (approvedHash.get(id) !== (await hashEmail(state.email))) skip(id, "email_changed");
+    else if (approvedHash.get(id) !== (await hashShopEmail(request.shop, state.email))) skip(id, "email_changed");
     else if (state.suppressions === null) skip(id, "state_unknown");
     else if (state.suppressions.length > 0) skip(id, "already_suppressed");
     // Sent exactly as Klaviyo holds it: an altered spelling could make Klaviyo create a new, suppressed profile.
@@ -341,6 +349,7 @@ async function selectForUndo(db: Db, client: KlaviyoClient, request: BatchReques
 export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: GatewayDeps = {}): SuppressionGateway {
   const clock = deps.now ?? (() => new Date());
   let segmentCheck: { id: string; at: number } | null = null;
+  const seenUntil = new Map<string, Date>();
 
   return {
     async submitBatch(request: BatchRequest): Promise<BatchResult> {
@@ -373,7 +382,9 @@ export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: Ga
           if (!segmentCheck || clock().getTime() - segmentCheck.at >= SEGMENT_CHECK_TTL_MS) {
             segmentCheck = { id: await usableCandidateSegment(db, client, env, shop, connection.klaviyoAccountId), at: clock().getTime() };
           }
-          emails = await revalidateForSuppress(db, client, request, profileIds, segmentCheck.id, skip, (id) => void confirmed.push(id));
+          const since = seenUntil.get(request.runId) ?? (await ordersSeenUntil(db, request.runId));
+          seenUntil.set(request.runId, since);
+          emails = await revalidateForSuppress(db, client, request, profileIds, segmentCheck.id, since, skip, (id) => void confirmed.push(id));
         }
 
         const skipped = Object.keys(skipReasons);

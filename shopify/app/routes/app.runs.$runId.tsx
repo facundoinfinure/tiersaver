@@ -223,7 +223,7 @@ export default function Run() {
               {!running && run.unknown > 0 ? (
                 <s-table-row>
                   <s-table-cell>
-                    Sent, but Klaviyo's answer was lost: they may have been {verb}.{isUndo ? "" : " Undo includes them."}
+                    {`Sent, but the answer from Klaviyo was lost: they may have been ${verb}.${isUndo ? "" : " Undo includes them."}`}
                   </s-table-cell>
                   <s-table-cell>{number(run.unknown)}</s-table-cell>
                 </s-table-row>

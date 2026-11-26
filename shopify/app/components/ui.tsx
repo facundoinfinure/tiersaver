@@ -40,8 +40,8 @@ export function useRevealError(token: unknown, active: boolean) {
         // Not focusable: being in view is enough.
       }
       // Polaris form elements are `display: contents`: they have no box of their own to scroll to, their rendered content does.
-      const hasBox = (el: Element | null | undefined): el is Element => Boolean(el && el.getClientRects().length > 0);
-      const box = hasBox(target) ? target : ([...(target.shadowRoot?.querySelectorAll("*") ?? [])].find(hasBox) ?? target.parentElement);
+      const hasBox = (el: Element | null | undefined): boolean => Boolean(el && el.getClientRects().length > 0);
+      const box: Element | null = hasBox(target) ? target : ([...(target.shadowRoot?.querySelectorAll("*") ?? [])].find(hasBox) ?? target.parentElement);
       box?.scrollIntoView({ block: "center", behavior: "auto" });
     }, 120);
     return () => clearTimeout(timer);

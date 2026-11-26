@@ -28,7 +28,10 @@ import { KlaviyoClient, filterString, nextCursor } from "../app/klaviyo/client";
 import { CANDIDATE_SEGMENT_NAME, KLAVIYO_REVISION, SEEDED_METRIC_SPECS } from "../app/klaviyo/config";
 import { KlaviyoApiError } from "../app/klaviyo/errors";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
-import { DEFAULT_RULE_SETTINGS, hashEmail } from "@tiersaver/core";
+import { DEFAULT_RULE_SETTINGS } from "@tiersaver/core";
+import { hashShopEmail } from "../app/email-hash";
+
+const TEST_SHOP = "client-test.myshopify.com";
 
 /** A client on a fake clock: `sleep` advances time instead of waiting. */
 function setup(options: { maxAttempts?: number; maxWaitMs?: number; subrequestBudget?: number } = {}) {
@@ -45,6 +48,7 @@ function setup(options: { maxAttempts?: number; maxWaitMs?: number; subrequestBu
       return token;
     },
     fetch: fake.fetch,
+    hashEmail: (email) => hashShopEmail(TEST_SHOP, email),
     now: () => clock,
     sleep: async (ms) => {
       sleeps.push(ms);
@@ -252,7 +256,7 @@ describe("API functions", () => {
       ].join(","),
     );
 
-    expect(seen[0]!.emailHash).toBe(await hashEmail("person0@buyers.test"));
+    expect(seen[0]!.emailHash).toBe(await hashShopEmail(TEST_SHOP, "person0@buyers.test"));
     expect(JSON.stringify(seen)).not.toContain("@buyers.test");
   });
 
@@ -274,7 +278,7 @@ describe("API functions", () => {
     const [a, b, c] = items as [KlaviyoProfileRecord, KlaviyoProfileRecord, KlaviyoProfileRecord];
     expect(a).toEqual({
       id: "A",
-      emailHash: await hashEmail("a@buyers.test"),
+      emailHash: await hashShopEmail(TEST_SHOP, "a@buyers.test"),
       createdAt: new Date("2025-03-01T00:00:00Z"),
       lastEventAt: new Date("2026-10-01T00:00:00Z"),
       email: {
@@ -712,7 +716,7 @@ describe("candidate segment (Klaviyo's long-term inactive criteria)", () => {
     expect(second.nextCursor).toBeNull();
     const all = [...first.items, ...second.items];
     expect(all.every((p) => Number(p.id.slice(1)) % 2 === 0)).toBe(true);
-    expect(all[0]).toMatchObject({ emailHash: await hashEmail("p0@buyers.test"), email: { canReceiveMarketing: true }, sms: { canReceiveMarketing: false } });
+    expect(all[0]).toMatchObject({ emailHash: await hashShopEmail(TEST_SHOP, "p0@buyers.test"), email: { canReceiveMarketing: true }, sms: { canReceiveMarketing: false } });
     expect(JSON.stringify(all)).not.toContain("@buyers.test");
   });
 

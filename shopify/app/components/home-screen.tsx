@@ -406,7 +406,7 @@ export function HomeScreen({
                       ? "Your list is already clean. No profiles match the cleanup criteria, so there is nothing to suppress and nothing to charge."
                       : result.restoreLocked > 0
                         ? `Nothing to suppress right now. ${number(result.restoreLocked)} profiles meet the criteria but were restored in the last 365 days, so TierSaver leaves them out until 365 days have passed since their restore. Nothing is charged.`
-                        : "Nothing to suppress right now: every profile that meets the criteria is kept active for the reasons above. Nothing is charged."}
+                        : "Nothing to suppress right now: the profiles that meet the criteria are kept active for the reasons above, or are already suppressed in Klaviyo. Nothing is charged."}
                   </s-paragraph>
                 ) : null}
                 <s-stack direction="inline" gap="base" alignItems="center">
@@ -450,29 +450,35 @@ export function HomeScreen({
       <s-section slot="aside" heading="Monthly schedule">
         <s-stack gap="base">
           <s-stack direction="inline" gap="small" alignItems="center">
-            <s-badge tone={schedule.enabled ? "success" : "neutral"}>{schedule.enabled ? "On" : "Off"}</s-badge>
+            <s-badge tone={!schedule.enabled ? "neutral" : connected ? "success" : "warning"}>{!schedule.enabled ? "Off" : connected ? "On" : "Paused"}</s-badge>
             {schedule.enabled ? <s-text color="subdued">{schedule.automatic ? "Automatic cleanups" : "Waits for your approval"}</s-text> : null}
           </s-stack>
-          <s-text color="subdued">
-            {schedule.enabled
-              ? schedule.nextAuditOn
-                ? `Next audit on ${schedule.nextAuditOn}, a few days before your Klaviyo plan renews.`
-                : "Add your Klaviyo renewal day in Settings so the audit can be scheduled."
-              : "Run the audit every month, a few days before your Klaviyo plan renews, so Klaviyo's count is up to date."}
-          </s-text>
-          {schedule.enabled && schedule.automatic ? (
-            <s-text>
-              Automatic cleanups are on: after that audit, TierSaver suppresses the profiles it finds without asking you again.{" "}
-              {result?.price ? `Price if it suppresses profiles: ${result.price}, at most one charge every 28 days. ` : ""}
-              You can turn this off in Settings at any time.
-            </s-text>
-          ) : null}
-          {schedule.enabled && !schedule.automatic ? (
-            <s-text color="subdued">
-              TierSaver does not send email. Open the app {schedule.nextAuditOn ? `on ${schedule.nextAuditOn} or the day after` : "after the audit"} to
-              review the simulation: it can be approved for 24 hours.
-            </s-text>
-          ) : null}
+          {schedule.enabled && !connected ? (
+            <s-text color="subdued">No scheduled audit or cleanup runs while Klaviyo is not connected. The schedule picks up again when you reconnect.</s-text>
+          ) : (
+            <>
+              <s-text color="subdued">
+                {schedule.enabled
+                  ? schedule.nextAuditOn
+                    ? `Next audit on ${schedule.nextAuditOn}, a few days before your Klaviyo plan renews.`
+                    : "Add your Klaviyo renewal day in Settings so the audit can be scheduled."
+                  : "Run the audit every month, a few days before your Klaviyo plan renews, so Klaviyo's count is up to date."}
+              </s-text>
+              {schedule.enabled && schedule.automatic ? (
+                <s-text>
+                  Automatic cleanups are on: after that audit, TierSaver suppresses the profiles it finds without asking you again.{" "}
+                  {result?.price ? `Price if it suppresses profiles: ${result.price}, at most one charge every 28 days. ` : ""}
+                  You can turn this off in Settings at any time.
+                </s-text>
+              ) : null}
+              {schedule.enabled && !schedule.automatic ? (
+                <s-text color="subdued">
+                  TierSaver does not send email. Open the app {schedule.nextAuditOn ? `on ${schedule.nextAuditOn} or the day after` : "after the audit"} to
+                  review the simulation: it can be approved for 24 hours.
+                </s-text>
+              ) : null}
+            </>
+          )}
           <s-stack direction="inline" gap="base" alignItems="center">
             <s-button href="/app/settings">Settings</s-button>
             <s-link href={links.schedule} target="_blank">

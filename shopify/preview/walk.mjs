@@ -67,10 +67,10 @@ await page.goto(`${base}/app/simulation`, { waitUntil: "networkidle" });
 await shot("review-open");
 const [download] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }).catch(() => null), button(/Download/).click()]);
 if (download) { const p = join(out, "candidates.csv"); await download.saveAs(p); log.push(`csv downloaded: ${download.suggestedFilename()}`); } else problems.push("CSV download did not start");
-await click(button("Approve simulation"));
+await click(button("Approve this cleanup"));
 await shot("review-approve-without-ticking");
 await tick("acknowledged");
-await click(button("Approve simulation"));
+await click(button("Approve this cleanup"));
 await shot("review-approved");
 await click(button("Review pricing in Shopify"));
 await page.waitForURL(/\/app\/simulation/, { timeout: 30000 });
@@ -96,6 +96,11 @@ if (await page.locator('s-checkbox[name="confirmAfterRenewal"]').count()) {
 }
 await page.getByText("Completed").first().waitFor({ timeout: 90000 }).catch(() => problems.push("undo did not complete"));
 await shot("undo-completed");
+// A restored profile is left out for 365 days: the next audit finds nothing and says why.
+await page.goto(`${base}/app`, { waitUntil: "networkidle" });
+await click(button("Run the audit again"));
+await page.getByText("were restored in the last 365 days").first().waitFor({ timeout: 90000 }).catch(() => problems.push("restore lock was not explained on the home page"));
+await shot("home-restore-lock");
 
 await page.goto(`${base}/app/settings`, { waitUntil: "networkidle" });
 await shot("settings");
@@ -113,8 +118,15 @@ await page.goto(`${base}/app/simulation`, { waitUntil: "networkidle" });
 await shot("review-after-rules-changed");
 await page.goto(`${base}/app`, { waitUntil: "networkidle" });
 await shot("home-schedule-on");
-await click(button("Disconnect Klaviyo"));
+await button("Disconnect Klaviyo").click();
+await page.waitForTimeout(600);
+await shot("home-disconnect-confirmation");
+await click(page.getByRole("button", { name: "Disconnect", exact: true }));
+await page.waitForURL(/klaviyo=disconnected/, { timeout: 15000 }).catch(() => problems.push("disconnect did not go through"));
 await shot("home-disconnected");
+await page.goto(`${base}/app/not-a-page`, { waitUntil: "networkidle" });
+await shot("page-not-found");
+problems.splice(0, problems.length, ...problems.filter((p) => p !== "404 /app/not-a-page"));
 
 writeFileSync(join(out, "walk.log"), [...log, "", "problems:", ...(problems.length ? [...new Set(problems)] : ["none"])].join("\n"));
 console.log(log.join("\n"));

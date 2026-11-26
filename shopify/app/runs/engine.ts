@@ -387,6 +387,7 @@ async function runBatch(
   // Sent by an earlier attempt whose answer never arrived.
   const maybeSent = new Set(rows.filter((r) => r.attemptedAt).map((r) => r.profileId));
   const stampedNow: string[] = [];
+  let announced = false;
   const nowMs = args.now.getTime();
   const setAttempted = (ids: string[], value: number | null) =>
     eachChunk(ids, (part) =>
@@ -406,14 +407,20 @@ async function runBatch(
       profileIds,
       maybeSentProfileIds: [...maybeSent],
       beforeSend: async (ids) => {
+        announced = true;
         const fresh = ids.filter((id) => known.has(id) && !maybeSent.has(id));
         await setAttempted(fresh, nowMs);
         stampedNow.push(...fresh);
       },
     });
   } catch (err) {
-    // Rejected or never sent: Klaviyo certainly did not apply it, so this attempt leaves no "maybe sent" mark.
-    if (isNotSent(err) && stampedNow.length > 0) await setAttempted(stampedNow, null);
+    if (isNotSent(err)) {
+      // Rejected or never sent: Klaviyo certainly did not apply it, so this attempt leaves no "maybe sent" mark.
+      if (stampedNow.length > 0) await setAttempted(stampedNow, null);
+    } else if (!announced) {
+      // The gateway failed without saying whether the request left. Assume it did: "unknown" never means untouched.
+      await setAttempted(profileIds.filter((id) => !maybeSent.has(id)), nowMs);
+    }
     throw err;
   }
 

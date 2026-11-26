@@ -4,6 +4,8 @@ interface TierSaverSecrets {
   SHOPIFY_API_KEY: string;
   SHOPIFY_API_SECRET: string;
   TOKEN_ENCRYPTION_KEY: string;
+  /** Secret the per-store email hash keys are derived from (app/email-hash.ts). At least 32 random bytes, base64. */
+  HASH_PEPPER: string;
   /** Klaviyo OAuth app credentials (app created at klaviyo.com/manage-apps). */
   KLAVIYO_CLIENT_ID: string;
   KLAVIYO_CLIENT_SECRET: string;
