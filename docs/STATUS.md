@@ -419,3 +419,12 @@ Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado 
 - Dentro del admin no hay colores ni logo propios (es Polaris). La marca va en el ícono de la app, la app OAuth de Klaviyo, la ficha, el sitio y los mails.
 
 **Pasos que solo puede hacer Facundo**: `14-PASOS-DASHBOARD.md` (distribución pública, datos protegidos, read_all_orders, ícono, logo en Klaviyo, prueba de cobro).
+
+### 2026-11-26
+
+- Pruebas de Facundo en la interfaz: guardado de Settings (lista protegida, versión 2, registrado con su usuario) y auditoría posterior: correctos. La auditoría dio 0 candidatos por el bloqueo de 365 días tras el deshacer, así que no había CSV para bajar.
+- **Con autorización de Facundo**: en la D1, las 1.392 filas de `run_profiles` de `tiersaver.myshopify.com` (limpieza y deshacer de prueba) llevan ahora el prefijo `archived-test:` en `email_hash`. No se borró nada; History muestra las dos corridas. Efecto: el bloqueo por restauración y el detector de ciclos ya no las alcanzan, y la cuenta de prueba vuelve a tener candidatos. Es un arreglo solo para la tienda de desarrollo.
+- La sesión no puede manejar un navegador, y el intento de llamar a la app firmando un token de sesión con el secreto fue bloqueado por el control de permisos. Las pruebas de clic las hace Facundo.
+- Preparado para Klaviyo: `brand/logo/final/klaviyo-app-logo.svg` (48 × 48) y textos en `14-PASOS-DASHBOARD.md`.
+- Verificado: el sitio usa los tokens de `brand/tokens.css` (idénticos) y los logos finales de la opción B; la app embebida usa Polaris, como define `03-MARCA.md`.
+- Pendiente de decisión: Facundo quiere elegir la distribución pública cuando la landing esté publicada (dominio desde el 2026-12-05, scripts de build y datos legales pendientes).
