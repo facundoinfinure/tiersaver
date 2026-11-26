@@ -28,7 +28,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 
 ## Comandos
 
-- `npm ci && npm test && npm run typecheck` en la raíz. (`npm test` falla hoy solo por `site/test/site.test.ts`, que necesita los scripts de build perdidos.)
+- `npm ci && npm test && npm run typecheck` en la raíz. Al 2026-11-26 pasa todo: app 358 y 1 salteado (el de Klaviyo real), núcleo 86, sitio 306.
 - Deploy del Worker: `npm run deploy:worker -w @tiersaver/shopify`. Migraciones: `npx wrangler d1 migrations apply DB --remote` desde `shopify/`.
 - Deploy de la configuración de Shopify, desde `shopify/`:
   `NODE_USE_ENV_PROXY=1 SHOPIFY_HTTP_PROXY="$HTTPS_PROXY" SHOPIFY_HTTPS_PROXY="$HTTPS_PROXY" npx shopify app deploy --allow-updates`
@@ -45,7 +45,7 @@ Para la sesión que sigue. Leé también `CLAUDE.md`, `docs/00-HANDOVER.md` (dec
 4. **Cobro contra Shopify real**: aceptar la suscripción de prueba en la tienda de desarrollo y ver el usage record. Puede depender de la distribución pública (A4).
 5. **Lo que falta de la Fase 3**: mails (simulación programada lista, resultado de corrida), detector de ciclos (guardarraíl 6), reporte mensual, decidir si se muestra la estimación de plan de Klaviyo.
 6. Reactivar `orders/create` en `shopify.app.toml` cuando la app tenga acceso a datos protegidos, y redesplegar la configuración.
-7. Sitio: reconstruir los scripts de build (tarea aparte), completar placeholders y publicar cuando el dominio esté en la cuenta TierSaver (después del 2026-12-05). Publicar es un freno.
+7. Sitio: los scripts de build ya están reconstruidos en `site/build/` (2026-11-26) y el sitio está en staging. Falta el dominio (se puede mover desde el 2026-12-05), sacar el cartel de borrador tras el OK del abogado y apuntar el botón principal a la ficha del App Store cuando exista.
 
 ## Pendiente de Facundo
 
