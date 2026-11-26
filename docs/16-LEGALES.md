@@ -72,7 +72,7 @@ Riesgo residual: bajo, medio o alto, después de la decisión. "Con abogado" dic
 | (a) instrucciones documentadas, también para transferencias; avisar si una ley obliga a otra cosa | DPA 4 "Instructions", DPA 6 | Cumple |
 | (b) confidencialidad | DPA 4 | Cumple |
 | (c) medidas del art. 32 | DPA 4 y Anexo II | Cumple (Anexo II solo lista medidas que existen) |
-| (d) subencargados (28.2 y 28.4) | DPA 5, Anexo III | Cumple; depende del compromiso C2 (DPA de Cloudflare) |
+| (d) subencargados (28.2 y 28.4) | DPA 5, Anexo III | Cumple (el DPA de Cloudflare forma parte del contrato self-serve; verificado el 2026-11-27) |
 | (e) ayuda con derechos de titulares | DPA 4, Anexo II "Assistance" | Cumple |
 | (f) ayuda con arts. 32 a 36 | DPA 4 "Assistance" y "Security breaches" | Cumple |
 | (g) borrar **o devolver, a elección** del responsable | DPA 4 | **Corregido**: antes solo borraba; ahora el merchant elige devolución (copia legible por máquina) antes de desinstalar |
@@ -140,7 +140,7 @@ Fuentes: [Ley 25.326, texto actualizado](https://servicios.infoleg.gob.ar/infole
 | Copia estructurada y legible por máquina para merchant o cliente, con posibilidad de corregir | API Terms 6.2.4 | Cumple: JSON en Settings para clientes; mail para merchants; DPA 4 ofrece la copia |
 | No comunicarse con los clientes del merchant | API Terms 6.2.6 | Cumple (la app no envía mails) |
 | **Avisar a Shopify de un incidente dentro de 24 horas de conocerlo** | API Terms 6.2.10; PPA | **No estaba en la política de incidentes** (decía "al mismo tiempo que a los merchants"). Corregido en `17` §1 |
-| Proveedores con contrato que proteja los datos | API Terms 2.6 | Depende de C2 (DPA de Cloudflare) |
+| Proveedores con contrato que proteja los datos | API Terms 2.6 | Cumple (DPA de Cloudflare incorporado al contrato self-serve) |
 | Sincronizar datos de clientes o pedidos que la app recolecte en la tienda | API Terms 2.17 y 2.22 | No aplica: TierSaver no recolecta datos en la tienda |
 | Cobrar solo por la facturación de Shopify; reembolsos solo por el procesador original | PPA C.4; App Store 1.1.15, 1.2 | Cumple (términos 6) |
 
@@ -184,7 +184,7 @@ Otros medios: arbitraje nuevo sin revisión de un abogado; borrado a 40 días en
 
 | Acción | Costo | Cuándo |
 | --- | --- | --- |
-| C2: aceptar y archivar el DPA de Cloudflare | Sin costo | Antes de desplegar el sitio sin cartel |
+| C2: DPA de Cloudflare: rige automáticamente para cuentas self-serve (verificado el 2026-11-27); solo archivar copia | Sin costo | Hecho |
 | C3: crear hello@ y support@ y leerlos cada día hábil (los textos los nombran para reclamos, exclusión del arbitraje y privacidad) | El del proveedor de correo | Antes de desplegar el sitio sin cartel |
 | Confirmar que el buzón de 153 E Flagler St, Suite 1640-6389 está registrado a nombre de Digital Solvers LLC ante la agencia receptora (requisito del pie CAN-SPAM, 16 CFR 316.2(p)) | Sin costo | Antes del primer mail |
 | Decidir el representante del art. 27 en la UE y el Reino Unido | Pago anual a un proveedor (sin verificar) | Antes del primer merchant de la UE o el Reino Unido |

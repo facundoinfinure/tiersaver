@@ -11,7 +11,7 @@ Resumen de compromisos pendientes de adoptar:
 | # | Compromiso | Sección | Fecha límite |
 | --- | --- | --- | --- |
 | C1 | Activar 2FA en Cloudflare, Shopify Partners, Klaviyo, GitHub, el registrador del dominio y el proveedor de mail | 2 | Antes del primer merchant real |
-| C2 | Aceptar y archivar el DPA de Cloudflare (el Anexo II del DPA dice que el subencargado está obligado por contrato escrito) | 4 | **Antes de desplegar el sitio sin cartel** |
+| C2 | DPA de Cloudflare: **cumplido sin acción** (verificado el 2026-11-27 en https://www.cloudflare.com/cloudflare-customer-dpa/: el DPA "forms part of the Main Agreement", que incluye el "Self-Serve Subscription Agreement"; trae las SCC 2021/914, el UK Addendum B1.0 y el Data Privacy Framework). Archivar una copia en PDF de esa página con fecha | 4 | Hecho |
 | C3 | Crear y atender hello@ y support@ (revisar al menos una vez por día hábil). Los términos los usan para reclamos, aviso previo de disputas y exclusión del arbitraje | 1, 6 | **Antes de desplegar el sitio sin cartel** |
 | C4 | Guardar una copia de `HASH_PEPPER` y de la clave de cifrado de tokens en un gestor de contraseñas | 2 | Antes del primer merchant real |
 | C5 | Separar ambiente de prueba y de producción (otra base D1 y otro Worker) | 2 | Antes del primer merchant real |
