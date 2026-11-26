@@ -1,49 +1,52 @@
 <!--
-title: Billing and charges
-nav: Billing and charges
-description: How TierSaver charges through Shopify: accepting the pricing, when a charge is created, what each charge status means and how to stop being charged.
-summary: Accepting the pricing in Shopify, when a charge is created, charge statuses and how to stop.
-lead: TierSaver charges through Shopify, and only when a cleanup suppresses profiles. This page follows a charge from start to end.
+title: Billing and your plan
+nav: Billing and your plan
+description: How TierSaver's monthly plan works in Shopify: when it starts, how it renews, changing plans when your list changes size, cancelling, and a plan on hold.
+summary: Starting the plan in Shopify, renewal every {{plan.intervalDays}} days, changing plans, cancelling and a plan on hold.
+lead: TierSaver is billed through Shopify as a monthly plan. This page follows the plan from the day it starts to the day you cancel it.
 layout: doc
 group: help
 order: 7.5
 updated: 2026-11-26
 -->
-<h2>Before the first cleanup</h2>
-<p>After you approve your first simulation, the app shows "Review pricing in Shopify". Shopify then displays TierSaver's pricing for you to accept, under the name "TierSaver list hygiene". Accepting does not charge anything by itself: it allows TierSaver to create a charge when a cleanup suppresses profiles, up to {{fee.maxPerWindow}} in a {{fee.windowDays}}-day period. If you decline, no cleanup can start, and you can still use the audit and simulations.</p>
+<h2>Before the plan starts</h2>
+<p>Installing, connecting Klaviyo, the audit and the simulation are free and need no plan. In Settings, the Plan section says "No plan yet. It starts when you approve your first cleanup."</p>
+
+<h2>Starting the plan</h2>
+<p>The "Review cleanup" page states the monthly price for your list size and the plan's terms before you approve anything. When you approve your first cleanup, the app sends you to Shopify's approval screen for that plan, named "TierSaver list hygiene" with the list size it covers. The plan starts when you approve it there. If you decline, no plan starts and no cleanup can start; you can still use the audit and simulations.</p>
 <p>The prices are in <a href="/help/pricing">how pricing works</a>.</p>
 
-<h2>What you see before you approve a cleanup</h2>
-<p>The "Review cleanup" page states the price of that cleanup: the flat monthly price for your list size, or that the cleanup would not be charged because another cleanup was already charged in the last {{fee.minDays}} days. For a list above {{plans.maxProfiles}} active profiles it says that nothing is charged automatically.</p>
+<h2>Renewal</h2>
+<p>Shopify charges the plan every {{plan.intervalDays}} days, whether or not a cleanup runs that month, until you cancel. The charge appears on your Shopify invoice. Settings shows your plan, its price and the date the current period ends.</p>
+<p>There is no charge per cleanup. Any cleanup you run while the plan is active, manual or automatic, is included.</p>
 
-<h2>From cleanup to charge</h2>
-<ol>
-  <li><strong>Estimated charge.</strong> When the cleanup finishes, its page shows an estimated charge. Nothing has been sent to Shopify yet.</li>
-  <li><strong>Confirmation by Klaviyo.</strong> TierSaver waits until Klaviyo reports that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.</li>
-  <li><strong>{{fee.holdHours}} hours.</strong> The charge is sent to Shopify {{fee.holdHours}} hours after the cleanup finished. If you restore the whole cleanup before then, nothing is charged. If a restore is still running when the {{fee.holdHours}} hours end, the charge waits until it has finished.</li>
-  <li><strong>Charged.</strong> The cleanup's page shows the amount and the date. On your Shopify invoice the charge is described as "List cleanup", with the number of profiles suppressed.</li>
-</ol>
-<p>If a charge cannot be created in Shopify, for example because Shopify cannot be reached, TierSaver tries again later. The amount does not change.</p>
+<h2>Cleanups need an active plan</h2>
+<p>Right before a cleanup starts, TierSaver asks Shopify whether your store has an active plan that covers the list size shown in the simulation. If it does not, the cleanup does not start and nothing changes in Klaviyo.</p>
 
-<h2>When a cleanup is not charged</h2>
-<p>The cleanup's page gives one of these reasons:</p>
+<h2>When your list changes size</h2>
 <ul>
-  <li>No profile was suppressed.</li>
-  <li>A cleanup was already charged in the last {{fee.minDays}} days. Of two cleanups within {{fee.minDays}} days, only one is charged.</li>
-  <li>The cleanup was undone in full before its charge was created.</li>
-  <li>The monthly maximum of {{fee.maxPerWindow}} was already reached.</li>
-  <li>The list is above {{plans.maxProfiles}} active profiles, which is priced by agreement and not charged automatically.</li>
+  <li><strong>Your list grows past your plan.</strong> The next cleanup waits until you approve the new monthly price in Shopify, which you do when you approve that cleanup. Automatic mode waits for you too and never charges more without your approval. Shopify prorates the change. Until then you keep paying your current price.</li>
+  <li><strong>Your list shrinks into a smaller plan.</strong> The app tells you, in Settings and on the "Review cleanup" page, and offers to switch. The change is not automatic. If you switch, Shopify asks you to approve the new price and prorates the change.</li>
 </ul>
 
 <h2>Restoring and refunds</h2>
-<p>A cleanup you restore in full within {{fee.holdHours}} hours of its end is not charged. Restoring it later, or restoring only part of it, does not refund the charge. See <a href="/help/undo">undo</a>.</p>
+<p>Restoring a cleanup does not refund the month and does not change your plan. See <a href="/help/undo">undo</a>.</p>
 
-<h2>How to stop being charged</h2>
+<h2>Cancelling</h2>
+<p>Open Settings, go to the Plan section and select "Cancel plan". Uninstalling the app also cancels the plan. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>
 <ul>
-  <li>A charge is only created by a cleanup. If you do not approve a cleanup, nothing is charged.</li>
-  <li>If you turned on the monthly schedule or automatic mode, turn them off in <a href="/help/settings">Settings</a>. It takes effect at once.</li>
-  <li>Uninstalling the app also stops all charges. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</li>
+  <li>Shopify stops charging the plan. The period you already paid for is not refunded.</li>
+  <li>No cleanup can start, and automatic mode is switched off.</li>
+  <li>Audits stay free, and scheduled audits keep running.</li>
+  <li>Profiles already suppressed stay suppressed in Klaviyo, and you can still restore them from History.</li>
+  <li>A new plan starts if you approve another cleanup.</li>
 </ul>
 
+<h2>A plan on hold</h2>
+<p>If Shopify freezes the plan because of a payment problem with your store, cleanups stop until Shopify makes the plan active again. Settings then shows "Your plan is on hold in Shopify." The hold is resolved in your Shopify billing, not in TierSaver.</p>
+
+<h2>Development stores</h2>
+<p>On a development store the plan is a test plan: Shopify does not bill it.</p>
+
 <h2>If a charge looks wrong</h2>
-<p>Write to <a href="mailto:{{support.email}}">{{support.email}}</a> with your store's myshopify.com address and the date of the cleanup. See <a href="/help/contact">contact support</a>.</p>
+<p>Write to <a href="mailto:{{support.email}}">{{support.email}}</a> with your store's myshopify.com address and the date of the charge. See <a href="/help/contact">contact support</a>.</p>

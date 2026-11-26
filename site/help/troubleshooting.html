@@ -85,7 +85,7 @@
 
 <h2 id="the-audit-found-nobody-to-suppress">The audit found nobody to suppress</h2>
 <ul>
-  <li><strong>"Your list is already clean."</strong> No profile matches the cleanup criteria. There is nothing to suppress and nothing to charge.</li>
+  <li><strong>"Your list is already clean."</strong> No profile matches the cleanup criteria. There is nothing to suppress.</li>
   <li><strong>Profiles could not be checked against your store's full order history.</strong> They were kept active. This happens while your Shopify order history is still being read, or when Shopify has not shared the whole history with the app. A profile is only suppressed once it can be checked against your orders. If the app says the history is still being read, run the audit again later.</li>
   <li><strong>Your Klaviyo account has no record of delivered emails, opens or clicks yet.</strong> Without that data no profile can be called inactive.</li>
   <li><strong>A protected list or segment could not be read.</strong> Every profile was kept active. Run the audit again later.</li>
@@ -98,14 +98,17 @@
   <li><strong>"This simulation is out of date", or "Your rules or protected lists changed after this audit."</strong> You changed the criteria or a protected list after it was computed, or a newer audit replaced it. Run the audit again.</li>
   <li><strong>"This simulation was already used for a cleanup."</strong> A simulation runs once. Run the audit again for a new one.</li>
   <li><strong>The approval is refused.</strong> Tick the box that confirms you have read the notices and accept the terms. If the app says it could not identify your Shopify user, reload the page and try again.</li>
-  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, or this cleanup would suppress more than 10% of your active profiles or more than three times as many profiles as the last one you approved. Review the simulation and approve it yourself if it is right.</li>
+  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, this cleanup would suppress more than 10% of your active profiles or more than three times as many profiles as the last one you approved, or your list has grown past your plan and the new monthly price needs your approval in Shopify. Review the simulation and approve it yourself if it is right.</li>
   <li><strong>"The file could not be prepared."</strong> The CSV of candidates is read from Klaviyo at the moment you download it. Try again; Klaviyo has to be connected.</li>
 </ul>
 
 <h2 id="starting-a-cleanup">Starting a cleanup</h2>
 <ul>
-  <li><strong>"Accept the TierSaver pricing in Shopify before starting the cleanup."</strong> Select "Review pricing in Shopify" and accept. See <a href="/help/billing">billing and charges</a>.</li>
-  <li><strong>"Shopify billing could not be reached."</strong> Nothing was changed. Try again.</li>
+  <li><strong>"You need an active TierSaver plan to start a cleanup."</strong> Start the plan from the "Review cleanup" page; Shopify asks you to approve it. See <a href="/help/billing">billing and your plan</a>.</li>
+  <li><strong>"Your list has grown into a larger plan."</strong> Approve the new monthly price in Shopify before starting the cleanup. Nothing more is charged without that approval.</li>
+  <li><strong>"Your TierSaver plan is on hold in Shopify because of a billing issue with your store."</strong> Cleanups can start again once Shopify makes the plan active again. Check your store's billing in Shopify.</li>
+  <li><strong>"Lists this large are not sold automatically."</strong> Your list is above 150,000 active profiles. Write to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>.</li>
+  <li><strong>"Shopify could not be asked about your plan."</strong> Nothing was changed. Try again.</li>
   <li><strong>"Connect Klaviyo before starting a cleanup."</strong> The connection was lost after you approved. Reconnect and start again while the simulation is still valid.</li>
   <li><strong>"Cleanups are not switched on for this installation yet."</strong> The installation can audit and simulate but cannot suppress profiles yet. Nothing was changed in Klaviyo. <a href="/help/contact">Contact support</a>.</li>
 </ul>
@@ -131,7 +134,7 @@
 </ul>
 
 <h2 id="klaviyo-s-profile-count-has-not-changed">Klaviyo's profile count has not changed</h2>
-<p>Klaviyo applies a cleanup in the background, and the count it shows can take up to 72 hours to update. On the cleanup's page, "Check jobs in Klaviyo" shows what Klaviyo reports so far. Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</p>
+<p>Klaviyo applies a cleanup in the background and updates its count on its own schedule, so the count it shows may not change right away. On the cleanup's page, "Check jobs in Klaviyo" shows what Klaviyo reports so far. Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</p>
 
 <h2 id="settings">Settings</h2>
 <ul>
@@ -162,7 +165,7 @@
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
             <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/billing">Billing and your plan</a></li>
             <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy">Data and privacy</a></li>
             <li><a href="/help/troubleshooting" aria-current="page">Troubleshooting</a></li>

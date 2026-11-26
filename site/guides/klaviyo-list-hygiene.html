@@ -85,7 +85,7 @@
 <p>Klaviyo offers three ways.</p>
 
 <h3>Build an inactivity segment</h3>
-<p>Klaviyo's suggested definition combines all of these conditions:</p>
+<p>Klaviyo's article "Understanding active profile management in Klaviyo" describes a segment that combines all of these conditions:</p>
 <ul>
   <li>Person can receive email marketing</li>
   <li>Email is set</li>
@@ -101,7 +101,8 @@
 <p>Creating the segment does not suppress anyone.</p>
 
 <h3>Use the profiles Klaviyo suggests</h3>
-<p>On the Suppressed profiles page (Audience, Profiles, View suppressed profiles), Klaviyo may show a banner that suggests profiles to suppress. The criteria Klaviyo publishes for it: can receive email marketing with no suppression added in the last 90 days, created at least 365 days ago, received 5 or more emails over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+<p>On the Suppressed profiles page (Audience, Profiles, View suppressed profiles), Klaviyo may show a banner that suggests profiles to suppress. The criteria Klaviyo publishes for it, in "How to manage email suppressions and delete profiles in bulk": can receive email marketing with no suppression added in the last 90 days, created at least 365 days ago, received 5 or more emails over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+<p>The two articles use different ages: 180 days in the segment above, 365 days here. TierSaver's default criteria follow this second set, with 365 days.</p>
 
 <h3>Use "Suppress inactive profiles" on a list or segment</h3>
 <p>When you bulk suppress a list or segment, Klaviyo may offer to suppress only inactive profiles. That option keeps active anyone in the group who is subscribed, has not marked your emails as spam, and has clicked an email or placed an order within the last 182 days. Klaviyo says the option is unavailable when your deliverability score for the last 30 days is 60 or lower, or when more than 120,000 profiles qualify as inactive.</p>
@@ -123,7 +124,7 @@
 <p>Remember the waiting period: once a profile is suppressed and then unsuppressed, Klaviyo does not let it be manually suppressed again until 90 days after the previous suppression.</p>
 
 <h2 id="step-5-repeat-every-month">Step 5. Repeat every month</h2>
-<p>Klaviyo's advice is to manage your active profiles on an ongoing basis. A bulk suppression does not repeat by itself, so put it in your calendar. Klaviyo says the count shown in billing may take up to 72 hours to refresh after a large cleanup. On Klaviyo's Advanced KDP plan, suppressed profiles can still count toward billing. <a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a> explains the rest.</p>
+<p>Klaviyo's advice is to manage your active profiles on an ongoing basis. A bulk suppression does not repeat by itself, so put it in your calendar. Klaviyo gives no fixed time for its active profile count to update after a bulk suppression: it updates the count on its own schedule and checks it shortly before your billing cycle renews. On Klaviyo's Advanced KDP plan, billing is based on total profiles, including suppressed profiles. <a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a> explains the rest.</p>
 
 <h2 id="where-tiersaver-fits">Where TierSaver fits</h2>
 <p>Everything above works by hand. TierSaver is for Shopify stores that want the routine done for them: it finds profiles using the criteria Klaviyo publishes for suppressing unengaged profiles, checks every candidate against Shopify orders (step 2), shows a simulation for you to approve, keeps the record (step 4) and can restore a cleanup. It never deletes profiles. <a href="/#how-it-works">See how it works</a>.</p>
@@ -133,6 +134,7 @@
   <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read November 26, 2026)</li>
   <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read November 26, 2026)</li>
   <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "How to choose your upgrade preference". <a href="https://help.klaviyo.com/hc/en-us/articles/4405883690651" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/4405883690651</a> (read November 26, 2026)</li>
 </ul>
         </div>
       </article>

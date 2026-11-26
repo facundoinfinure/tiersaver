@@ -1146,14 +1146,15 @@ mark.placeholder {
   --on-field: #f6f4ef;
   --on-field-muted: #cfcbc2;
 }
-.field {
+/* Only the two glow panels: ".field" is also the class of a form field in the list health check. */
+:where(.hero__stage, .panel--dark).field {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   background: var(--surface-deep);
   color: var(--on-field);
 }
-.field > :where(:not(.field__glow, .field__grain, .field__veil)) {
+:where(.hero__stage, .panel--dark).field > :where(:not(.field__glow, .field__grain, .field__veil)) {
   position: relative;
 }
 .field__glow,

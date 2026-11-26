@@ -1,7 +1,7 @@
 <!--
 title: Terms of service (draft)
 nav: Terms of service
-description: Draft terms of service for TierSaver for Klaviyo: what the app does, the merchant's responsibilities, the flat monthly price billed through Shopify, and the limits of what is promised.
+description: Draft terms of service for TierSaver for Klaviyo: what the app does, the merchant's responsibilities, the monthly plan billed through Shopify, and the limits of what is promised.
 lead: The agreement between you and TierSaver, in plain language. It describes what the app does, what stays your responsibility and how you are charged.
 kicker: Legal · Draft
 layout: doc
@@ -9,7 +9,7 @@ group: legal
 order: 2
 updated: Draft of 2026-11-26
 -->
-<p><strong>Effective date:</strong> November 26, 2026</p>
+<p><strong>Effective date:</strong> {{terms.effectiveDateLong}}</p>
 
 <h2>1. The agreement</h2>
 <p>These terms are an agreement between you, the merchant who installs TierSaver for Klaviyo ("TierSaver", "the app"), and Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131, United States ("we", "us"). By installing the app, and again when you confirm in the app that you accept these terms as you approve a cleanup, you accept them. That acceptance also covers every later cleanup, including the cleanups that run in automatic mode after you turn it on. If you do not accept them, do not install or use the app.</p>
@@ -55,7 +55,7 @@ updated: Draft of 2026-11-26
 <ul>
   <li><strong>Klaviyo records only one kind of manual suppression</strong> and does not say who added it. Undo removes the suppression the cleanup added, and the app may not be able to tell it apart from one that you, a colleague or another tool added to the same profile for your own reason. If that happened, undo may remove that suppression too;</li>
   <li>undo does not resubscribe anyone. According to Klaviyo's documentation on November 26, 2026, profiles that unsubscribed, bounced or have an invalid address stay as they are, and Klaviyo keeps them unsendable;</li>
-  <li>undo does not restore emails that were not sent in the meantime, and it cancels a charge only in the case described in section 6;</li>
+  <li>undo does not restore emails that were not sent in the meantime, and it does not refund any part of your plan (section 6);</li>
   <li>a profile restored by an undo is left out of later cleanups by the app for 365 days;</li>
   <li>undo needs the app to be installed and connected to your Klaviyo account, and it may restore only part of a cleanup, for example when a profile no longer exists.</li>
 </ul>
@@ -66,8 +66,8 @@ updated: Draft of 2026-11-26
 <p>How Klaviyo counts profiles depends on the Klaviyo products you use. For example, Klaviyo's documentation states that its Advanced KDP product is sized by total profiles, including suppressed profiles, so a cleanup does not change that count.</p>
 
 <h2>6. Price and payment</h2>
-<p>The audit and simulations are free. The app has a flat monthly price that depends only on the number of active profiles in your Klaviyo account, counted in the audit behind the simulation you approved. On the effective date above, the prices are:</p>
-<div class="table-scroll" tabindex="0" role="region" aria-label="TierSaver prices by list size">
+<p>Installing the app, connecting Klaviyo, the audit and the simulation are free and need no plan. To run cleanups you need a TierSaver plan: a subscription, billed by Shopify, whose monthly price depends only on the number of active profiles in your Klaviyo account. On the effective date above, the plans are:</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="TierSaver monthly plans by list size">
   <table class="data-table">
     <thead>
       <tr><th scope="col">Active profiles in your Klaviyo account</th><th scope="col">Price (USD)</th></tr>
@@ -77,29 +77,41 @@ updated: Draft of 2026-11-26
     </tbody>
   </table>
 </div>
-<p>For a list above {{plans.maxProfiles}} active profiles the app creates no charge automatically. We may contact you to agree a price for continued use. The price does not depend on how many profiles are suppressed or on your Klaviyo plan or invoice. The current prices are also shown in the app and at <a href="/help/pricing">tiersaver.com/help/pricing</a>.</p>
+<p>For a list above {{plans.maxProfiles}} active profiles the app is not sold automatically: no plan is offered and no cleanup starts. Write to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a> to agree a price. The price does not depend on how many profiles are suppressed, on how many cleanups run or on your Klaviyo plan or invoice. The current prices are also shown in the app and at <a href="/help/pricing">tiersaver.com/help/pricing</a>.</p>
+<h3>Your plan is a subscription that renews automatically</h3>
+<p><strong>Please read these five points together.</strong> Before you approve your first cleanup, the app states the price for your list size, that Shopify charges it every {{plan.intervalDays}} days until you cancel, and how to cancel.</p>
 <ul>
-  <li><strong>When you are charged.</strong> A charge is created for a cleanup that suppressed at least one profile, 72 hours after the cleanup finishes and once Klaviyo has confirmed the suppressions. The only exception is described below, under "If you uninstall before a charge is created". If no cleanup runs, or a cleanup suppresses nobody, nothing is charged. The price is the full price for your list size whether the cleanup suppressed one profile or many, and whether it completed or stopped partway. If a charge cannot be created, for example because Shopify cannot be reached, we try again later for the same amount.</li>
-  <li><strong>How often.</strong> At most one charge is created in any 28-day period, even if more than one cleanup runs in that time. A cleanup that runs within 28 days of a charged cleanup is not charged: of two cleanups within 28 days, only one is charged.</li>
-  <li><strong>Maximum.</strong> The total charged through Shopify is at most $149 in each 30-day Shopify billing cycle.</li>
-  <li><strong>How you pay.</strong> All charges are made through Shopify's billing system, which you approve in Shopify. They appear on your Shopify invoice and are subject to Shopify's payment terms. We do not collect payment in any other way, and we do not receive or store your payment details.</li>
-  <li><strong>Currency.</strong> Prices are stated in US dollars and exclude taxes.</li>
+  <li><strong>Price.</strong> The monthly price in the table above for your list size, as counted in the audit behind the simulation you approve. Prices are stated in US dollars and exclude taxes.</li>
+  <li><strong>Start and renewal.</strong> The plan starts when you approve it on Shopify's approval screen, which the app opens when you approve your first cleanup. Nothing is charged before that. <strong>From then on the plan renews automatically: Shopify charges its price every {{plan.intervalDays}} days, whether or not a cleanup runs in that period, until you cancel.</strong></li>
+  <li><strong>How to cancel.</strong> You can cancel at any time in the app, under Settings, then Plan, or by uninstalling the app. Cancelling stops all future charges and takes effect at once.</li>
+  <li><strong>No refunds for the current period.</strong> The period you have already paid for is not refunded, in whole or in part, when you cancel, when you uninstall or when you undo a cleanup, except where the law requires a refund.</li>
+  <li><strong>Price changes only with your approval.</strong> You are never charged a higher price unless you have first approved that price on Shopify's approval screen. This applies when your list moves to a larger plan and when we change our prices.</li>
 </ul>
-<h3>Automatic mode and recurring charges</h3>
-<p>Automatic mode is off unless you turn it on. If you turn it on, you authorize us to run a cleanup each month and to create the charge for each cleanup that suppresses at least one profile, without asking you again, until you turn automatic mode off in the app's Settings or uninstall the app. Each of those charges follows the rules above: the price for your list size, at most one charge in any 28-day period, and at most $149 in each 30-day Shopify billing cycle. When you turn automatic mode on, the app records who turned it on, when, the price shown and the version of these terms.</p>
-<p>Automatic mode is available only with the default criteria and only after you have approved and run at least one cleanup yourself. An automatic cleanup does not start, and its simulation waits for your review in the app, when the last cleanup you approved yourself was undone in full, when your criteria or protected lists have changed since that approval, or when the cleanup would be unusually large compared with your list or with the last cleanup you approved, as the help center describes.</p>
-<p>Turning automatic mode off takes effect immediately, costs nothing and stops future automatic cleanups and their charges. It does not reverse a cleanup that has already run or a charge already created. The app shows the date of the next scheduled audit on its home page and the result of every cleanup in its history. The app does not send these notices by email.</p>
+<h3>What the plan covers</h3>
+<p>There is no charge per cleanup. Every cleanup that starts while your plan is active, whether you start it or automatic mode does, is included in the plan's price. A cleanup starts only while your store has an active plan whose price is at least the price for the list size shown in that cleanup's simulation. Without such a plan no cleanup starts and nothing is suppressed.</p>
+<h3>If your list changes size</h3>
+<ul>
+  <li><strong>Your list moves to a larger plan.</strong> The app tells you, and no cleanup starts until you approve the new monthly price on Shopify's approval screen. Automatic mode waits for that approval too. When you approve, the new plan replaces the old one at once and Shopify prorates the change under its own billing rules. Until you approve, you keep your current plan at its current price.</li>
+  <li><strong>Your list moves to a smaller plan.</strong> The app tells you and offers the smaller plan. The change is not automatic: your price changes only if you choose the smaller plan and approve it in Shopify, and Shopify then prorates the change under its own billing rules.</li>
+</ul>
+<h3>Cancelling</h3>
+<p>After you cancel, no cleanup starts and automatic mode is switched off. Audits and simulations stay free. Profiles that are already suppressed stay suppressed in your Klaviyo account, and while the app stays installed and connected you can still undo past cleanups as section 4 describes. A new plan starts only if you approve another cleanup and approve that plan in Shopify.</p>
+<h3>Automatic mode</h3>
+<p>Automatic mode is off unless you turn it on. If you turn it on, you authorize us to run a cleanup each month without asking you again, until you turn automatic mode off in the app's Settings, cancel your plan or uninstall the app. Automatic cleanups are covered by your plan and add no charge. When you turn automatic mode on, the app records who turned it on, when, the price shown and the version of these terms.</p>
+<p>Automatic mode is available only with the default criteria and only after you have approved and run at least one cleanup yourself. An automatic cleanup does not start, and its simulation waits for your review in the app, when the last cleanup you approved yourself was undone in full, when your criteria or protected lists have changed since that approval, when the cleanup would be unusually large compared with your list or with the last cleanup you approved, as the help center describes, or when your store has no active plan that covers your list size.</p>
+<p>Turning automatic mode off takes effect immediately and stops future automatic cleanups. It does not cancel your plan and does not reverse a cleanup that has already run. The app shows the date of the next scheduled audit on its home page and the result of every cleanup in its history. The app does not send these notices by email.</p>
 <h3>Undo and refunds</h3>
-<p>A charge is created in Shopify 72 hours after a cleanup finishes, once Klaviyo has confirmed the suppressions. If you undo the cleanup in full during those 72 hours, so that every profile it suppressed has been restored before the charge is created, the cleanup is not charged. If an undo of the cleanup is still running when the 72 hours end, the charge waits until it has finished. In every other case, including an undo of only part of a cleanup and an undo after the charge has been created, undoing a cleanup does not cancel or refund its charge. Charges that have been created are not refundable, except where the law requires a refund.</p>
-<h3>If you uninstall before a charge is created</h3>
-<p>The 72 hours exist so that you can correct a mistake at no charge. If you uninstall the app during those 72 hours while a cleanup that has not been restored in full is still waiting for its charge, Shopify no longer lets us create that charge, and that cleanup is not charged. In that case we keep a minimal record that outlasts the uninstall: a keyed hash of the Klaviyo account ID, the date of the cleanup and the amount that was not charged. It contains no store name and no customer data, and it is deleted after 400 days (about 13 months) at the latest, as the privacy policy describes.</p>
-<p>While that record exists, the next cleanup on the same Klaviyo account, from any store, is charged as soon as Klaviyo has confirmed its suppressions, without the 72-hour wait, so undoing that cleanup does not cancel its charge. The price and the other limits of this section stay the same. Once that charge has been created in Shopify, the record is deleted and the 72 hours apply again to later cleanups.</p>
+<p>Undoing a cleanup, in full or in part, does not refund any part of your plan and does not change it. Amounts already charged are not refundable, except where the law requires a refund.</p>
+<h3>If Shopify puts your plan on hold</h3>
+<p>If Shopify freezes your plan because of a payment problem with your store, no cleanup starts until Shopify makes the plan active again.</p>
+<h3>How you pay</h3>
+<p>All charges are made through Shopify's billing system, which you approve in Shopify. They appear on your Shopify invoice and are subject to Shopify's payment terms. We do not collect payment in any other way, and we do not receive or store your payment details. On a Shopify development store the plan is a test subscription, which Shopify does not bill.</p>
 <h3>Billing questions</h3>
-<p>Shopify issues the invoice and collects payment. If you think a charge is wrong, write to <a href="mailto:support@tiersaver.com">support@tiersaver.com</a> within 60 days of the Shopify invoice that shows it. Where a correction is due, we make it through Shopify, as a refund or an app credit; we cannot refund in any other way. The 60 days help us look into a charge while the records are fresh; they do not shorten any period the law gives you to bring a claim. If a charge is unpaid or reversed, we may pause cleanups until it is settled.</p>
+<p>Shopify issues the invoice and collects payment. If you think a charge is wrong, write to <a href="mailto:support@tiersaver.com">support@tiersaver.com</a> within 60 days of the Shopify invoice that shows it. Where a correction is due, we make it through Shopify, as a refund or an app credit; we cannot refund in any other way. The 60 days help us look into a charge while the records are fresh; they do not shorten any period the law gives you to bring a claim.</p>
 <h3>Taxes</h3>
 <p>You are responsible for any sales, use, value added, goods and services, withholding or similar taxes that apply to your use of the app, other than taxes on our income. Where such a tax applies, it is added to the charge on your Shopify invoice.</p>
 <h3>Price changes</h3>
-<p>We may change our prices for future cleanups. A new price applies to you only after the app has shown it to you and, where Shopify requires it, you have approved it in Shopify. Any increase in the maximum amount you approved in Shopify requires your new approval in Shopify.</p>
+<p>We may change our prices. A new price applies to a plan that starts after the change. If you already have a plan, a new price applies to you only after the app has shown it to you and you have approved it on Shopify's approval screen; until then your plan keeps renewing at the price you approved.</p>
 
 <h2>7. Acceptable use</h2>
 <p>You agree not to use the app:</p>
@@ -108,7 +120,6 @@ updated: Draft of 2026-11-26
   <li>to suppress profiles before your Klaviyo plan renews and then remove those suppressions in bulk after it renews, once or repeatedly;</li>
   <li>to keep sending marketing messages to suppressed profiles through another provider, another account or any other channel;</li>
   <li>as your record of unsubscribe or opt-out requests, or in place of honoring one;</li>
-  <li>to run cleanups and then uninstall the app before their charges are created, so as not to pay for them;</li>
   <li>to connect one Klaviyo account to more than one store at the same time. Only one installed store can be connected to a given Klaviyo account at a time, and the app refuses a second connection until the first store disconnects that account or uninstalls the app;</li>
   <li>in any way that breaches Klaviyo's or Shopify's terms, the law or anyone's rights;</li>
   <li>to access the app by automated means, to resell it, or to build a competing product;</li>
@@ -175,9 +186,9 @@ updated: Draft of 2026-11-26
 <p>This section does not apply to the extent a claim results from our breach of these terms or our gross negligence or intentional misconduct. The limits in section 12 apply to our liability and do not limit your obligations under this section or your obligation to pay charges.</p>
 
 <h2>14. Ending the agreement</h2>
-<p>You can stop using the app and end this agreement at any time by uninstalling the app from your Shopify store. We may suspend or end your access if you breach these terms, if Klaviyo or Shopify requires it, if we reasonably believe your use puts the service or another merchant at risk, if a charge is unpaid or reversed, or if we stop offering the app. Where we reasonably can, we will show a notice in the app first and leave undo available.</p>
-<p>When the agreement ends, the app creates no further charges, but charges already created remain payable. A cleanup whose charge had not yet been created when you uninstalled is not charged, and section 6 describes the record we keep in that case and its effect on the next cleanup on the same Klaviyo account. Suppressed profiles stay suppressed in your Klaviyo account until you remove the suppression there, and the segment the app created stays in your Klaviyo account until you delete it. After you uninstall, the app can no longer undo a cleanup, and reinstalling it later does not bring back the history of earlier cleanups. We delete your data as described in the privacy policy, which also describes that record.</p>
-<p>Sections 3, 4, 5, 6 (for charges already created), 7, 8, 9, 11, 12, 13, 14, 15, 16 and 17, and any other section that by its nature should survive, continue to apply after the agreement ends.</p>
+<p>You can stop using the app and end this agreement at any time by uninstalling the app from your Shopify store. We may suspend or end your access if you breach these terms, if Klaviyo or Shopify requires it, if we reasonably believe your use puts the service or another merchant at risk, if a charge for your plan is unpaid or reversed, or if we stop offering the app. Where we reasonably can, we will show a notice in the app first and leave undo available.</p>
+<p>Uninstalling the app cancels your plan: Shopify stops charging it, amounts already charged remain payable, and the period already paid is not refunded, as section 6 describes. Suppressed profiles stay suppressed in your Klaviyo account until you remove the suppression there, and the segment the app created stays in your Klaviyo account until you delete it. After you uninstall, the app can no longer undo a cleanup, and reinstalling it later does not bring back the history of earlier cleanups. We delete your data as described in the privacy policy.</p>
+<p>Sections 3, 4, 5, 6 (for amounts already charged), 7, 8, 9, 11, 12, 13, 14, 15, 16 and 17, and any other section that by its nature should survive, continue to apply after the agreement ends.</p>
 
 <h2>15. Governing law and disputes</h2>
 <p>These terms, and any dispute or claim that arises out of or relates to them or to the app, are governed by the laws of the State of Florida, United States, without regard to its conflict of laws rules. The United Nations Convention on Contracts for the International Sale of Goods does not apply.</p>
@@ -188,11 +199,11 @@ updated: Draft of 2026-11-26
 <p>If you have a problem with the app, please write to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a> first. Most problems can be solved that way.</p>
 
 <h2>16. Changes to these terms</h2>
-<p>We may change these terms. We will post the new version here with a new effective date. Before a change that reduces your rights or adds to your obligations takes effect, we will post it here and show a notice in the app at least 30 days in advance, unless the law, Klaviyo or Shopify requires the change sooner. A change applies only from its effective date: it does not apply to charges already created or to a dispute that arose before then. If you keep using the app after the effective date, you accept the new terms. If you do not agree, uninstall the app before then.</p>
+<p>We may change these terms. We will post the new version here with a new effective date. Before a change that reduces your rights or adds to your obligations takes effect, we will post it here and show a notice in the app at least 30 days in advance, unless the law, Klaviyo or Shopify requires the change sooner. A change applies only from its effective date: it does not apply to amounts already charged or to a dispute that arose before then. If you keep using the app after the effective date, you accept the new terms. If you do not agree, uninstall the app before then.</p>
 
 <h2>17. General</h2>
 <ul>
-  <li><strong>Entire agreement.</strong> These terms and the charge you approve in Shopify are the entire agreement between you and us about the app, and replace any earlier statement or understanding about it. The privacy policy explains how we handle data; it is part of this agreement only where section 8 refers to it. The Data Processing Addendum is part of this agreement as section 8 describes. If these terms and the pricing text shown by Shopify differ, these terms apply, except that you are never charged more than the maximum you approved in Shopify. A separate written agreement signed by both of us, such as one for a list above the public prices, prevails over these terms where they conflict.</li>
+  <li><strong>Entire agreement.</strong> These terms and the plan you approve in Shopify are the entire agreement between you and us about the app, and replace any earlier statement or understanding about it. The privacy policy explains how we handle data; it is part of this agreement only where section 8 refers to it. The Data Processing Addendum is part of this agreement as section 8 describes. If these terms and the pricing text shown by Shopify differ, these terms apply, except that you are never charged more than the price you approved in Shopify. A separate written agreement signed by both of us, such as one for a list above the public prices, prevails over these terms where they conflict.</li>
   <li><strong>Electronic agreement.</strong> You agree that these terms, your approvals in the app and the notices we give you are in electronic form, that ticking a box or pressing a button in the app has the same effect as a signature, and that our records of your approvals are evidence of them.</li>
   <li><strong>Our rights in the app.</strong> We and our licensors keep all rights in the app and in tiersaver.com. While this agreement is in effect you may use the app for your own store.</li>
   <li><strong>Your data.</strong> You keep all rights in your data. You authorize us to access and process it, and to act in your Shopify store and your Klaviyo account, as needed to provide the app to you and as described in the privacy policy.</li>

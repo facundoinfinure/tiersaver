@@ -66,6 +66,32 @@ También define a quién corresponde suprimir, y la definición es estricta:
 
 https://help.klaviyo.com/hc/en-us/articles/24263920096027 (leído el 2026-11-25)
 
+### 1.2.1 Verificación del 2026-11-26: dos artículos, dos antigüedades, y ningún plazo para el conteo
+
+Releídos el 2026-11-26 por la sesión principal (este documento registra lo que esa lectura informó; las citas en inglés son las que pasó esa sesión).
+
+**Los dos artículos dan criterios distintos para la antigüedad del perfil.**
+
+| Artículo | Actualizado | Qué describe | Antigüedad | Resto de las condiciones |
+| --- | --- | --- | --- | --- |
+| "How to manage email suppressions and delete profiles in bulk", https://help.klaviyo.com/hc/en-us/articles/24312135764251 | 2026-10-27 | Los perfiles que Klaviyo sugiere suprimir | "Were created at least 365 days ago" | "Have received 5 or more emails over roughly the last 72 weeks"; "Have never opened or clicked an email from you"; "Have no recorded website visits, product views, started checkouts, or purchases"; "Can receive email marketing and have not had a suppression added in the last 90 days" |
+| "Understanding active profile management in Klaviyo", https://help.klaviyo.com/hc/en-us/articles/24263920096027 | 2026-10-29 | Un segmento de inactividad armado a mano | "Created is at least 180 days ago" | Recibió al menos 5 mails en las últimas 72 semanas; cero Opened Email, Clicked Email, Active on Site, Viewed Product, Checkout Started y Placed Order en todo el historial |
+
+- El default de TierSaver (`packages/core/src/rules.ts`, `newProfileDays: 365`) coincide con el primer artículo, que es el que seguimos. Por eso el sitio puede seguir diciendo que TierSaver sigue "the criteria Klaviyo publishes for suppressing unengaged profiles", con 365 días. Nunca "recommended" ni "recommends" en texto público.
+- Los 180 días del segundo artículo no se mencionan en páginas públicas, salvo en una guía que compare los dos, y ahí cada número va atribuido a su artículo (hoy: `site/src/pages/guides/klaviyo-list-hygiene.html`). El piso del modo ampliado (`RULE_LIMITS.newProfileDays.min`, 180) coincide con ese segundo artículo.
+
+**Klaviyo no publica ningún plazo para que se actualice el conteo de perfiles activos.**
+
+- El artículo 24312135764251 solo dice "Processing may take a few moments" y "may take some time". El 24263920096027 tampoco da un plazo.
+- La cifra "hasta 72 horas", que estaba en el sitio, en la app y en `00-HANDOVER.md`, venía de un blog de agencia, no de Klaviyo. Se quitó del sitio el 2026-11-26. Lo que se dice ahora: Klaviyo actualiza su conteo según su propio calendario y lo revisa poco antes de que se renueve el ciclo de facturación (esto último sale de https://help.klaviyo.com/hc/en-us/articles/4405883690651, cita en 1.2).
+- Pendiente fuera del sitio: `00-HANDOVER.md` ("Por qué existe", tercer punto) todavía dice 72 horas; cambiarlo es de Facundo o de la sesión principal.
+
+**Cómo citar el efecto en el plan, con las palabras de Klaviyo.**
+
+- Los suprimidos "do not count toward your email plan's active profile limit" (24312135764251); "do not contribute towards your email plan's active profile count" (24263920096027).
+- "Advanced KDP billing is based on total profiles, including suppressed profiles" (24312135764251). En el sitio: en Advanced KDP los suprimidos siguen contando para su total. No más "can still count".
+- Suprimir "will not automatically change the Email subscription plan on your account" (24312135764251), y "a lower active profile count does not necessarily lower your bill" (24263920096027).
+
 ### 1.3 La lectura más plausible
 
 A Klaviyo le corresponde cobrar por los perfiles a los que el cliente puede escribir. Si el merchant renuncia de verdad a escribirle a un perfil inactivo, Klaviyo dice por escrito que ese perfil no se cobra: ahí no hay un cargo "otherwise entitled" que se esté evitando. La cláusula apunta a quien conserva el beneficio (poder escribirles) sin pagarlo.
@@ -327,6 +353,8 @@ La calculadora pública de ahorro es el activo de marketing más comprometido. A
 **Nombre.** Opciones: (1) mantener "TierSaver for Klaviyo" y asumir que el nombre contradice el posicionamiento; (2) mantener la marca y cambiar el descriptor a "TierSaver: List Hygiene for Klaviyo"; (3) cambiar la marca por una de higiene. Con el precio B o C, la opción 2 es razonable y barata. Con el precio actual, nombre más precio juntos son difíciles de defender. Cambiar el nombre después del lanzamiento cuesta mucho más que ahora.
 
 Las dos decisiones son de Facundo. No se aplicó ninguna.
+
+**Estado al 2026-11-26.** Facundo decidió el precio dos veces después de este análisis: el 2026-11-25, cargo fijo por limpieza (variante de C, US$ 15 / 29 / 79 / 149); el 2026-11-26, **plan mensual fijo por tamaño de lista** (variante de B): US$ 9 / 19 / 39 / 79 por mes hasta 10.000 / 25.000 / 75.000 / 150.000 perfiles activos, gratis hasta la primera limpieza, cobrado por Shopify cada 30 días hasta que el merchant lo cancela. Para la exposición frente a Klaviyo vale lo dicho de B: el ingreso no depende de la factura de Klaviyo ni de cuántos perfiles se suprimen. Lo que se pierde respecto de C es "el mes sin limpieza no se cobra"; la regla de producto 6 pasó a ser "gratis hasta la primera limpieza" (`CLAUDE.md`, `00-HANDOVER.md`). El nombre quedó en la opción 2.
 
 ## 4. Cobertura operativa
 

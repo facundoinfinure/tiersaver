@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_PRICE_TABLES,
+  DEFAULT_FEE_POLICY,
   FLAT_PRICE_TIERS,
   KLAVIYO_EMAIL_2026_11,
   KLAVIYO_MARKETING_2026_11,
   flatTierFor,
+  formatUsd as coreFormatUsd,
   tierFor,
 } from "@tiersaver/core";
 import {
@@ -73,10 +75,10 @@ describe("Klaviyo plan sizes come from core's price table", () => {
 describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS", () => {
   it("core has the four confirmed tiers", () => {
     expect(FLAT_PRICE_TIERS).toEqual([
-      { maxProfiles: 10_000, monthlyCents: 1_500 },
-      { maxProfiles: 25_000, monthlyCents: 2_900 },
-      { maxProfiles: 75_000, monthlyCents: 7_900 },
-      { maxProfiles: 150_000, monthlyCents: 14_900 },
+      { maxProfiles: 10_000, monthlyCents: 900 },
+      { maxProfiles: 25_000, monthlyCents: 1_900 },
+      { maxProfiles: 75_000, monthlyCents: 3_900 },
+      { maxProfiles: 150_000, monthlyCents: 7_900 },
     ]);
     expect(largestTierSaverPlan()).toBe(150_000);
   });
@@ -92,16 +94,19 @@ describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS
   it("uses inclusive upper bounds and 'contact us' above the largest plan", () => {
     const price = (active: number) =>
       describeResult(check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" })).tierSaverPrice;
-    expect(price(1)).toBe("$15/month");
-    expect(price(SMALL_LIST_EXAMPLE)).toBe("$15/month");
-    expect(price(10_000)).toBe("$15/month");
-    expect(price(10_001)).toBe("$29/month");
-    expect(price(12_500)).toBe("$29/month");
-    expect(price(25_000)).toBe("$29/month");
-    expect(price(25_001)).toBe("$79/month");
-    expect(price(75_000)).toBe("$79/month");
-    expect(price(75_001)).toBe("$149/month");
-    expect(price(150_000)).toBe("$149/month");
+    // Each boundary is read from core, so the check and the app agree on where a plan ends.
+    const [a, b, c, d] = FLAT_PRICE_TIERS.map((t) => `${coreFormatUsd(t.monthlyCents)}/month`);
+    expect([a, b, c, d]).toEqual(["$9/month", "$19/month", "$39/month", "$79/month"]);
+    expect(price(1)).toBe(a);
+    expect(price(SMALL_LIST_EXAMPLE)).toBe(a);
+    expect(price(10_000)).toBe(a);
+    expect(price(10_001)).toBe(b);
+    expect(price(12_500)).toBe(b);
+    expect(price(25_000)).toBe(b);
+    expect(price(25_001)).toBe(c);
+    expect(price(75_000)).toBe(c);
+    expect(price(75_001)).toBe(d);
+    expect(price(150_000)).toBe(d);
     expect(price(150_001)).toBe("Contact us");
   });
 
@@ -114,8 +119,8 @@ describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS
     ]);
     const view = (active: number) =>
       describeResult(check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" })).tierSaverPlan;
-    expect(view(8_000)).toBe("Flat price for lists of up to 10,000 active profiles");
-    expect(view(12_500)).toBe("Flat price for lists of 10,001 to 25,000 active profiles");
+    expect(view(8_000)).toBe("Monthly plan for lists of up to 10,000 active profiles");
+    expect(view(12_500)).toBe("Monthly plan for lists of 10,001 to 25,000 active profiles");
     expect(view(150_001)).toBe("Lists above 150,000 active profiles are quoted individually");
   });
 
@@ -123,7 +128,7 @@ describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS
     const few = check({ activeProfiles: 30_000, meetingCriteria: 10, unit: "profiles", plan: "email" });
     const many = check({ activeProfiles: 30_000, meetingCriteria: 20_000, unit: "profiles", plan: "email" });
     expect(few.tierSaverPlan).toEqual(many.tierSaverPlan);
-    expect(describeResult(many).tierSaverPrice).toBe("$79/month");
+    expect(describeResult(many).tierSaverPrice).toBe("$39/month");
   });
 });
 
@@ -170,11 +175,12 @@ describe("honest cases", () => {
     expect(view.klaviyoAfter).toBe("Free plan");
   });
 
-  it("nobody meets the criteria: nothing to suppress, month not charged", () => {
+  it("nobody meets the criteria: nothing to suppress, and no plan starts without a first cleanup", () => {
     const view = describeResult(check({ activeProfiles: 9_000, meetingCriteria: 0, unit: "profiles", plan: "email" }));
     expect(view.figure).toBe("9,000");
     expect(view.message).toMatch(/nothing to suppress/);
-    expect(view.message).toMatch(/not charged/);
+    expect(view.message).toMatch(/The audit is free, and the plan only starts when you approve a first cleanup\./);
+    expect(view.message).not.toMatch(/not charged/);
   });
 
   it("unusable input is reported, never computed", () => {
@@ -239,8 +245,9 @@ describe("percentage input and parsing", () => {
     expect(parsePercent("12.5")).toBe(12.5);
     expect(parsePercent("-3")).toBeNaN();
   });
-  it("formats money", () => {
-    expect(formatUsd(2_900)).toBe("$29");
+  it("formats money with core's own formatter", () => {
+    expect(formatUsd).toBe(coreFormatUsd);
+    expect(formatUsd(1_900)).toBe("$19");
     expect(formatUsd(123_450)).toBe("$1,234.50");
   });
 });
@@ -251,10 +258,14 @@ describe("default example rendered into the pages", () => {
     const view = describeResult(check(DEFAULT_EXAMPLE));
     expect(data["check.figure"]).toBe("10,000");
     expect(data["check.figure"]).toBe(view.figure);
-    expect(data["check.tierSaverPrice"]).toBe("$29/month");
+    expect(data["check.tierSaverPrice"]).toBe("$19/month");
     expect(data["check.tierSaverPlan"]).toBe(view.tierSaverPlan);
-    expect(data["plans.defaultExamplePrice"]).toBe("$29");
-    expect(data["plans.smallExamplePrice"]).toBe("$15");
+    expect(data["plans.defaultExamplePrice"]).toBe("$19");
+    expect(data["plans.smallExamplePrice"]).toBe("$9");
+    expect(data["plans.lowestPrice"]).toBe(coreFormatUsd(FLAT_PRICE_TIERS[0]!.monthlyCents));
+    expect(data["plan.intervalDays"]).toBe(String(DEFAULT_FEE_POLICY.billingIntervalDays));
+    // The tokens of the per-cleanup model are gone.
+    for (const token of ["fee.minDays", "fee.maxPerWindow", "fee.holdHours", "fee.windowDays"]) expect(data).not.toHaveProperty([token]);
     expect(data["check.klaviyoBefore"]).toBe("Up to 12,500 profiles");
     expect(data["check.klaviyoAfter"]).toBe("Up to 10,000 profiles");
     expect(data["check.keptPercent"]).toBe("80");

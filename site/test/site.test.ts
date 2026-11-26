@@ -14,14 +14,13 @@ import {
 import { cleanupCriteria } from "../src/data.js";
 import {
   CANDIDATE_SEGMENT_NAME,
-  CHARGE_HOLD_HOURS,
-  CHARGE_WINDOW_DAYS,
   CSV_PART_SIZE,
   GROUPS_LISTED_PER_KIND,
   KLAVIYO_SCOPES,
   MAX_LEAD_DAYS,
   MAX_PROTECTED_GROUPS,
   SHOPIFY_SCOPES,
+  TERMS_EFFECTIVE_DATE,
 } from "../src/site-config.js";
 import { AUDIT_CTA_LABEL, AUDIT_CTA_URL, LEGAL_DRAFT, SITE_DIR, generate } from "../build/build.mjs";
 import { checkLinks } from "../build/check-links.mjs";
@@ -179,38 +178,142 @@ describe("numbers on the pages come from core", () => {
     expect(rows).toEqual([...expected.map((e) => [e.range, e.price]), [`Above ${top}`, "Contact us"]]);
 
     // Copy that names a price for an example list.
-    expect(textOf(help)).toContain("a list of 8,000 active profiles is $15 per month, and a list of 12,500 is $29 per month");
-    expect(textOf(landing)).toContain("$29/month");
-    expect(textOf(landing)).toContain("Flat price for lists of 10,001 to 25,000 active profiles");
-    expect(textOf(landing)).toContain("The audit is free. You are charged only when a cleanup suppresses profiles.");
+    expect(textOf(help)).toContain("a list of 8,000 active profiles is $9 per month, and a list of 12,500 is $19 per month");
+    expect(textOf(landing)).toContain("$19/month");
+    expect(textOf(landing)).toContain("Monthly plan for lists of 10,001 to 25,000 active profiles");
+    expect(textOf(landing)).toContain("Free until your first cleanup. Installing, connecting Klaviyo, the audit and the simulation cost nothing and need no plan.");
   });
 
-  it("charging rules: the numbers come from core's fee policy and the app, on the landing page and in the help center", async () => {
-    const days = DEFAULT_FEE_POLICY.minDaysBetweenCharges;
-    const max = usd(DEFAULT_FEE_POLICY.windowCapCents);
-    expect(DEFAULT_FEE_POLICY.windowCapCents).toBe(FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!.monthlyCents);
-    // The site repeats these two numbers from the app; fail if the app changes them.
-    expect(await appSource("app/runs/labels.ts")).toContain(`export const CHARGE_HOLD_HOURS = ${CHARGE_HOLD_HOURS};`);
-    expect(/windowStart = now\.getTime\(\) - (\d+) \* /.exec(await appSource("app/billing/billing.ts"))?.[1]).toBe(String(CHARGE_WINDOW_DAYS));
+  it("the monthly plan: its terms come from core's fee policy and the app, and are stated together wherever a price is shown", async () => {
+    const days = DEFAULT_FEE_POLICY.billingIntervalDays;
+    expect(Object.keys(DEFAULT_FEE_POLICY).sort()).toEqual(["billingIntervalDays", "tiers"]);
+    expect(DEFAULT_FEE_POLICY.tiers).toBe(FLAT_PRICE_TIERS);
     const top = FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!.maxProfiles.toLocaleString("en-US");
 
+    // What the site says about the plan is what the app does; fail if the app changes it.
+    const billing = await appSource("app/billing/billing.ts");
+    expect(billing).toContain('export const PLAN_INTERVAL = "EVERY_30_DAYS";');
+    expect(days).toBe(30);
+    expect(billing).toContain("export const PLAN_INTERVAL_DAYS = DEFAULT_FEE_POLICY.billingIntervalDays;");
+    // Cancelling does not credit the days left; development stores get test subscriptions.
+    expect(billing).toContain("appSubscriptionCancel(id: $id, prorate: false)");
+    expect(billing).toContain("test: status.developmentStore");
+    // Cancelling switches automatic mode off; a frozen plan and a plan that is too small refuse a cleanup.
+    expect(billing).toContain('set({ mode: "approval", updatedAt: now })');
+    for (const refusal of ["plan_required", "plan_frozen", "plan_price_too_low", "above_price_tiers"]) expect(billing).toContain(`"${refusal}"`);
+    const automatic = await appSource("app/schedule/automatic.ts");
+    expect(automatic).toContain('const PLAN_REFUSALS: readonly PlanGateRefusal[] = ["plan_required", "plan_frozen", "plan_price_too_low", "above_price_tiers"];');
+    // The plan is asked for when a cleanup is approved, never before.
+    expect(await appSource("app/billing/approval.ts")).toContain("const plan = await requestPlanFor(deps, {");
+    const settings = await appSource("app/routes/app.settings.tsx");
+    expect(settings).toContain('<s-section heading="Plan">');
+    expect(settings).toContain("No plan yet. It starts when you approve your first cleanup.");
+    expect(settings).toContain("Your plan is on hold in Shopify.");
+    expect(settings).toContain("The period you already paid for is not refunded.");
+    expect(settings).toContain("Your list now fits a smaller plan");
+    const review = await appSource("app/routes/app.simulation.tsx");
+    expect(review).toContain("restoring a cleanup does not refund the month");
+    expect(review).toContain("Your list has grown into a larger plan. Approve the new monthly price in Shopify before starting this cleanup.");
+    expect(await appSource("app/legal.ts")).toContain('export const SALES_EMAIL = "hello@tiersaver.com";');
+
+    const renews = `Shopify charges the plan every ${days} days, whether or not a cleanup runs that month, until you cancel.`;
+    const starts = "When you approve your first cleanup, on Shopify's approval screen. Nothing is charged before that.";
+
     const help = textOf(generated.get("help/pricing.html")!);
-    expect(help).toContain("Only when a cleanup suppresses profiles.");
-    expect(help).toContain("The charge is the same whether the cleanup suppressed a few profiles or many.");
-    expect(help).toContain(`At most one charge every ${days} days,`);
-    expect(help).toContain(`Never more than ${max} in a ${CHARGE_WINDOW_DAYS}-day period.`);
-    expect(help).toContain(`${CHARGE_HOLD_HOURS} hours after the cleanup finishes.`);
-    expect(help).toContain(`A cleanup that you restore in full within those ${CHARGE_HOLD_HOURS} hours is not charged.`);
-    expect(help).toContain("or restoring only part of it, does not refund the charge");
-    expect(help).toContain(`Lists above ${top} active profiles are not charged automatically.`);
+    expect(help).toContain("Installing the app, connecting Klaviyo, the audit and the simulation are free and need no plan.");
+    expect(help).toContain("There is no charge per cleanup, and the price is the same whether a cleanup suppresses a few profiles or many.");
+    expect(help).toContain(starts);
+    expect(help).toContain(renews);
+    expect(help).toContain("In the app, under Settings, then Plan, or by uninstalling the app. The period already paid is not refunded.");
+    expect(help).toContain("A higher price only applies after you approve it in Shopify.");
+    expect(help).toContain("Restoring a cleanup does not refund the month.");
+    expect(help).toContain("only starts while your store has an active plan that covers the list size shown in its simulation");
+    expect(help).toContain("it never charges more without your approval. Shopify prorates the change.");
+    expect(help).toContain("The app tells you and offers the smaller plan. The change is not automatic");
+    expect(help).toContain(`Lists above ${top} active profiles are not sold automatically.`);
+    expect(help).toContain("Development stores get a test plan, which Shopify does not bill.");
 
     const landing = textOf(generated.get("index.html")!);
-    expect(landing).toContain(`at most one charge every ${days} days and never more than ${max} in a ${CHARGE_WINDOW_DAYS}-day period`);
-    expect(landing).toContain(`The charge is created ${CHARGE_HOLD_HOURS} hours after the cleanup finishes`);
-    expect(landing).toContain(`Lists above ${top} profiles are not charged automatically`);
-    for (const path of ["help/undo.html", "help/billing.html"]) {
-      expect(textOf(generated.get(path)!), path).toContain("does not refund the charge");
+    expect(landing).toContain("The plan starts when you approve your first cleanup, on Shopify's approval screen. Nothing is charged before that.");
+    expect(landing).toContain(renews);
+    expect(landing).toContain("In the app, under Settings, then Plan, or by uninstalling. The period already paid is not refunded.");
+    expect(landing).toContain("A higher price only applies after you approve it in Shopify. There is no charge per cleanup, and restoring a cleanup does not refund the month.");
+    expect(landing).toContain(`Lists above ${top} active profiles are not sold automatically`);
+
+    const billingHelp = textOf(generated.get("help/billing.html")!);
+    expect(billingHelp).toContain(renews);
+    expect(billingHelp).toContain("No cleanup can start, and automatic mode is switched off.");
+    expect(billingHelp).toContain("Audits stay free");
+    expect(billingHelp).toContain("Profiles already suppressed stay suppressed in Klaviyo, and you can still restore them from History.");
+    expect(billingHelp).toContain("cleanups stop until Shopify makes the plan active again");
+    for (const path of ["help/undo.html", "help/billing.html", "help/history.html"]) {
+      expect(textOf(generated.get(path)!), path).toMatch(/does not refund the month/);
     }
+    expect(textOf(generated.get("help/uninstalling.html")!)).toContain("Uninstalling cancels your TierSaver plan");
+  });
+
+  it("the terms state the auto-renewing plan in one place, with the app's terms version as their date", async () => {
+    const days = DEFAULT_FEE_POLICY.billingIntervalDays;
+    expect(await appSource("app/legal.ts")).toContain(`export const TERMS_VERSION = "${TERMS_EFFECTIVE_DATE}";`);
+    const html = generated.get("terms.html")!;
+    const terms = textOf(html);
+    const [year, month, day] = TERMS_EFFECTIVE_DATE.split("-").map(Number);
+    const effective = new Date(Date.UTC(year!, month! - 1, day!)).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" });
+    expect(terms).toContain(`Effective date: ${effective}`);
+
+    // Price, renewal, cancelling, refunds and price changes: five consecutive items of one list.
+    const list = /<h3>Your plan is a subscription that renews automatically<\/h3>[\s\S]*?<ul>([\s\S]*?)<\/ul>/.exec(html)![1]!;
+    const items = [...list.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => textOf(m[1]!).trim());
+    expect(items.map((item) => item.slice(0, item.indexOf(".") + 1))).toEqual([
+      "Price.",
+      "Start and renewal.",
+      "How to cancel.",
+      "No refunds for the current period.",
+      "Price changes only with your approval.",
+    ]);
+    expect(items[1]).toContain(`the plan renews automatically: Shopify charges its price every ${days} days, whether or not a cleanup runs in that period, until you cancel.`);
+    expect(items[2]).toContain("under Settings, then Plan, or by uninstalling the app");
+    expect(items[3]).toContain("except where the law requires a refund");
+    expect(items[4]).toContain("unless you have first approved that price on Shopify's approval screen");
+    const rows = [...html.matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)].map((m) => m[2]);
+    expect(rows).toEqual([...FLAT_PRICE_TIERS.map((tier) => `${usd(tier.monthlyCents)} per month`), "Contact us"]);
+    expect(terms).toContain("Only one installed store can be connected to a given Klaviyo account at a time");
+  });
+
+  it("nothing of the per-cleanup model is left on any page", () => {
+    const old: [string, RegExp][] = [
+      ["charged only when a cleanup suppresses", /only when a cleanup suppresses|charged only when/i],
+      ["no cleanup, no charge", /no cleanup,? no charge|is not charged|not charged automatically|nothing to charge/i],
+      ["72-hour hold", /72[- ]hours?/i],
+      ["28-day rule", /28[- ]days?/i],
+      ["charge window", /30-day period|monthly maximum|never more than/i],
+      ["old prices", /\$15\b|\$29\b|\$149\b/],
+      ["unpaid-cleanup record", /uncharged cleanup|unpaid (cleanup|amount)|400 days|outlasts/i],
+      ["charge per cleanup", /estimated charge|review pricing in shopify|charge is created|charge was created/i],
+    ];
+    for (const [path, html] of pages) {
+      const text = textOf(html);
+      for (const [name, re] of old) expect(re.test(text), `${path} still states "${name}"`).toBe(false);
+    }
+  });
+
+  it("Klaviyo's count: no update time is stated, and the Advanced KDP exception is worded as Klaviyo words it", () => {
+    for (const [path, html] of pages) {
+      const text = textOf(html);
+      expect(/can still count/i.test(text), `${path}: old Advanced KDP wording`).toBe(false);
+      expect(/up to \d+ hours to (update|refresh)/i.test(text), `${path}: a time for Klaviyo's count`).toBe(false);
+    }
+    for (const path of ["help/after-a-cleanup.html", "help/monthly-schedule-and-your-klaviyo-plan.html", "guides/klaviyo-list-hygiene.html"]) {
+      expect(textOf(generated.get(path)!), path).toMatch(/updates (its|the) count on its own schedule and checks it shortly before your billing cycle renews/);
+      expect(generated.get(path)!, path).toContain('href="https://help.klaviyo.com/hc/en-us/articles/4405883690651"');
+    }
+    for (const path of ["index.html", "help/after-a-cleanup.html", "help/monthly-schedule-and-your-klaviyo-plan.html", "guides/how-klaviyo-counts-active-profiles.html"]) {
+      expect(textOf(generated.get(path)!), path).toMatch(/lower active profile count does not necessarily lower your bill/);
+    }
+    // The age in the default criteria is core's, and the guide that shows Klaviyo's two articles attributes each number.
+    expect(DEFAULT_RULE_SETTINGS.newProfileDays).toBe(365);
+    const guide = textOf(generated.get("guides/klaviyo-list-hygiene.html")!);
+    expect(guide).toContain("The two articles use different ages: 180 days in the segment above, 365 days here.");
   });
 
   it("list health check: the static default shows core's plan sizes, as a dated estimate, and no Klaviyo price", () => {
@@ -224,7 +327,7 @@ describe("numbers on the pages come from core", () => {
     const read = new Date(Date.UTC(year!, month! - 1, day!)).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" });
     expect(text).toContain(`An estimate from the numbers you typed and the plan sizes on Klaviyo's price list (klaviyo.com/pricing), read on ${read}.`);
     expect(text).toContain("Suppressed profiles do not count toward your Klaviyo email plan, according to Klaviyo's help center");
-    expect(text).toContain("on Klaviyo's Advanced KDP plan they can still count toward billing");
+    expect(text).toContain("on Klaviyo's Advanced KDP plan they still count toward its total");
     expect(text).toContain("TierSaver makes no promise about your Klaviyo plan or invoice.");
     expect(text).not.toMatch(/list price/i);
     expect(generated.get("index.html")!).toContain('href="https://help.klaviyo.com/hc/en-us/articles/24263920096027"');

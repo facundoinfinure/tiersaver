@@ -2,7 +2,7 @@
 
 ## Tesis
 
-Las agencias son el canal principal y el App Store es donde se cierra la venta, no donde nace. Las dos apps comparables encontradas el 2026-11-25 (ListSweep, con plan gratis y Pro a US$ 7 por mes, y ShopiDeck, con auditoría gratis y planes desde US$ 9) llevan semanas o meses publicadas sin una reseña (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 1.10): confiar solo en la búsqueda del App Store es la apuesta que ya falló.
+Las agencias son el canal principal y el App Store es donde se cierra la venta, no donde nace. Las dos apps comparables encontradas el 2026-11-25 (ListSweep, con plan gratis y Pro a US$ 7 por mes, y ShopiDeck, con auditoría gratis y planes desde US$ 9) llevan semanas o meses publicadas sin una reseña (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 1.10): confiar solo en la búsqueda del App Store es la apuesta que ya falló. Con el plan mensual decidido el 2026-11-26 (desde US$ 9 por mes hasta 10.000 perfiles activos, gratis hasta la primera limpieza), TierSaver queda en el mismo rango de precio que esas dos; la diferencia a comunicar no es el precio sino el cruce con pedidos de Shopify, la simulación aprobada y el registro con deshacer.
 
 Todo texto de este documento que vaya a ver un tercero sigue las reglas de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.2, obligatorias desde el 2026-11-25: se vende higiene de lista con los criterios de Klaviyo, no pagarle menos a Klaviyo.
 
@@ -73,7 +73,8 @@ Reglas para personalizarlos:
 - Ninguna cifra de dinero, porcentaje ni garantía. Los conteos de perfiles solo salen de una auditoría real.
 - No ofrecer pagarle menos a Klaviyo, ni el momento de la corrida respecto de la facturación, ni suprimir y volver a activar.
 - El efecto en el plan, si se menciona, va como hecho de Klaviyo y en segundo plano.
-- Precios confirmados el 2026-11-25: US$ 15 / 29 / 79 / 149 según tamaño de lista (hasta 10.000 / 25.000 / 75.000 / 150.000 perfiles activos).
+- Precio decidido el 2026-11-26 (reemplaza US$ 15 / 29 / 79 / 149 por limpieza): plan mensual de US$ 9 / 19 / 39 / 79 según tamaño de lista (hasta 10.000 / 25.000 / 75.000 / 150.000 perfiles activos); por encima no se vende automáticamente, se escribe a hello@tiersaver.com. Gratis hasta la primera limpieza: instalar, conectar Klaviyo, auditar y simular no piden plan. El plan empieza cuando el merchant aprueba su primera limpieza en la pantalla de Shopify y Shopify lo cobra cada 30 días, haya o no limpieza ese mes, hasta que lo cancela (Settings → Plan, o desinstalando). Ya no se dice "no cleanup, no charge": se dice "free until your first cleanup".
+- Donde un script nombre el precio, va junto que se renueva cada 30 días hasta cancelar.
 
 ### 1 · Mail a prioridad A
 
@@ -109,7 +110,7 @@ Hi [Name],
 
 Quick question: how do you handle profile cleanup across your client accounts today? Most small teams I talk to do it by hand, account by account, when someone remembers.
 
-TierSaver does it every month for Shopify stores: audit, simulation, approval, then suppression of the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles. Buyers are protected with Shopify order data, every cleanup is logged, and nothing is deleted. Pricing is a flat monthly price by list size, and a month with no cleanup is not charged.
+TierSaver does it every month for Shopify stores: audit, simulation, approval, then suppression of the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles. Buyers are protected with Shopify order data, every cleanup is logged, and nothing is deleted. It is free until the first cleanup; after that it is a monthly plan by list size, billed through Shopify every 30 days until cancelled.
 
 For partners we offer either 25% recurring commission or three free months for your clients. Could I show you a 10-minute audit on one of your accounts this week?
 
@@ -143,7 +144,9 @@ Reglas de este mensaje (el "review gating" está prohibido):
 
 ### 7 · Respuesta en comunidades
 
-Klaviyo's plan is based on your active profiles, whether you email them or not, and suppressed profiles don't count toward it. Klaviyo's help center publishes criteria for suppressing (not deleting) unengaged profiles: created over a year ago, sent emails, and never opened, clicked, visited or purchased. It describes this as ongoing maintenance. Klaviyo checks your count shortly before the plan renews, and the count can take up to 72 hours to refresh, so finish the cleanup a few days ahead. If your count drops, you can move to a lower plan in billing settings, or turn on auto-downgrade. Full disclosure, I work on an app that runs this routine, but the steps above work by hand too.
+Regla de Shopify Community: fuera del tablero "Ask and Offer" no se puede nombrar ni enlazar la app. Este guion no nombra a TierSaver a propósito; el nombre y el enlace solo van en una respuesta dentro de "Ask and Offer". En Klaviyo Community, releer sus reglas de autopromoción antes de publicar. Corregido el 2026-11-26: se quitó "the count can take up to 72 hours to refresh" (la ayuda de Klaviyo no da ningún plazo; la cifra venía de un blog de agencia).
+
+Klaviyo's plan is based on your active profiles, whether you email them or not, and suppressed profiles don't count toward it. Klaviyo's help center publishes criteria for suppressing (not deleting) unengaged profiles: created over a year ago, sent emails, and never opened, clicked, visited or purchased. It describes this as ongoing maintenance. Klaviyo updates its count on its own schedule and, with auto-downgrade on, checks it shortly before the billing cycle renews, so don't leave the cleanup for the last day. A lower count does not change your plan by itself: you can pick a smaller plan in billing settings, or turn on auto-downgrade. On Advanced KDP suppressed profiles still count toward its total. Full disclosure, I work on an app that runs this routine, but the steps above work by hand too.
 
 ## Contenido de SEO (Fase 4)
 

@@ -8,7 +8,7 @@ App de Shopify de higiene de lista para Klaviyo: suprime, con simulación y apro
 
 - Desde el 18 de febrero de 2025 Klaviyo cobra por todos los perfiles activos, no por los contactados. Sigue vigente en noviembre de 2026.
 - Los tramos saltan fuerte: de 10.000 a 12.500 perfiles el plan Email pasa de US$ 150 a US$ 275 por mes.
-- Klaviyo revisa el conteo de perfiles activos poco antes de renovar el ciclo, y el conteo puede tardar hasta 72 horas en actualizarse tras una limpieza.
+- Klaviyo revisa el conteo de perfiles activos poco antes de renovar el ciclo. Klaviyo no publica un plazo para que el conteo se actualice tras una limpieza (la cifra de 72 horas que figuraba acá venía del blog de una agencia; corregido el 2026-11-26).
 - Los perfiles suprimidos no cuentan para el plan, y la ayuda de Klaviyo recomienda suprimir inactivos de forma continua (citas en `12-CUMPLIMIENTO-KLAVIYO.md`, sección 1.2).
 - La supresión nativa en bloque alcanza solo a los miembros actuales del segmento; hay que repetirla a mano.
 - Si se le quita la supresión a un perfil, no se lo puede volver a suprimir hasta 90 días después de la supresión anterior (ayuda de Klaviyo, leída el 2026-11-25; ver `12-CUMPLIMIENTO-KLAVIYO.md`, sección 1.3).

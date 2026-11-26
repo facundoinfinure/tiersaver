@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Billing and charges · TierSaver</title>
-  <meta name="description" content="How TierSaver charges through Shopify: accepting the pricing, when a charge is created, what each charge status means and how to stop being charged.">
+  <title>Billing and your plan · TierSaver</title>
+  <meta name="description" content="How TierSaver's monthly plan works in Shopify: when it starts, how it renews, changing plans when your list changes size, cancelling, and a plan on hold.">
   <link rel="canonical" href="https://tiersaver.com/help/billing">
   <meta name="theme-color" content="#eeeeec">
   <meta property="og:site_name" content="TierSaver">
   <meta property="og:type" content="article">
   <meta property="og:locale" content="en_US">
-  <meta property="og:title" content="Billing and charges">
-  <meta property="og:description" content="How TierSaver charges through Shopify: accepting the pricing, when a charge is created, what each charge status means and how to stop being charged.">
+  <meta property="og:title" content="Billing and your plan">
+  <meta property="og:description" content="How TierSaver's monthly plan works in Shopify: when it starts, how it renews, changing plans when your list changes size, cancelling, and a plan on hold.">
   <meta property="og:url" content="https://tiersaver.com/help/billing">
   <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/styles/tokens.css">
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/site.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Billing and charges","item":"https://tiersaver.com/help/billing"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Billing and your plan","item":"https://tiersaver.com/help/billing"}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -53,56 +53,59 @@
       <ol>
           <li><a href="/">Home</a></li>
           <li><a href="/help/">Help center</a></li>
-          <li aria-current="page">Billing and charges</li>
+          <li aria-current="page">Billing and your plan</li>
       </ol>
     </nav>
     <div class="doc__grid">
       <article class="doc__article">
         <header class="doc__header">
           <p class="label">Help center</p>
-          <h1>Billing and charges</h1>
-          <p class="lead">TierSaver charges through Shopify, and only when a cleanup suppresses profiles. This page follows a charge from start to end.</p>
+          <h1>Billing and your plan</h1>
+          <p class="lead">TierSaver is billed through Shopify as a monthly plan. This page follows the plan from the day it starts to the day you cancel it.</p>
           <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
         </header>
         <div class="prose">
-<h2 id="before-the-first-cleanup">Before the first cleanup</h2>
-<p>After you approve your first simulation, the app shows "Review pricing in Shopify". Shopify then displays TierSaver's pricing for you to accept, under the name "TierSaver list hygiene". Accepting does not charge anything by itself: it allows TierSaver to create a charge when a cleanup suppresses profiles, up to $149 in a 30-day period. If you decline, no cleanup can start, and you can still use the audit and simulations.</p>
+<h2 id="before-the-plan-starts">Before the plan starts</h2>
+<p>Installing, connecting Klaviyo, the audit and the simulation are free and need no plan. In Settings, the Plan section says "No plan yet. It starts when you approve your first cleanup."</p>
+
+<h2 id="starting-the-plan">Starting the plan</h2>
+<p>The "Review cleanup" page states the monthly price for your list size and the plan's terms before you approve anything. When you approve your first cleanup, the app sends you to Shopify's approval screen for that plan, named "TierSaver list hygiene" with the list size it covers. The plan starts when you approve it there. If you decline, no plan starts and no cleanup can start; you can still use the audit and simulations.</p>
 <p>The prices are in <a href="/help/pricing">how pricing works</a>.</p>
 
-<h2 id="what-you-see-before-you-approve-a-cleanup">What you see before you approve a cleanup</h2>
-<p>The "Review cleanup" page states the price of that cleanup: the flat monthly price for your list size, or that the cleanup would not be charged because another cleanup was already charged in the last 28 days. For a list above 150,000 active profiles it says that nothing is charged automatically.</p>
+<h2 id="renewal">Renewal</h2>
+<p>Shopify charges the plan every 30 days, whether or not a cleanup runs that month, until you cancel. The charge appears on your Shopify invoice. Settings shows your plan, its price and the date the current period ends.</p>
+<p>There is no charge per cleanup. Any cleanup you run while the plan is active, manual or automatic, is included.</p>
 
-<h2 id="from-cleanup-to-charge">From cleanup to charge</h2>
-<ol>
-  <li><strong>Estimated charge.</strong> When the cleanup finishes, its page shows an estimated charge. Nothing has been sent to Shopify yet.</li>
-  <li><strong>Confirmation by Klaviyo.</strong> TierSaver waits until Klaviyo reports that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.</li>
-  <li><strong>72 hours.</strong> The charge is sent to Shopify 72 hours after the cleanup finished. If you restore the whole cleanup before then, nothing is charged. If a restore is still running when the 72 hours end, the charge waits until it has finished.</li>
-  <li><strong>Charged.</strong> The cleanup's page shows the amount and the date. On your Shopify invoice the charge is described as "List cleanup", with the number of profiles suppressed.</li>
-</ol>
-<p>If a charge cannot be created in Shopify, for example because Shopify cannot be reached, TierSaver tries again later. The amount does not change.</p>
+<h2 id="cleanups-need-an-active-plan">Cleanups need an active plan</h2>
+<p>Right before a cleanup starts, TierSaver asks Shopify whether your store has an active plan that covers the list size shown in the simulation. If it does not, the cleanup does not start and nothing changes in Klaviyo.</p>
 
-<h2 id="when-a-cleanup-is-not-charged">When a cleanup is not charged</h2>
-<p>The cleanup's page gives one of these reasons:</p>
+<h2 id="when-your-list-changes-size">When your list changes size</h2>
 <ul>
-  <li>No profile was suppressed.</li>
-  <li>A cleanup was already charged in the last 28 days. Of two cleanups within 28 days, only one is charged.</li>
-  <li>The cleanup was undone in full before its charge was created.</li>
-  <li>The monthly maximum of $149 was already reached.</li>
-  <li>The list is above 150,000 active profiles, which is priced by agreement and not charged automatically.</li>
+  <li><strong>Your list grows past your plan.</strong> The next cleanup waits until you approve the new monthly price in Shopify, which you do when you approve that cleanup. Automatic mode waits for you too and never charges more without your approval. Shopify prorates the change. Until then you keep paying your current price.</li>
+  <li><strong>Your list shrinks into a smaller plan.</strong> The app tells you, in Settings and on the "Review cleanup" page, and offers to switch. The change is not automatic. If you switch, Shopify asks you to approve the new price and prorates the change.</li>
 </ul>
 
 <h2 id="restoring-and-refunds">Restoring and refunds</h2>
-<p>A cleanup you restore in full within 72 hours of its end is not charged. Restoring it later, or restoring only part of it, does not refund the charge. See <a href="/help/undo">undo</a>.</p>
+<p>Restoring a cleanup does not refund the month and does not change your plan. See <a href="/help/undo">undo</a>.</p>
 
-<h2 id="how-to-stop-being-charged">How to stop being charged</h2>
+<h2 id="cancelling">Cancelling</h2>
+<p>Open Settings, go to the Plan section and select "Cancel plan". Uninstalling the app also cancels the plan. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>
 <ul>
-  <li>A charge is only created by a cleanup. If you do not approve a cleanup, nothing is charged.</li>
-  <li>If you turned on the monthly schedule or automatic mode, turn them off in <a href="/help/settings">Settings</a>. It takes effect at once.</li>
-  <li>Uninstalling the app also stops all charges. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</li>
+  <li>Shopify stops charging the plan. The period you already paid for is not refunded.</li>
+  <li>No cleanup can start, and automatic mode is switched off.</li>
+  <li>Audits stay free, and scheduled audits keep running.</li>
+  <li>Profiles already suppressed stay suppressed in Klaviyo, and you can still restore them from History.</li>
+  <li>A new plan starts if you approve another cleanup.</li>
 </ul>
 
+<h2 id="a-plan-on-hold">A plan on hold</h2>
+<p>If Shopify freezes the plan because of a payment problem with your store, cleanups stop until Shopify makes the plan active again. Settings then shows "Your plan is on hold in Shopify." The hold is resolved in your Shopify billing, not in TierSaver.</p>
+
+<h2 id="development-stores">Development stores</h2>
+<p>On a development store the plan is a test plan: Shopify does not bill it.</p>
+
 <h2 id="if-a-charge-looks-wrong">If a charge looks wrong</h2>
-<p>Write to <a href="mailto:support@tiersaver.com">support@tiersaver.com</a> with your store's myshopify.com address and the date of the cleanup. See <a href="/help/contact">contact support</a>.</p>
+<p>Write to <a href="mailto:support@tiersaver.com">support@tiersaver.com</a> with your store's myshopify.com address and the date of the charge. See <a href="/help/contact">contact support</a>.</p>
         </div>
       </article>
       <aside class="doc__aside">
@@ -121,7 +124,7 @@
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
             <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/billing" aria-current="page">Billing and charges</a></li>
+            <li><a href="/help/billing" aria-current="page">Billing and your plan</a></li>
             <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy">Data and privacy</a></li>
             <li><a href="/help/troubleshooting">Troubleshooting</a></li>

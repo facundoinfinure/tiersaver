@@ -80,7 +80,7 @@
       <tr><td>Klaviyo profile IDs of profiles in a simulation or a run, with the reason, the status and a keyed hash of the profile's email address</td><td>To suppress exactly what you approved and to undo it. The per-profile list of a simulation that was never run is deleted after 7 days</td></tr>
       <tr><td>A keyed hash of each buyer's email address, with the date of their last order and a hash of their Shopify customer ID</td><td>To recognize buyers without keeping their email address</td></tr>
       <tr><td>A log of actions: who approved or did what (by Shopify user ID), when, and the version of the terms accepted with each manual approval and when automatic mode is turned on</td><td>So every change is traceable</td></tr>
-      <tr><td>Billing records: the list size and price band that applied, the number of profiles suppressed, the amount, whether a charge was created and why not, and the charges created through Shopify</td><td>To bill correctly</td></tr>
+      <tr><td>The state of your TierSaver plan: Shopify's subscription ID, the monthly price and the list size it covers, its status, whether it is a test plan, and the dates it started, ended and its current period ends</td><td>To know whether a cleanup can start and to show you your plan</td></tr>
       <tr><td>Customer data requests that Shopify sends for your store: Shopify's request ID, the Shopify customer ID and a keyed hash of the customer's email address. Kept for 90 days</td><td>So you can download what TierSaver holds about that customer and answer them</td></tr>
     </tbody>
   </table>
@@ -105,11 +105,11 @@
 <p>Access tokens are encrypted before they are stored. The encryption key is held separately from the database.</p>
 
 <h2 id="where-it-runs">Where it runs</h2>
-<p>The app and its database run on Cloudflare, with the database in the United States (eastern North America). The person who operates and supports TierSaver works from Argentina and can access the data from there for maintenance and support. Charges are handled by Shopify. Cloudflare's per-request logs are switched off for the app. See section 7 of the <a href="/privacy">privacy policy</a>, and the <a href="/dpa">Data Processing Addendum</a> for the terms that cover transfers.</p>
+<p>The app and its database run on Cloudflare, with the database in the United States (eastern North America). The person who operates and supports TierSaver works from Argentina and can access the data from there for maintenance and support. The plan is billed by Shopify. Cloudflare's per-request logs are switched off for the app. See section 7 of the <a href="/privacy">privacy policy</a>, and the <a href="/dpa">Data Processing Addendum</a> for the terms that cover transfers.</p>
 
 <h2 id="deletion">Deletion</h2>
 <ul>
-  <li><strong>When you uninstall:</strong> tokens are deleted as soon as Shopify notifies TierSaver, and TierSaver asks Klaviyo to revoke its access. Everything else is deleted when Shopify sends its shop deletion request, 48 hours after uninstalling, and as a backstop TierSaver itself deletes the data of an uninstalled store 10 days after the uninstall if that request has not arrived. Deleted data can remain for up to 30 days in the hosting provider's point-in-time recovery copies of the database, which cannot be switched off, before it is permanently removed. One thing can stay longer: if you uninstall while a cleanup has not been charged yet, TierSaver keeps a record with a keyed hash of your Klaviyo account ID, the date and the unpaid amount for up to 400 days. It holds no customer data. See <a href="/help/uninstalling">what happens on uninstall</a>.</li>
+  <li><strong>When you uninstall:</strong> tokens are deleted as soon as Shopify notifies TierSaver, and TierSaver asks Klaviyo to revoke its access. Everything else is deleted when Shopify sends its shop deletion request, 48 hours after uninstalling, and as a backstop TierSaver itself deletes the data of an uninstalled store 10 days after the uninstall if that request has not arrived. Deleted data can remain for up to 30 days in the hosting provider's point-in-time recovery copies of the database, which cannot be switched off, before it is permanently removed. The state of your plan is deleted as soon as you uninstall, with the tokens. See <a href="/help/uninstalling">what happens on uninstall</a>.</li>
   <li><strong>When a customer asks your store to erase their data:</strong> Shopify notifies TierSaver, which deletes that customer's hashed purchase record, removes them from simulations and removes the link between past cleanups and their Klaviyo profile. The cleanups keep their counts, but a later restore leaves that customer's profile as it is.</li>
   <li><strong>When a customer asks for a copy of their data:</strong> TierSaver holds a keyed hash of their email address, the date of their last order and, if their profile was in a simulation or a cleanup, the Klaviyo profile ID, the reason, the status and the dates. When Shopify sends TierSaver the customer's data request, TierSaver records it and lists it in Settings, under "Customer data requests", where you can download that information for 90 days and pass it on to your customer. The app does not send it for you.</li>
 </ul>
@@ -140,7 +140,7 @@
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
             <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/billing">Billing and your plan</a></li>
             <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy" aria-current="page">Data and privacy</a></li>
             <li><a href="/help/troubleshooting">Troubleshooting</a></li>

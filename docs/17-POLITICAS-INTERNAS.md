@@ -54,7 +54,7 @@ Las copias de D1 ("Time Travel") permiten restaurar la base a un punto anterior.
 
 ## 3. Calendario de retención
 
-Valores tomados de `shopify/app/data/housekeeping.ts`, `shopify/app/billing/unpaid.ts` y la política de privacidad (sección 9). La tarea horaria (`17 * * * *`) ejecuta los borrados.
+Valores tomados de `shopify/app/data/housekeeping.ts`, `shopify/app/data/privacy.ts` y la política de privacidad (sección 9). Actualizado el 2026-11-26 por el cambio a plan mensual: se quitó el registro de limpieza sin cobrar y se agregó el estado del plan. La tarea horaria (`17 * * * *`) ejecuta los borrados.
 
 | Dato | Plazo | Cómo se borra |
 | --- | --- | --- |
@@ -63,13 +63,15 @@ Valores tomados de `shopify/app/data/housekeeping.ts`, `shopify/app/billing/unpa
 | Marcadores de intento de conexión con Klaviyo | 24 horas | Tarea horaria |
 | Cookie `__Host-ts_klaviyo_oauth` | 10 minutos como máximo | Vence o se borra al terminar el paso |
 | Registro de un pedido de acceso de un cliente | 90 días (`PRIVACY_REQUEST_RETENTION_DAYS`), o antes si llega su pedido de borrado | Tarea horaria o `customers/redact` |
-| Hashes de compradores, historial de limpiezas por perfil, registro de acciones, ajustes, cargos | Mientras la app está instalada. Sin plazo propio: se necesitan para proteger a quien compró alguna vez y para deshacer | Con la tienda |
+| Hashes de compradores, historial de limpiezas por perfil, registro de acciones, ajustes | Mientras la app está instalada. Sin plazo propio: se necesitan para proteger a quien compró alguna vez y para deshacer | Con la tienda |
 | Tokens de Shopify y de Klaviyo | Hasta la desinstalación | Al recibir el aviso de desinstalación |
+| Estado del plan de la tienda (`shop_plans`): id de la suscripción de Shopify, precio mensual, tramo que cubre, estado, si es de prueba, fechas de inicio, fin y fin del período en curso | Mientras la app está instalada | Al recibir el aviso de desinstalación (`handleUninstall`), junto con los tokens |
 | Todo lo demás de una tienda desinstalada | Hasta el `shop/redact` de Shopify (48 horas después de desinstalar); si no llega, 10 días (`UNINSTALLED_SHOP_RETENTION_DAYS`) | Webhook o tarea horaria |
 | Datos de un cliente con pedido de borrado | Al recibir `customers/redact`: se borra su hash y sus filas de simulación; en limpiezas pasadas se quita el hash y el id de perfil se reemplaza por un valor al azar | Webhook |
-| Registro de limpieza sin cobrar (`unpaid_cleanups`) | Hasta que se crea el siguiente cargo de esa cuenta de Klaviyo; como máximo 400 días (`UNPAID_CLEANUP_RETENTION_DAYS`) | Al cobrar o tarea horaria |
 | Copias "Time Travel" de D1 | Hasta 30 días en el plan pago (7 en el gratuito); no se pueden apagar | Las vence Cloudflare |
 | Logs propios de la app y estado de los Workflows en Cloudflare | Lo que fija Cloudflare según el plan (3 o 7 días según su documentación leída el 2026-11-26) | Los vence Cloudflare |
+
+Ya no hay ningún registro que sobreviva a la desinstalación. La tabla `unpaid_cleanups` del modelo de cargo por limpieza quedó sin uso desde el 2026-11-26: nada la escribe ni la lee, en producción no tiene filas, y la tarea horaria sigue borrando cualquier fila de más de 400 días. La tabla `usage_charges` del mismo modelo tampoco recibe filas nuevas; las que hubiera se borran con la tienda.
 | Datos de prospectos (nombre, cargo, mail laboral, empresa) | Hasta que la persona se opone; como máximo 24 meses desde el último contacto | **[COMPROMISO]** revisión manual cada 6 meses |
 | Correspondencia de hello@ y support@ | 24 meses desde el último mensaje, salvo reclamo abierto | **[COMPROMISO]** revisión manual cada 6 meses |
 | Registros de incidentes | 3 años | Manual |
@@ -94,14 +96,14 @@ Alta o cambio de un subencargado: actualizar privacidad 6 y el Anexo III del DPA
 | Responsables por cuenta de quienes se trata | Cada merchant con la app instalada, identificado por su dominio `myshopify.com`. La lista vigente es la tabla `shops` |
 | Representante en la UE / Reino Unido | Sin nombrar (ver `docs/16-LEGALES-PARA-ABOGADO.md`, punto 4) |
 | DPO | No hay; no es obligatorio |
-| Categorías de tratamiento | (a) Auditoría de la lista de Klaviyo; (b) reconocimiento de compradores con los pedidos de Shopify; (c) simulación; (d) supresión de los perfiles aprobados y deshacer; (e) cálculo del cargo; (f) atención de pedidos de acceso y borrado recibidos de Shopify |
+| Categorías de tratamiento | (a) Auditoría de la lista de Klaviyo; (b) reconocimiento de compradores con los pedidos de Shopify; (c) simulación; (d) supresión de los perfiles aprobados y deshacer; (e) comprobación del plan de la tienda antes de cada limpieza; (f) atención de pedidos de acceso y borrado recibidos de Shopify |
 | Titulares | Clientes, suscriptores y contactos del merchant con perfil en Klaviyo o pedido en Shopify |
 | Datos | Guardados: id de perfil de Klaviyo, hash con clave del mail, motivo y estado, fecha del último pedido, hash del id de cliente de Shopify. En memoria, sin guardar: mail, fechas de creación y última actividad, estado de consentimiento y supresión. Sin categorías especiales |
 | Transferencias a terceros países | EE.UU. (alojamiento, Cloudflare): cláusulas contractuales tipo de la UE y addendum del Reino Unido, vía el DPA. Argentina (acceso del operador): decisión de adecuación 2003/490/CE y normas de adecuación del Reino Unido |
 | Medidas de seguridad (art. 32) | Anexo II del DPA y sección 2 de este documento |
 | Plazos | Sección 3 |
 
-Tratamientos propios, como responsable (art. 30.1, resumen): cuenta e instalación del merchant, registro de acciones con id de usuario de Shopify, cargos, registro de limpieza sin cobrar (interés legítimo), prospectos (interés legítimo, 24 meses), correspondencia.
+Tratamientos propios, como responsable (art. 30.1, resumen): cuenta e instalación del merchant, registro de acciones con id de usuario de Shopify, estado del plan de la tienda, prospectos (interés legítimo, 24 meses), correspondencia.
 
 ## 6. Pedidos de titulares
 
@@ -111,7 +113,7 @@ La app no tiene relación directa con los clientes de las tiendas. El circuito e
 | --- | --- | --- |
 | Acceso (`customers/data_request`) | Verifica la firma, registra el pedido y lo lista en Settings → "Customer data requests". El merchant descarga lo que hay de ese cliente durante 90 días. La app no le envía nada al cliente | Nada, salvo que el merchant escriba |
 | Borrado de un cliente (`customers/redact`) | Borra su hash de compras, sus filas de simulación y su pedido de acceso; en limpiezas pasadas quita el hash y reemplaza el id de perfil por un valor al azar. Un deshacer posterior no lo restaura | Nada |
-| Borrado de la tienda (`shop/redact`) | Borra todo lo de la tienda. Respaldo a los 10 días. No borra `unpaid_cleanups`, que no identifica a la tienda | Nada |
+| Borrado de la tienda (`shop/redact`) | Borra todo lo de la tienda. Respaldo a los 10 días | Nada |
 | Un cliente escribe directo a hello@ | — | Responder dentro de 5 días hábiles derivándolo a la tienda; no confirmar ni negar que la tienda usa TierSaver más allá de lo necesario |
 | Un merchant o un prospecto ejerce sus propios derechos | — | Responder dentro de 30 días. Prospecto que se opone: borrarlo y anotarlo en la lista de no contactar |
 

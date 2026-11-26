@@ -16,7 +16,7 @@ Automatic list hygiene for Klaviyo. TierSaver is not a deliverability tool and n
 - **For**: Shopify brands whose Klaviyo lists are full of profiles that never engaged.
 - **Promise**: keep the list clean with no manual work, without touching anyone who buys.
 - **How**: it audits, simulates, checks every profile against Shopify orders, and suppresses the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles, once you approve. It runs monthly and finishes before your plan renews.
-- **Why believe it**: it uses the criteria Klaviyo publishes by default; nothing is touched without an approved simulation; buyers are protected with Shopify order data; every run is logged and can be undone; nothing is deleted; the price is flat, and a month with no cleanup is not charged.
+- **Why believe it**: it uses the criteria Klaviyo publishes by default; nothing is touched without an approved simulation; buyers are protected with Shopify order data; every run is logged and can be undone; nothing is deleted; it is free until the first cleanup, and then a monthly plan by list size that can be cancelled at any time.
 
 ## Core messages
 
@@ -26,7 +26,7 @@ Automatic list hygiene for Klaviyo. TierSaver is not a deliverability tool and n
 | Subhead | TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles. Every cleanup is simulated first, approved by you and logged. Nothing is deleted. |
 | Proof point 1 | Every profile is checked against your Shopify orders before anything changes. |
 | Proof point 2 | Every cleanup is simulated first, approved by you, and can be undone. |
-| Proof point 3 | A flat monthly price by list size. A month with no cleanup is not charged. |
+| Proof point 3 | Free until your first cleanup. Then a monthly plan by list size, cancelled whenever you want. |
 | CTA | Run my free list audit |
 
 Two-tone headline treatment: "Automatic list hygiene" is the important part (ink), "for Klaviyo." is the context (faint).
@@ -54,8 +54,11 @@ Profiles with SMS consent, profiles in the lists and segments you mark as protec
 
 Prices belong in the pricing section of the listing and on the pricing part of the site, nowhere else in the listing.
 
-- A flat monthly price by list size: $15 up to 10,000 active profiles, $29 up to 25,000, $79 up to 75,000, $149 up to 150,000. Larger lists: by agreement. Confirmed by the owner on 2026-11-25.
-- A billing cycle with no cleanup is not charged. The audit is free. Billing goes through the merchant's Shopify invoice.
+- A monthly plan by list size: $9 up to 10,000 active profiles, $19 up to 25,000, $39 up to 75,000, $79 up to 150,000. Above that it is not sold automatically: write to hello@tiersaver.com. Decided by the owner on 2026-11-26; replaces the per-cleanup prices of 2026-11-25.
+- Free until your first cleanup: installing, connecting Klaviyo, the audit and the simulation need no plan. Never write "no cleanup, no charge" again.
+- The plan starts when the merchant approves their first cleanup, on Shopify's approval screen. Shopify charges it every 30 days, whether or not a cleanup runs that month, until it is cancelled (Settings, then Plan, or by uninstalling). The period already paid is not refunded, and restoring a cleanup does not refund the month.
+- Wherever a price is shown, say next to it that the plan renews every 30 days until cancelled and how to cancel.
+- A higher price only applies after the merchant approves it in Shopify. Billing goes through the merchant's Shopify invoice.
 - The price never depends on the merchant's Klaviyo invoice.
 
 ## Voice
@@ -103,7 +106,7 @@ The profile stays suppressed in Klaviyo until the person resubscribes or you rem
 Profiles that were suppressed stay suppressed. You can remove a suppression from Klaviyo at any time.
 
 **How does pricing work?**
-A flat monthly price based on the size of your list, billed through Shopify. A month with no cleanup is not charged, and the audit is free.
+A monthly plan based on the size of your list, billed through Shopify. It is free until your first cleanup: the plan starts when you approve that cleanup, and Shopify then charges it every 30 days until you cancel in Settings or uninstall.
 
 ## Checklist before publishing any copy
 

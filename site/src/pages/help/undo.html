@@ -32,13 +32,13 @@ updated: 2026-11-26
   <li><strong>It may not tell your own suppressions apart.</strong> Klaviyo records only one kind of manual suppression and does not say who added it. Restore leaves a profile untouched when Klaviyo's dates show that it was already suppressed before the cleanup. Otherwise it removes the suppression the cleanup added, and it may not be able to tell that one apart from a suppression you added yourself to the same profile. Check before you restore.</li>
   <li><strong>Customers erased on request are not restored.</strong> When a customer asks your store to erase their data, TierSaver removes the link between past cleanups and that customer's Klaviyo profile, so Restore leaves the profile as it is. You can remove its suppression in Klaviyo.</li>
   <li><strong>Emails are not sent later.</strong> Whatever those profiles did not receive while they were suppressed is not sent to them afterwards.</li>
-  <li><strong>The charge.</strong> A cleanup you restore in full within {{fee.holdHours}} hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. If a restore is still running when the {{fee.holdHours}} hours end, the charge waits until it has finished. See <a href="/help/pricing">how pricing works</a>.</li>
+  <li><strong>Your plan.</strong> Restoring a cleanup, in full or in part, does not refund the month and does not change your TierSaver plan. See <a href="/help/pricing">how pricing works</a>.</li>
   <li><strong>Some profiles may be left as they are.</strong> Each profile is checked again right before the restore, and one that no longer exists in Klaviyo or has no email address cannot be restored. The restore's page shows how many were left untouched and why.</li>
 </ul>
 
 <h2>What happens to restored profiles</h2>
 <ul>
-  <li><strong>They count as active profiles again.</strong> Klaviyo's displayed count may take up to 72 hours to refresh after a large change.</li>
+  <li><strong>They count as active profiles again.</strong> Klaviyo updates its count on its own schedule, so the count it shows may not change right away.</li>
   <li><strong>TierSaver leaves them alone for {{criteria.undoLockDays}} days.</strong> A restored profile is left out of every cleanup during that time. If you restore a cleanup, you are telling TierSaver those profiles should stay.</li>
   <li><strong>Klaviyo has its own waiting period.</strong> Its help center says that once a profile is suppressed and then unsuppressed, it cannot be manually suppressed again until {{klaviyo.resuppressDays}} days after the previous suppression. The rule is not active during the first 30 days after a new Klaviyo account is created.</li>
 </ul>
