@@ -4,18 +4,20 @@
             <legend class="visually-hidden">Your Klaviyo list</legend>
             <div class="field">
               <label for="check-active">Active profiles now</label>
-              <input class="input" id="check-active" name="active" type="text" inputmode="numeric" autocomplete="off" value="{{check.active}}" aria-describedby="check-active-hint">
+              <input class="input" id="check-active" name="active" type="text" inputmode="numeric" autocomplete="off" value="{{check.active}}" aria-describedby="check-active-hint check-active-error">
+              <p class="field__error" id="check-active-error" data-error="active" hidden></p>
               <p class="field__hint" id="check-active-hint">In Klaviyo: Audience, then Profiles.</p>
             </div>
             <fieldset class="field">
               <legend>Profiles that meet the cleanup criteria</legend>
               <div class="field__row">
-                <input class="input" id="check-criteria" name="criteria" type="text" inputmode="decimal" autocomplete="off" value="{{check.criteria}}" aria-label="Profiles that meet the cleanup criteria" aria-describedby="check-criteria-hint">
-                <div class="segmented">
+                <input class="input" id="check-criteria" name="criteria" type="text" inputmode="decimal" autocomplete="off" value="{{check.criteria}}" aria-label="Profiles that meet the cleanup criteria" aria-describedby="check-criteria-hint check-criteria-error">
+                <div class="segmented" role="group" aria-label="Unit">
                   <label><input type="radio" name="unit" value="profiles" checked>Profiles</label>
                   <label><input type="radio" name="unit" value="percent">% of list</label>
                 </div>
               </div>
+              <p class="field__error" id="check-criteria-error" data-error="criteria" hidden></p>
               <p class="field__hint" id="check-criteria-hint">Profiles created at least {{criteria.ageDays}} days ago that received your emails and never opened, clicked, visited or bought. Not sure? The free audit counts them for you.</p>
             </fieldset>
             <fieldset class="field">
@@ -25,17 +27,19 @@
                 <label><input type="radio" name="plan" value="marketing">Marketing</label>
                 <label><input type="radio" name="plan" value="free">Free</label>
               </div>
-              <p class="field__hint">Only used for the plan size reference below the result.</p>
+              <p class="field__hint">Only used for the estimated plan size shown under the result.</p>
             </fieldset>
           </fieldset>
           <noscript>
             <p class="note">The list health check needs JavaScript. Without it, the example shown here still applies, and the free audit counts your real numbers.</p>
           </noscript>
         </form>
-        <div class="calc__result" aria-live="polite" aria-atomic="true">
+        <div class="calc__result">
           <p class="label"><span>Profiles that would stay active</span></p>
-          <p class="calc__figure" data-out="figure">{{check.figure}}</p>
-          <p class="calc__message" data-out="message">{{check.message}}</p>
+          <div aria-live="polite" aria-atomic="true">
+            <p class="calc__figure" data-out="figure">{{check.figure}}</p>
+            <p class="calc__message" data-out="message">{{check.message}}</p>
+          </div>
           <div class="calc__detail">
             <svg class="split-bar" aria-hidden="true" focusable="false">
               <rect class="split-bar__track" width="100%" height="100%"/>
@@ -52,12 +56,12 @@
               </div>
             </dl>
             <div class="calc__reference">
-              <p class="label"><span>For reference</span><span>Klaviyo plan size</span></p>
+              <p class="label"><span>For reference</span><span>Estimated Klaviyo plan size</span></p>
               <dl class="rows rows--plain">
                 <div><dt>Today</dt><dd data-out="klaviyo-before">{{check.klaviyoBefore}}</dd></div>
                 <div><dt>After the cleanup</dt><dd data-out="klaviyo-after">{{check.klaviyoAfter}}</dd></div>
               </dl>
-              <p class="calc__fine">Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="{{url.activeProfileManagement}}" rel="noopener noreferrer">Klaviyo's help center</a>. Whether you change plans is your decision, made in Klaviyo's billing settings. Klaviyo list prices read on {{prices.capturedOn}}, in US dollars; your invoice may differ.</p>
+              <p class="calc__fine">An estimate from the numbers you typed and the plan sizes on Klaviyo's price list ({{prices.source}}), read on {{prices.capturedOnLong}}. Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="{{url.activeProfileManagement}}" rel="noopener noreferrer">Klaviyo's help center</a>; on Klaviyo's Advanced KDP plan they can still count toward billing. Whether you change plans is your decision, made in Klaviyo's billing settings. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
             </div>
           </div>
         </div>

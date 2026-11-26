@@ -24,7 +24,7 @@ export default {
   scheduled(_controller, env, ctx) {
     ctx.waitUntil(
       (async () => {
-        const [{ drizzle }, schema, { runScheduleTick }, { startScan }, { runsWithOpenCharges, settleRunCharge }, { offlineAdminGraphql }] = await Promise.all([
+        const [{ drizzle }, schema, { runScheduleTick }, { startScan }, { CHARGE_ATTEMPTS_BEFORE_ALERT, runsWithOpenCharges, settleRunCharge }, { offlineAdminGraphql }] = await Promise.all([
           import("drizzle-orm/d1"),
           import("../app/db/schema"),
           import("../app/schedule/schedule"),
@@ -49,9 +49,21 @@ export default {
           const [{ confirmRunJobs }, { createKlaviyoClient }] = await Promise.all([import("../app/runs/confirm"), import("../app/klaviyo/connection.server")]);
           // A few per tick: each one reads its jobs from Klaviyo. Runs with more jobs than one invocation can read
           // are confirmed by their own Workflow.
-          for (const open of (await runsWithOpenCharges(db)).slice(0, 3)) {
-            const confirmation = await confirmRunJobs(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
-            await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId, confirmation);
+          // A charge Klaviyo already confirmed needs no read of Klaviyo, whatever the size of the run.
+          for (const open of (await runsWithOpenCharges(db)).slice(0, 5)) {
+            try {
+              const confirmation = open.confirmed
+                ? null
+                : await confirmRunJobs(db, createKlaviyoClient({ db, env }, open.shop, { subrequestBudget: 12 }), open.runId, 10).catch(() => null);
+              const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(open.shop) }, open.runId, confirmation);
+              if (result.status === "failed") {
+                const message = `charge of run ${open.runId} failed (${result.error}), attempt ${open.attempts + 1}`;
+                if (open.attempts + 1 >= CHARGE_ATTEMPTS_BEFORE_ALERT) console.error(`NEEDS ATTENTION: ${message}`);
+                else console.warn(message);
+              }
+            } catch (error) {
+              console.error(`charge retry of run ${open.runId} threw: ${error instanceof Error ? error.name : "error"}`);
+            }
           }
         } catch (error) {
           console.error(`charge retry failed: ${error instanceof Error ? error.name : "error"}`);

@@ -427,6 +427,36 @@ describe("charging a cleanup", () => {
     expect(admin.records).toHaveLength(1);
   });
 
+  it("a charge that never reached Shopify does not make the next cleanup free, and two cleanups never pay twice", async () => {
+    const first = await finishedCleanup(2);
+    // Rejected by Shopify: stays failed.
+    expect((await settleRunCharge({ db, graphql: fakeAdmin({ reject: true }).graphql, now: AFTER_HOLD }, first.runId, CONFIRMED)).status).toBe("failed");
+    const next = await seedSimulation({ shop: first.shop, candidates: 2 });
+    const second = await createSuppressionRun(db, { shop: first.shop, simulationId: next.simulationId, createdBy: "user:1" });
+    if (!second.ok) throw new Error(second.reason);
+    await executeRun({ db, gateway: new FakeGateway(), step: new FakeSteps() }, second.runId);
+    const admin = fakeAdmin();
+    expect(await settleRunCharge({ db, graphql: admin.graphql }, second.runId)).toEqual({ status: "estimated", feeCents: 1500 });
+    expect((await settleRunCharge({ db, graphql: admin.graphql, now: AFTER_HOLD }, second.runId, CONFIRMED)).status).toBe("charged");
+    // The first one is retried later: by then the shop was charged in this period.
+    expect(await settleRunCharge({ db, graphql: admin.graphql, now: AFTER_HOLD }, first.runId, CONFIRMED)).toEqual({ status: "not_charged", reason: "already_charged_this_cycle" });
+    expect(admin.records).toHaveLength(1);
+  });
+
+  it("keeps Klaviyo's confirmation, so the charge can be finished later without reading Klaviyo; a restore in progress holds it", async () => {
+    const { shop, runId } = await finishedCleanup(3);
+    const admin = fakeAdmin();
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, runId, { done: true, suppressed: 2 })).status).toBe("held");
+    expect((await runsWithOpenCharges(db, AFTER_HOLD(), 500)).find((r) => r.runId === runId)).toMatchObject({ confirmed: true });
+
+    const undo = await createUndoRun(db, { shop, runId, createdBy: "user:1", confirmAfterRenewal: true });
+    if (!undo.ok) throw new Error(undo.reason);
+    expect((await settleRunCharge({ db, graphql: admin.graphql, now: AFTER_HOLD }, runId)).status).toBe("held"); // restore still queued
+    await db.update(schema.runs).set({ status: "cancelled" }).where(eq(schema.runs.id, undo.runId));
+    expect((await settleRunCharge({ db, graphql: admin.graphql, now: AFTER_HOLD }, runId)).status).toBe("charged");
+    expect(admin.records[0]!.description).toContain("2 profiles");
+  });
+
   it("stays open and can be retried when Shopify has no subscription or rejects the record", async () => {
     const { runId } = await finishedCleanup(2);
     expect(await settleRunCharge({ db, graphql: fakeAdmin({ subscribed: false }).graphql, now: AFTER_HOLD }, runId, CONFIRMED)).toEqual({ status: "failed", error: "no_active_subscription" });

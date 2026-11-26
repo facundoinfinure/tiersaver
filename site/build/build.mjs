@@ -16,7 +16,8 @@
  * files are committed. test/site.test.ts fails when they are out of date.
  *
  * Page format: the file starts with an HTML comment of "key: value" lines.
- *   title        page title (required)
+ *   title        page title and h1 (required)
+ *   seoTitle     shorter text for <title> and og:title, when the h1 is too long for them
  *   description  meta description (required)
  *   layout       "landing" (body is the whole <main>) or "doc" (article with
  *                breadcrumb, header and a sidebar listing its group)
@@ -30,6 +31,10 @@
  *   script       name of a bundle in assets/ to load with defer
  *   sitemap      "no" leaves the page out of the sitemap and gives it no canonical URL
  *   index        "yes" marks a group's index page (not listed in the group itself)
+ *   footer       "yes" lists a help article in the site footer
+ *
+ * Front-matter values may use {{token}} placeholders too, so a description
+ * never types a number that src/data.ts already holds.
  */
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
@@ -37,7 +42,7 @@ import { pathToFileURL } from "node:url";
 import { build as esbuild } from "esbuild";
 import { SITE_DIR } from "./assets.mjs";
 
-export { SITE_DIR };
+export { SITE_DIR, AUDIT_CTA_URL, AUDIT_CTA_LABEL, LEGAL_DRAFT };
 
 const SRC_DIR = join(SITE_DIR, "src");
 const PAGES_DIR = join(SRC_DIR, "pages");
@@ -49,8 +54,27 @@ const TAGLINE = "Automatic list hygiene for Klaviyo";
 const LEGAL_ENTITY = "Digital Solvers LLC";
 const COPYRIGHT_YEAR = "2026";
 const THEME_COLOR = "#eeeeec";
-/** How many help articles the footer links to, after "All help articles". */
-const FOOTER_HELP_LINKS = 5;
+const CONTACT_EMAIL = "hello@tiersaver.com";
+const SUPPORT_EMAIL = "support@tiersaver.com";
+
+/**
+ * Where every "Run my free list audit" button goes.
+ * TODO: this must point to the Shopify App Store listing once it exists
+ * (https://apps.shopify.com/<handle>). Until then it opens an email, and
+ * AUDIT_CTA_NOTE says so next to the main button. When the listing is live,
+ * change the URL here and set AUDIT_CTA_NOTE to "".
+ */
+const AUDIT_CTA_URL = `mailto:${CONTACT_EMAIL}?subject=Free%20list%20audit`;
+const AUDIT_CTA_LABEL = "Run my free list audit";
+const AUDIT_CTA_NOTE = ` TierSaver is not on the Shopify App Store yet, so the button opens an email to ${CONTACT_EMAIL}.`;
+
+/**
+ * The one switch for the legal pages (group "legal": terms, privacy, DPA).
+ * While true they carry the draft banner, are left out of the sitemap, have no
+ * canonical URL and ask search engines not to index them. Set it to false only
+ * when the lawyer has approved the final text.
+ */
+const LEGAL_DRAFT = true;
 
 const GROUPS = {
   help: { label: "Help center", crumb: { href: "/help/", text: "Help center" } },
@@ -204,20 +228,23 @@ function fill(page, text, tokens, partials) {
   });
 }
 
-function head(page) {
+function head(page, tokens) {
   const { meta } = page;
-  const listed = meta.sitemap !== "no";
-  const title = meta.title.includes(SITE_NAME) ? meta.title : `${meta.title} · ${SITE_NAME}`;
+  const listed = isListed(page);
+  const shortTitle = meta.seoTitle ?? meta.title;
+  const title = shortTitle.includes(SITE_NAME) ? shortTitle : `${shortTitle} · ${SITE_NAME}`;
   const lines = [
     `<meta charset="utf-8">`,
     `<meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(meta.description)}">`,
     listed ? `<link rel="canonical" href="${ORIGIN}${page.url}">` : null,
+    isLegalDraft(page) ? `<meta name="robots" content="noindex">` : null,
     `<meta name="theme-color" content="${THEME_COLOR}">`,
     `<meta property="og:site_name" content="${SITE_NAME}">`,
     `<meta property="og:type" content="${meta.layout === "doc" ? "article" : "website"}">`,
-    `<meta property="og:title" content="${esc(meta.title)}">`,
+    `<meta property="og:locale" content="en_US">`,
+    `<meta property="og:title" content="${esc(shortTitle)}">`,
     `<meta property="og:description" content="${esc(meta.description)}">`,
     listed ? `<meta property="og:url" content="${ORIGIN}${page.url}">` : null,
     `<meta property="og:image" content="${ORIGIN}/assets/og-image.png">`,
@@ -234,6 +261,7 @@ function head(page) {
     `<link rel="stylesheet" href="/styles/base.css">`,
     `<link rel="stylesheet" href="/styles/site.css">`,
     meta.script ? `<script src="/assets/${meta.script}.js" defer></script>` : null,
+    ...structuredData(page, tokens),
   ];
   return lines
     .filter((line) => line !== null)
@@ -258,7 +286,7 @@ function siteHeader(page) {
           <li><a href="/help/"${helpCurrent}>Help</a></li>
         </ul>
       </nav>
-      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+      <a class="button button--small site-header__cta" href="${AUDIT_CTA_URL}">${AUDIT_CTA_LABEL}</a>
     </div>
   </header>`;
 }
@@ -266,49 +294,51 @@ function siteHeader(page) {
 function siteFooter(pages, tokens) {
   const item = (href, text) => `            <li><a href="${href}">${esc(text)}</a></li>`;
   const help = groupPages(pages, "help")
-    .slice(0, FOOTER_HELP_LINKS)
+    .filter((p) => p.meta.footer === "yes")
     .map((p) => item(p.url, p.meta.nav));
   const guides = groupPages(pages, "guide").map((p) => item(p.url, p.meta.nav));
-  const legal = groupPages(pages, "legal").map((p) => item(p.url, p.meta.title));
+  const legal = groupPages(pages, "legal").map((p) => item(p.url, LEGAL_DRAFT ? `${p.meta.nav} (draft)` : p.meta.nav));
   return `  <footer class="site-footer">
     <div class="container">
       <div class="site-footer__top">
         <div class="site-footer__brand">
           <img src="/assets/logo.svg" alt="${SITE_NAME}" width="133" height="32">
           <p class="text-muted small">${TAGLINE}, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a><br>Everything else: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a></p>
         </div>
-        <div class="site-footer__col">
-          <h2 class="label">Product</h2>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
           <ul>
             <li><a href="/#how-it-works">How it works</a></li>
             <li><a href="/#list-check">List health check</a></li>
             <li><a href="/#pricing">Pricing</a></li>
             <li><a href="/#faq">Questions</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Help center</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
           <ul>
             <li><a href="/help/">All help articles</a></li>
 ${help.join("\n")}
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Guides</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
           <ul>
 ${guides.join("\n")}
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Legal</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
           <ul>
 ${legal.join("\n")}
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
           </ul>
-        </div>
+        </nav>
       </div>
       <div class="site-footer__bottom">
         <p class="small text-muted">${SITE_NAME} is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what ${SITE_NAME} works with.</p>
-        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on ${tokens["prices.capturedOn"]} and may have changed. ${SITE_NAME} makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on ${longDate(tokens["prices.capturedOn"])} and may have changed. ${SITE_NAME} makes no promise about your Klaviyo plan or invoice.</p>
         <p class="small text-muted">© ${COPYRIGHT_YEAR} ${LEGAL_ENTITY}. All rights reserved.</p>
       </div>
     </div>
@@ -316,15 +346,99 @@ ${legal.join("\n")}
 }
 
 const DRAFT_BANNER = `    <div class="draft-banner" role="note">
-      <p><strong>Draft, pending review.</strong> This document has not been reviewed by a lawyer, is not final and is not in effect. Text in <mark class="placeholder">[BRACKETS]</mark> is still to be filled in.</p>
+      <p><strong>Draft under legal review.</strong> The final version will replace this page before ${SITE_NAME} is publicly available.</p>
     </div>
 `;
+
+/** True for a legal page while the legal texts are drafts. */
+function isLegalDraft(page) {
+  return LEGAL_DRAFT && page.meta.group === "legal";
+}
+
+/** False for pages that stay out of the sitemap and get no canonical URL. */
+function isListed(page) {
+  return page.meta.sitemap !== "no" && !isLegalDraft(page);
+}
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** "2026-11-25" becomes "November 25, 2026"; any other text is returned as it is. */
+function longDate(text) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  return m ? `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}` : text;
+}
+
+/** A JSON-LD data block. It is data, not a script the browser runs, so the Content-Security-Policy does not apply to it. */
+function jsonLd(data) {
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+}
+
+/** Structured data: the organization and the app on the landing page, the breadcrumb trail on articles. Nothing is invented: no ratings, no reviews. */
+function structuredData(page, tokens) {
+  const { meta } = page;
+  if (page.url === "/") {
+    const organization = {
+      "@type": "Organization",
+      "@id": `${ORIGIN}/#organization`,
+      name: SITE_NAME,
+      legalName: LEGAL_ENTITY,
+      url: `${ORIGIN}/`,
+      logo: `${ORIGIN}/assets/apple-touch-icon.png`,
+      email: CONTACT_EMAIL,
+      contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, url: `${ORIGIN}/help/contact` },
+    };
+    const app = {
+      "@type": "SoftwareApplication",
+      name: "TierSaver: List Hygiene for Klaviyo",
+      url: `${ORIGIN}/`,
+      description: meta.description,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      publisher: { "@id": `${ORIGIN}/#organization` },
+      offers: JSON.parse(tokens["jsonld.offers"]),
+    };
+    return [jsonLd({ "@context": "https://schema.org", "@graph": [organization, app] })];
+  }
+  if (meta.layout === "doc" && isListed(page)) {
+    const group = GROUPS[meta.group];
+    const trail = [{ name: "Home", item: `${ORIGIN}/` }];
+    if (group.crumb) trail.push({ name: group.crumb.text, item: `${ORIGIN}${group.crumb.href}` });
+    trail.push({ name: meta.nav, item: `${ORIGIN}${page.url}` });
+    return [
+      jsonLd({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: trail.map((entry, i) => ({ "@type": "ListItem", position: i + 1, ...entry })),
+      }),
+    ];
+  }
+  return [];
+}
 
 function landingMain(body) {
   return `  <main id="main">\n${body}  </main>`;
 }
 
-function docMain(page, pages, body) {
+/** Gives every plain <h2> of an article an id made from its text, so support can link to a section. */
+function withHeadingIds(body) {
+  const used = new Set([...body.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  used.add("main");
+  return body.replace(/<h2>([^<]+)<\/h2>/g, (whole, text) => {
+    const base = text
+      .replace(/&[a-z]+;/g, " ")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (!base) return whole;
+    let id = base;
+    for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+    used.add(id);
+    return `<h2 id="${id}">${text}</h2>`;
+  });
+}
+
+function docMain(page, pages, rawBody) {
+  const body = withHeadingIds(rawBody);
   const { meta } = page;
   const group = GROUPS[meta.group];
   const crumbs = [`<li><a href="/">Home</a></li>`];
@@ -335,7 +449,7 @@ function docMain(page, pages, body) {
     return `            <li><a href="${p.url}"${current}>${esc(p.meta.nav)}</a></li>`;
   });
   return `  <main id="main" class="container doc">
-${meta.group === "legal" ? DRAFT_BANNER : ""}    <nav class="breadcrumb" aria-label="Breadcrumb">
+${isLegalDraft(page) ? DRAFT_BANNER : ""}    <nav class="breadcrumb" aria-label="Breadcrumb">
       <ol>
 ${crumbs.map((c) => `          ${c}`).join("\n")}
       </ol>
@@ -346,7 +460,7 @@ ${crumbs.map((c) => `          ${c}`).join("\n")}
           <p class="label">${esc(meta.kicker ?? group.label)}</p>
           <h1>${esc(meta.title)}</h1>
           <p class="lead">${esc(meta.lead)}</p>
-          <p class="label doc__updated"><span>Last updated</span><span>${esc(meta.updated)}</span></p>
+          <p class="label doc__updated"><span>Last updated</span><span>${esc(longDate(meta.updated))}</span></p>
         </header>
         <div class="prose">
 ${body}        </div>
@@ -370,7 +484,7 @@ function renderPage(page, pages, tokens, partials) {
   return `<!doctype html>
 <html lang="en">
 <head>
-${head(page)}
+${head(page, tokens)}
 </head>
 <body>
 ${siteHeader(page)}
@@ -385,7 +499,7 @@ ${siteFooter(pages, tokens)}
 
 function sitemap(pages) {
   const urls = pages
-    .filter((p) => p.meta.sitemap !== "no")
+    .filter(isListed)
     .map((p) => p.url)
     .sort();
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -406,7 +520,20 @@ export async function generate() {
     loadSiteData(),
     bundleListCheck(),
   ]);
-  const tokens = { ...data, "list.help": linkGrid(pages, "help"), "list.guides": linkGrid(pages, "guide") };
+  const tokens = {
+    ...data,
+    "cta.url": AUDIT_CTA_URL,
+    "cta.label": AUDIT_CTA_LABEL,
+    "cta.note": AUDIT_CTA_NOTE,
+    "contact.email": CONTACT_EMAIL,
+    "support.email": SUPPORT_EMAIL,
+  };
+  // Front-matter values can use the same placeholders as the page bodies.
+  for (const page of pages) {
+    for (const [key, value] of Object.entries(page.meta)) page.meta[key] = fill(page.path, value, tokens, new Map());
+  }
+  tokens["list.help"] = linkGrid(pages, "help");
+  tokens["list.guides"] = linkGrid(pages, "guide");
 
   const out = new Map();
   for (const page of pages) out.set(page.path, renderPage(page, pages, tokens, partials));

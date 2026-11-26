@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_RULE_SETTINGS,
+  PURCHASE_DATA_MAX_AGE_HOURS,
   evaluateProfile,
   finalChargeForRun,
   simulate,
@@ -128,6 +129,31 @@ describe("missing data is conservative (default mode: history must reach back to
   });
   it("protects when purchase coverage is unknown", () => {
     expect(evalP(inactiveProfile(), { ...FULL_COVERAGE, purchasesSince: null }).kind).toBe("protected");
+  });
+  it("protects when purchase data is not known to be current, however far back it reaches", () => {
+    const stale = (purchasesUntil: Date | null | undefined) => evalP(inactiveProfile(), { ...FULL_COVERAGE, purchasesUntil });
+    // No "until" at all: order data frozen at some unknown moment (the install-time backfill).
+    expect(evalP(inactiveProfile(), { engagementSince: daysAgo(2000), purchasesSince: daysAgo(2000) })).toMatchObject({
+      kind: "protected",
+      reasons: ["insufficient_purchase_history"],
+    });
+    expect(stale(null)).toMatchObject({ kind: "protected", reasons: ["insufficient_purchase_history"] });
+    expect(stale(new Date(Number.NaN)).kind).toBe("protected");
+    expect(stale(daysAgo(30))).toMatchObject({ kind: "protected", reasons: ["insufficient_purchase_history"] });
+    const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000);
+    expect(stale(hoursAgo(PURCHASE_DATA_MAX_AGE_HOURS + 1)).kind).toBe("protected");
+    expect(stale(hoursAgo(PURCHASE_DATA_MAX_AGE_HOURS)).kind).toBe("candidate");
+    // Refreshed after the scan started: still current.
+    expect(stale(hoursAgo(-1)).kind).toBe("candidate");
+  });
+  it("stale purchase data protects in the wider mode too, and a known purchase still counts", () => {
+    const wide = { ...DEFAULT_RULE_SETTINGS, purchaseDays: 365 };
+    const staleCoverage = { ...FULL_COVERAGE, purchasesUntil: daysAgo(305) };
+    expect(evalP(inactiveProfile(), staleCoverage, wide)).toMatchObject({ kind: "protected", reasons: ["insufficient_purchase_history"] });
+    expect(evalP(inactiveProfile({ lastPurchaseAt: daysAgo(900) }), { ...FULL_COVERAGE, purchasesUntil: null })).toMatchObject({
+      kind: "protected",
+      reasons: ["recent_purchase"],
+    });
   });
   it("protects when engagement data starts after the profile was created", () => {
     const d = evalP(inactiveProfile({ createdAt: daysAgo(800) }), { ...FULL_COVERAGE, engagementSince: daysAgo(700) });

@@ -1,5 +1,5 @@
 import { chargeIdempotencyKey, DEFAULT_FEE_POLICY, FLAT_PRICE_TIERS, formatUsd, quoteCharge } from "@tiersaver/core";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
 import { CHARGE_HOLD_HOURS } from "../runs/labels";
@@ -144,6 +144,31 @@ const USAGE_MUTATION = `#graphql
     }
   }`;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The price of one cleanup given what the shop was already CHARGED. Only charges that reached Shopify count:
+ * a pending or failed one must not make the next cleanup free. The 28 days are counted in whole UTC days from
+ * the day of the charged cleanup, so a monthly schedule is not skipped in a 28-day February by a few minutes.
+ */
+async function quoteForRun(db: Db, run: { id: string; shop: string; processedCount: number }, activeProfiles: number, now: Date) {
+  const charged = await db.query.usageCharges.findMany({
+    where: and(eq(schema.usageCharges.shop, run.shop), eq(schema.usageCharges.status, "charged"), ne(schema.usageCharges.runId, run.id)),
+    orderBy: desc(schema.usageCharges.createdAt),
+    limit: 10,
+  });
+  const billable = charged.filter((c) => c.feeCents > 0);
+  const windowStart = now.getTime() - 30 * DAY_MS;
+  const last = billable[0]?.createdAt ?? null;
+  return quoteCharge({
+    activeProfiles,
+    profilesSuppressed: run.processedCount,
+    lastChargeAt: last ? new Date(Math.floor(last.getTime() / DAY_MS) * DAY_MS) : null,
+    chargedInWindowCents: billable.filter((c) => c.createdAt.getTime() >= windowStart).reduce((sum, c) => sum + c.feeCents, 0),
+    now,
+  });
+}
+
 export type SettleResult =
   | { status: "charged"; feeCents: number }
   /** Quoted from what the run sent; waiting for Klaviyo's jobs to confirm before anything is charged. */
@@ -187,20 +212,7 @@ export async function settleRunCharge(
   if (!charge) {
     const simulation = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId) });
     if (!simulation) return { status: "skipped", reason: "not_a_cleanup" };
-    const earlier = await db.query.usageCharges.findMany({
-      where: and(eq(schema.usageCharges.shop, run.shop), inArray(schema.usageCharges.status, ["charged", "pending", "failed"])),
-      orderBy: desc(schema.usageCharges.createdAt),
-      limit: 10,
-    });
-    const billable = earlier.filter((c) => c.feeCents > 0);
-    const windowStart = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-    const quote = quoteCharge({
-      activeProfiles: simulation.activeProfiles,
-      profilesSuppressed: run.processedCount,
-      lastChargeAt: billable[0]?.createdAt ?? null,
-      chargedInWindowCents: billable.filter((c) => c.createdAt.getTime() >= windowStart).reduce((sum, c) => sum + c.feeCents, 0),
-      now,
-    });
+    const quote = await quoteForRun(db, run, simulation.activeProfiles, now);
     await db
       .insert(schema.usageCharges)
       .values({
@@ -235,9 +247,10 @@ export async function settleRunCharge(
     if (charge.status === "not_charged") return { status: "not_charged", reason: charge.noChargeReason ?? "no_cleanup" };
   }
 
-  // The amount is an estimate until Klaviyo confirms how many profiles its jobs processed.
-  if (!confirmation?.done) return { status: "estimated", feeCents: charge.feeCents };
-  const confirmed = Math.max(0, Math.min(Math.trunc(confirmation.suppressed), run.processedCount));
+  // The amount is an estimate until Klaviyo confirms how many profiles its jobs processed. Once confirmed, the
+  // count is kept on the charge, so a later call (the cron, after the undo window) needs no read of Klaviyo.
+  if (!confirmation?.done && !charge.confirmedAt) return { status: "estimated", feeCents: charge.feeCents };
+  const confirmed = confirmation?.done ? Math.max(0, Math.min(Math.trunc(confirmation.suppressed), run.processedCount)) : charge.profilesSuppressed;
   if (confirmed === 0) {
     await db
       .update(schema.usageCharges)
@@ -259,16 +272,39 @@ export async function settleRunCharge(
       .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
     return { status: "not_charged", reason: "cleanup_undone" };
   }
-  if (confirmed !== charge.profilesSuppressed) {
-    await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed }).where(eq(schema.usageCharges.id, charge.id));
-    charge = { ...charge, profilesSuppressed: confirmed };
+  if (confirmed !== charge.profilesSuppressed || !charge.confirmedAt) {
+    const confirmedAt = charge.confirmedAt ?? now;
+    await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed, confirmedAt }).where(eq(schema.usageCharges.id, charge.id));
+    charge = { ...charge, profilesSuppressed: confirmed, confirmedAt };
   }
 
   const chargeAt = (run.finishedAt ?? charge.createdAt).getTime() + CHARGE_HOLD_MS;
   if (now.getTime() < chargeAt) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(chargeAt).toISOString() };
+  // A restore that is still running when the window ends decides the charge: wait for it (an hour at a time).
+  const undoing = await db.query.runs.findFirst({
+    where: and(eq(schema.runs.undoOfRunId, runId), inArray(schema.runs.status, ["queued", "running"])),
+    columns: { id: true },
+  });
+  if (undoing) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(now.getTime() + 60 * 60 * 1000).toISOString() };
+
+  // Priced again at the moment of charging, against what was really charged by now: of two cleanups inside
+  // 28 days the first to be charged is the one that pays, and one that was undone does not block the other.
+  const simulation = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, run.simulationId), columns: { activeProfiles: true } });
+  const finalQuote = await quoteForRun(db, run, simulation?.activeProfiles ?? charge.activeProfiles, now);
+  if (finalQuote.feeCents <= 0) {
+    await db
+      .update(schema.usageCharges)
+      .set({ status: "not_charged", feeCents: 0, noChargeReason: finalQuote.noChargeReason ?? "no_cleanup" })
+      .where(and(eq(schema.usageCharges.id, charge.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
+    return { status: "not_charged", reason: finalQuote.noChargeReason ?? "no_cleanup" };
+  }
+  if (finalQuote.feeCents !== charge.feeCents) {
+    await db.update(schema.usageCharges).set({ feeCents: finalQuote.feeCents, capApplied: finalQuote.capApplied }).where(eq(schema.usageCharges.id, charge.id));
+    charge = { ...charge, feeCents: finalQuote.feeCents };
+  }
 
   const fail = async (error: string): Promise<SettleResult> => {
-    await db.update(schema.usageCharges).set({ status: "failed" }).where(and(eq(schema.usageCharges.id, charge!.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
+    await db.update(schema.usageCharges).set({ status: "failed", attempts: sql`${schema.usageCharges.attempts} + 1`, lastAttemptAt: now }).where(and(eq(schema.usageCharges.id, charge!.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
     return { status: "failed", error };
   };
   if (!deps.graphql) return fail("shopify_unavailable");
@@ -297,24 +333,28 @@ export async function settleRunCharge(
   }
 }
 
+/** After this many failed tries a charge is still retried, but each try is logged as needing a person. */
+export const CHARGE_ATTEMPTS_BEFORE_ALERT = 24;
+
 /**
  * Runs whose charge still has to be created or retried (cron). A charge that is waiting out the undo window is
- * left alone until the window ends. Only ten days back (the window plus a week of retries): an older failure
- * needs a person.
+ * left alone until the window ends. The least recently tried come first, so a charge that keeps failing cannot
+ * hold back the others. Thirty days back: an older failure needs a person.
  */
-export async function runsWithOpenCharges(db: Db, now = new Date(), limit = 20): Promise<{ runId: string; shop: string }[]> {
-  const since = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+export async function runsWithOpenCharges(db: Db, now = new Date(), limit = 20): Promise<{ runId: string; shop: string; confirmed: boolean; attempts: number }[]> {
+  const since = new Date(now.getTime() - 30 * DAY_MS);
   const holdEnded = now.getTime() - CHARGE_HOLD_MS;
   const rows = await db.$client
     .prepare(
-      `SELECT r.id AS runId, r.shop AS shop FROM runs r
+      `SELECT r.id AS runId, r.shop AS shop, c.confirmed_at IS NOT NULL AS confirmed, COALESCE(c.attempts, 0) AS attempts FROM runs r
+       JOIN shops s ON s.shop = r.shop AND s.status = 'installed'
        LEFT JOIN usage_charges c ON c.run_id = r.id
        WHERE r.kind = 'suppress' AND r.status IN ('completed', 'completed_with_errors', 'failed', 'cancelled')
          AND r.processed_count > 0 AND r.finished_at >= ?1
          AND (c.id IS NULL OR c.status = 'failed' OR (c.status = 'pending' AND r.finished_at <= ?3))
-       ORDER BY r.finished_at LIMIT ?2`,
+       ORDER BY COALESCE(c.last_attempt_at, 0), r.finished_at LIMIT ?2`,
     )
     .bind(since.getTime(), limit, holdEnded)
-    .all<{ runId: string; shop: string }>();
-  return rows.results;
+    .all<{ runId: string; shop: string; confirmed: number; attempts: number }>();
+  return rows.results.map((r) => ({ runId: r.runId, shop: r.shop, confirmed: Boolean(r.confirmed), attempts: r.attempts }));
 }

@@ -3,8 +3,10 @@
  * site-config.ts so they are not bundled into the browser script.
  */
 
-/** Date the articles below were read. */
-export const SOURCES_READ_ON = "2026-11-25";
+/** Date the articles below were last read and compared with what the site says. */
+export const SOURCES_READ_ON = "2026-11-26";
+/** Klaviyo's public price list: the source of the plan sizes in core's price table. Named in text, never linked or requested. */
+export const KLAVIYO_PRICING_PAGE = "klaviyo.com/pricing";
 export const KLAVIYO_SOURCES = Object.freeze({
   activeProfileManagement: {
     title: "Understanding active profile management in Klaviyo",
@@ -29,5 +31,7 @@ export const KLAVIYO_SOURCES = Object.freeze({
   mpp: {
     title: "How to identify iOS15 Mail Privacy Protection opens",
     url: "https://help.klaviyo.com/hc/en-us/articles/4416791883163",
+    // Not read again in the review of 2026-11-26.
+    readOn: "2026-11-25",
   },
 });

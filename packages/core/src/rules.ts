@@ -135,6 +135,14 @@ export interface DataCoverage {
   engagementSince: Date | null;
   /** Earliest date for which purchase data is complete. null = unknown. */
   purchasesSince: Date | null;
+  /**
+   * Instant up to which purchase data is complete: the last successful read of
+   * the store's orders. Purchase history is only "sufficient" when this is no
+   * older than PURCHASE_DATA_MAX_AGE_HOURS at evaluation time. null or
+   * undefined = unknown, which protects: order data that stopped being
+   * refreshed must never turn a later buyer into a candidate.
+   */
+  purchasesUntil?: Date | null;
   /** Earliest date for which site activity data is complete. null = not tracked (rule then relies on others). */
   siteActivitySince?: Date | null;
 }
@@ -164,6 +172,20 @@ export type Decision =
   | { kind: "skipped"; reason: SkipReason };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How old the purchase data may be when a profile is evaluated. Orders are
+ * re-read hourly and again inside every scan, so healthy data is minutes old;
+ * six hours tolerates a few failed reads and nothing more. Beyond it the
+ * purchase rule protects everyone (insufficient_purchase_history).
+ */
+export const PURCHASE_DATA_MAX_AGE_HOURS = 6;
+
+/** True when purchase data was refreshed recently enough to trust the absence of an order. */
+export function purchaseDataIsFresh(until: Date | null | undefined, now: Date): boolean {
+  if (!until || Number.isNaN(until.getTime())) return false;
+  return now.getTime() - until.getTime() <= PURCHASE_DATA_MAX_AGE_HOURS * 60 * 60 * 1000;
+}
 
 /** True when `date` falls inside the window; a null window means any time at all. */
 function within(date: Date | null | undefined, days: Window, now: Date): boolean {
@@ -206,7 +228,12 @@ export function evaluateProfile(
   else if (within(profile.createdAt, settings.newProfileDays, now)) reasons.push("new_profile");
 
   if (within(profile.lastPurchaseAt, settings.purchaseDays, now)) reasons.push("recent_purchase");
-  else if (!covers(coverage.purchasesSince, settings.purchaseDays, profile.createdAt, now)) reasons.push("insufficient_purchase_history");
+  else if (
+    !purchaseDataIsFresh(coverage.purchasesUntil, now) ||
+    !covers(coverage.purchasesSince, settings.purchaseDays, profile.createdAt, now)
+  ) {
+    reasons.push("insufficient_purchase_history");
+  }
 
   if (within(profile.lastClickAt, settings.clickDays, now)) reasons.push("recent_click");
 

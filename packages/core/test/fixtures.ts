@@ -25,6 +25,7 @@ export const daysAgo = (n: number) => new Date(NOW.getTime() - n * DAY);
 export const FULL_COVERAGE: DataCoverage = {
   engagementSince: daysAgo(2000),
   purchasesSince: daysAgo(2000),
+  purchasesUntil: NOW,
   siteActivitySince: daysAgo(2000),
 };
 

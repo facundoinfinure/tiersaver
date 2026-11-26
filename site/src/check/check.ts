@@ -6,8 +6,9 @@
  * and (as a secondary, cited fact) which Klaviyo plan size the active count
  * corresponds to today and afterwards.
  *
- * Klaviyo plan sizes and list prices come from @tiersaver/core's price table,
- * the same data the app uses; nothing about Klaviyo's prices is typed here.
+ * Klaviyo plan sizes come from @tiersaver/core's price table, the same data
+ * the app uses. Only the sizes (profile counts) are shown, labelled as an
+ * estimate: no Klaviyo price is ever displayed.
  * TierSaver's own flat prices come from core too (FLAT_PRICE_TIERS), the same
  * table the app charges from.
  *
@@ -92,6 +93,8 @@ function isUsable(input: CheckInput): boolean {
   if (!Number.isFinite(input.activeProfiles) || input.activeProfiles < 0) return false;
   if (!Number.isFinite(input.meetingCriteria) || input.meetingCriteria < 0) return false;
   if (input.unit === "percent" && input.meetingCriteria > 100) return false;
+  // More profiles "meeting the criteria" than the list holds is a typing mistake, not something to clamp silently.
+  if (input.unit === "profiles" && input.meetingCriteria > Math.ceil(input.activeProfiles)) return false;
   return true;
 }
 
@@ -176,10 +179,37 @@ export interface CheckView {
   klaviyoAfter: string;
 }
 
+/** The plan size only. Klaviyo's prices are deliberately not shown (see the header comment). */
 function klaviyoText(tier: PriceTier | null, above: boolean, plan: KlaviyoPlan): string {
   if (plan === "free") return "Free plan";
-  if (above || !tier) return `Above ${formatCount(largestPublishedPlan())} profiles: custom pricing, not published`;
-  return `Up to ${formatCount(tier.maxProfiles)} profiles (${formatUsd(tier.monthlyCents)}/mo list price)`;
+  if (above || !tier) return `Above ${formatCount(largestPublishedPlan())} profiles: no plan size is published`;
+  return `Up to ${formatCount(tier.maxProfiles)} profiles`;
+}
+
+export interface FieldErrors {
+  /** Message for the "active profiles" field, or null when it is fine. */
+  active: string | null;
+  /** Message for the "meet the cleanup criteria" field, or null when it is fine. */
+  criteria: string | null;
+}
+
+export const FIELD_MESSAGES = {
+  wholeNumber: "Enter a whole number, for example 12,500.",
+  percent: "Enter a percentage from 0 to 100, for example 20.",
+  tooLarge: "This cannot be larger than your active profiles.",
+} as const;
+
+/** What is wrong with each field as typed. The same parsing the result uses. */
+export function fieldErrors(activeText: string, criteriaText: string, unit: CriteriaUnit): FieldErrors {
+  const active = parseCount(activeText);
+  const activeError = Number.isFinite(active) ? null : FIELD_MESSAGES.wholeNumber;
+  if (unit === "percent") {
+    const percent = parsePercent(criteriaText);
+    return { active: activeError, criteria: Number.isFinite(percent) && percent <= 100 ? null : FIELD_MESSAGES.percent };
+  }
+  const count = parseCount(criteriaText);
+  if (!Number.isFinite(count)) return { active: activeError, criteria: FIELD_MESSAGES.wholeNumber };
+  return { active: activeError, criteria: activeError === null && count > active ? FIELD_MESSAGES.tooLarge : null };
 }
 
 /** Strings for the result panel. Used by the page script and by the build (static default). */
@@ -189,7 +219,7 @@ export function describe(result: CheckResult): CheckView {
       valid: false,
       figure: "Check the numbers",
       message:
-        "Enter whole numbers: your active profiles, and how many of them meet the cleanup criteria (or a percentage from 0 to 100).",
+        "Enter whole numbers: your active profiles, and how many of them meet the cleanup criteria (no more than your active profiles, or a percentage from 0 to 100).",
       keptPercent: 100,
       staying: "",
       leaving: "",
@@ -202,16 +232,17 @@ export function describe(result: CheckResult): CheckView {
   const keptPercent =
     result.profilesBefore > 0 ? Math.round((result.profilesAfter / result.profilesBefore) * 1000) / 10 : 100;
   const plan = result.tierSaverPlan;
+  const one = result.profilesSuppressed === 1;
   return {
     valid: true,
     figure: formatCount(result.profilesAfter),
     message:
       result.profilesSuppressed === 0
         ? "No profiles meet the cleanup criteria, so there is nothing to suppress. A month with no cleanup is not charged."
-        : `${formatCount(result.profilesSuppressed)} of ${formatCount(result.profilesBefore)} profiles meet the cleanup criteria. They would be suppressed only after you approve a simulation. None are deleted.`,
+        : `${formatCount(result.profilesSuppressed)} of ${formatCount(result.profilesBefore)} profiles ${one ? "meets" : "meet"} the cleanup criteria. ${one ? "It" : "They"} would be suppressed only after you approve a simulation. Nothing is deleted.`,
     keptPercent,
-    staying: `${formatCount(result.profilesAfter)} stay active`,
-    leaving: `${formatCount(result.profilesSuppressed)} meet the cleanup criteria`,
+    staying: `${formatCount(result.profilesAfter)} ${result.profilesAfter === 1 ? "stays" : "stay"} active`,
+    leaving: `${formatCount(result.profilesSuppressed)} ${one ? "meets" : "meet"} the cleanup criteria`,
     tierSaverPrice: plan ? `${formatUsd(plan.monthlyCents)}/month` : "Contact us",
     tierSaverPlan: plan
       ? `Flat price for lists of ${planRange(plan).replace(/^Up/, "up")} active profiles`

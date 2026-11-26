@@ -7,6 +7,7 @@ import {
   check,
   criteriaCount,
   describe,
+  fieldErrors,
   formatCount,
   parseCount,
   parsePercent,
@@ -36,6 +37,15 @@ function render(root: HTMLElement, view: CheckView): void {
   if (bar) bar.setAttribute("width", `${view.keptPercent}%`);
 }
 
+/** Marks a field as invalid and shows what is wrong under it; the message is linked with aria-describedby in the HTML. */
+function showError(root: Element, input: HTMLInputElement, name: string, message: string | null): void {
+  input.setAttribute("aria-invalid", String(message !== null));
+  const el = root.querySelector<HTMLElement>(`[data-error="${name}"]`);
+  if (!el) return;
+  el.textContent = message ?? "";
+  el.hidden = message === null;
+}
+
 function init(root: HTMLElement): void {
   const form = root.querySelector<HTMLFormElement>("form");
   const fields = root.querySelector<HTMLFieldSetElement>("[data-fields]");
@@ -52,8 +62,9 @@ function init(root: HTMLElement): void {
     const activeProfiles = parseCount(active.value);
     const value = unit === "percent" ? parsePercent(criteria.value) : parseCount(criteria.value);
 
-    active.setAttribute("aria-invalid", String(!Number.isFinite(activeProfiles)));
-    criteria.setAttribute("aria-invalid", String(!Number.isFinite(value) || (unit === "percent" && value > 100)));
+    const errors = fieldErrors(active.value, criteria.value, unit);
+    showError(root, active, "active", errors.active);
+    showError(root, criteria, "criteria", errors.criteria);
 
     render(root, describe(check({ activeProfiles, meetingCriteria: value, unit, plan })));
   };

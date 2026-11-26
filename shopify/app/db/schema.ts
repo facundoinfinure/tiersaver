@@ -442,6 +442,11 @@ export const usageCharges = sqliteTable(
     shopifyUsageRecordId: text("shopify_usage_record_id"),
     createdAt: timestamp("created_at").notNull().default(now),
     chargedAt: timestamp("charged_at"),
+    /** Times the charge was sent to Shopify without success, and when the last try was (cron rotation). */
+    attempts: integer("attempts").notNull().default(0),
+    lastAttemptAt: timestamp("last_attempt_at"),
+    /** When Klaviyo's jobs confirmed `profilesSuppressed`; from then on the charge needs no further read of Klaviyo. */
+    confirmedAt: timestamp("confirmed_at"),
   },
   (t) => [
     uniqueIndex("usage_charges_idempotency_unique").on(t.idempotencyKey),
@@ -468,4 +473,24 @@ export const eventsLog = sqliteTable(
     detail: text("detail", { mode: "json" }),
   },
   (t) => [index("events_log_shop_at_idx").on(t.shop, t.at)],
+);
+
+/**
+ * customers/data_request webhooks. The merchant downloads what the app holds
+ * about that customer from Settings and passes it on. No email in clear.
+ */
+export const privacyRequests = sqliteTable(
+  "privacy_requests",
+  {
+    id: text("id").primaryKey(),
+    shop: text("shop")
+      .notNull()
+      .references(() => shops.shop, { onDelete: "cascade" }),
+    shopifyRequestId: text("shopify_request_id"),
+    shopifyCustomerId: text("shopify_customer_id"),
+    emailHash: text("email_hash"),
+    receivedAt: timestamp("received_at").notNull().default(now),
+    downloadedAt: timestamp("downloaded_at"),
+  },
+  (t) => [index("privacy_requests_shop_idx").on(t.shop, t.receivedAt)],
 );

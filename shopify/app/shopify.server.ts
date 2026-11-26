@@ -8,6 +8,7 @@ import {
 import { DrizzleSessionStorageSQLite } from "@shopify/shopify-app-session-storage-drizzle";
 import { db, schema } from "./db.server";
 import { ensureShop } from "./orders/purchases";
+import { markInstalled } from "./data/privacy";
 import { EncryptedSessionStorage } from "./session-storage.server";
 
 const sessionStorage = new EncryptedSessionStorage(
@@ -27,6 +28,8 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ session }) => {
       await ensureShop(db, session.shop);
+      // A fresh installation: late uninstall or shop/redact webhooks of an earlier one are ignored from here on.
+      await markInstalled(db, session.shop);
       try {
         // One backfill per shop per day; a repeated id is rejected by Workflows.
         const day = new Date().toISOString().slice(0, 10);

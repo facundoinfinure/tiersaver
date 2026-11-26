@@ -10,6 +10,7 @@
  */
 import {
   CURRENT_PRICE_TABLES,
+  DEFAULT_FEE_POLICY,
   DEFAULT_RULE_SETTINGS,
   DEFAULT_SCHEDULE,
   EMAILS_RECEIVED_WINDOW_DAYS,
@@ -28,8 +29,26 @@ import {
   planRange,
   type CheckInput,
 } from "./check/check.js";
-import { KLAVIYO_RESUPPRESS_WAIT_DAYS } from "./site-config.js";
-import { KLAVIYO_SOURCES, SOURCES_READ_ON } from "./sources.js";
+import {
+  CANDIDATE_SEGMENT_NAME,
+  CHARGE_HOLD_HOURS,
+  CHARGE_WINDOW_DAYS,
+  CSV_PART_SIZE,
+  GROUPS_LISTED_PER_KIND,
+  KLAVIYO_RESUPPRESS_WAIT_DAYS,
+  MAX_LEAD_DAYS,
+  MAX_PROTECTED_GROUPS,
+} from "./site-config.js";
+import { KLAVIYO_PRICING_PAGE, KLAVIYO_SOURCES, SOURCES_READ_ON } from "./sources.js";
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** "2026-11-25" as "November 25, 2026". */
+export function longDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) throw new Error(`Not an ISO date: ${iso}`);
+  return `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}`;
+}
 
 /** The example the hero and the list health check show before anyone types. */
 export const DEFAULT_EXAMPLE = {
@@ -104,8 +123,21 @@ function priceFor(activeProfiles: number): string {
 }
 
 function source(key: keyof typeof KLAVIYO_SOURCES): string {
-  const s = KLAVIYO_SOURCES[key];
-  return `<li>Klaviyo Help Center, "${s.title}". <a href="${s.url}" rel="noopener noreferrer">${s.url}</a> (read ${SOURCES_READ_ON})</li>`;
+  const s: { title: string; url: string; readOn?: string } = KLAVIYO_SOURCES[key];
+  return `<li>Klaviyo Help Center, "${s.title}". <a href="${s.url}" rel="noopener noreferrer">${s.url}</a> (read ${longDate(s.readOn ?? SOURCES_READ_ON)})</li>`;
+}
+
+/** TierSaver's own prices as schema.org offers, for the landing page's structured data. */
+function jsonLdOffers(): string {
+  return JSON.stringify(
+    FLAT_PRICE_TIERS.map((plan) => ({
+      "@type": "Offer",
+      name: `${planRange(plan)} active profiles`,
+      price: (plan.monthlyCents / 100).toFixed(2),
+      priceCurrency: "USD",
+      description: "Flat monthly price by list size, charged only when a cleanup suppresses profiles.",
+    })),
+  );
 }
 
 export function siteData(): Record<string, string> {
@@ -120,6 +152,8 @@ export function siteData(): Record<string, string> {
   return {
     // Klaviyo price table (plan sizes), from core
     "prices.capturedOn": email.capturedOn,
+    "prices.capturedOnLong": longDate(email.capturedOn),
+    "prices.source": KLAVIYO_PRICING_PAGE,
     "prices.maxProfiles": formatCount(largestPublishedPlan(email)),
 
     // TierSaver's own flat prices, from core
@@ -129,6 +163,21 @@ export function siteData(): Record<string, string> {
     "plans.smallExample": formatCount(SMALL_LIST_EXAMPLE),
     "plans.smallExamplePrice": priceFor(SMALL_LIST_EXAMPLE),
     "plans.defaultExamplePrice": priceFor(DEFAULT_EXAMPLE.activeProfiles),
+    "plans.lowestPrice": formatUsd(FLAT_PRICE_TIERS[0]!.monthlyCents),
+    "jsonld.offers": jsonLdOffers(),
+
+    // Charging rules, from core's fee policy and the app
+    "fee.minDays": String(DEFAULT_FEE_POLICY.minDaysBetweenCharges),
+    "fee.maxPerWindow": formatUsd(DEFAULT_FEE_POLICY.windowCapCents),
+    "fee.holdHours": String(CHARGE_HOLD_HOURS),
+    "fee.windowDays": String(CHARGE_WINDOW_DAYS),
+
+    // The app's own limits (src/site-config.ts)
+    "app.csvPartSize": formatCount(CSV_PART_SIZE),
+    "app.maxProtectedGroups": String(MAX_PROTECTED_GROUPS),
+    "app.maxLeadDays": String(MAX_LEAD_DAYS),
+    "app.groupsListed": String(GROUPS_LISTED_PER_KIND),
+    "app.segmentName": CANDIDATE_SEGMENT_NAME,
 
     // Default example of the list health check, rendered statically
     "ex.before": formatCount(result.profilesBefore),
@@ -149,6 +198,8 @@ export function siteData(): Record<string, string> {
     // Cleanup criteria, from core's rules
     "criteria.ageDays": String(criteria.minProfileAgeDays),
     "criteria.emails": String(criteria.minEmailsReceived),
+    "criteria.maxEmails": String(RULE_LIMITS.minEmailsReceived.max),
+    "criteria.maxAgeDays": String(RULE_LIMITS.newProfileDays.max),
     "criteria.weeks": String(criteria.emailsReceivedWeeks),
     "criteria.widerEngagementDays": String(criteria.widerMinEngagementDays),
     "criteria.widerPurchaseDays": String(criteria.widerMinPurchaseDays),
@@ -159,9 +210,10 @@ export function siteData(): Record<string, string> {
     // Simulation and schedule, from core
     "sim.ttlHours": String(SIMULATION_TTL_MS / (60 * 60 * 1000)),
     "schedule.leadDays": String(DEFAULT_SCHEDULE.leadDays),
+    "schedule.minLeadDays": String(DEFAULT_SCHEDULE.minLeadDays),
 
     // Sources
-    "sources.readOn": SOURCES_READ_ON,
+    "sources.readOn": longDate(SOURCES_READ_ON),
     "url.activeProfileManagement": KLAVIYO_SOURCES.activeProfileManagement.url,
     "src.activeProfileManagement": source("activeProfileManagement"),
     "src.bulkSuppress": source("bulkSuppress"),
