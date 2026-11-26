@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { STATUS_LABELS } from "../runs/labels";
+import type { NoticeView } from "../notices";
 import type { Stamp } from "../settings/timezone";
+import { NoticeBanners } from "./notices";
 import { number, Row, Time } from "./ui";
 
 /**
@@ -13,6 +15,8 @@ export type Notice = "connected" | "declined" | "failed" | "disconnected" | null
 
 export interface HomeView {
   notice: Notice;
+  /** Notices from app/notices.ts of the last 90 days that this shop has not dismissed. */
+  notices: NoticeView[];
   /** False while the deployment has no Klaviyo OAuth credentials. */
   configured: boolean;
   startUrl: string | null;
@@ -129,11 +133,14 @@ export function HomeScreen({
   view,
   busy,
   renderForm,
+  renderDismiss,
 }: {
   view: HomeView;
   busy: boolean;
   /** Wraps its content (a submit button, or a dialog that holds one) in the form that posts `intent` to the home route. */
   renderForm: (intent: "scan" | "disconnect", content: ReactNode) => ReactNode;
+  /** Wraps a notice's "Got it" button in the form that records its dismissal. */
+  renderDismiss: (noticeId: string, button: ReactNode) => ReactNode;
 }) {
   const { connection, result, scan, simulation, lastCleanup, schedule, links, plan } = view;
   const connected = connection?.status === "connected";
@@ -299,6 +306,7 @@ export function HomeScreen({
 
   return (
     <s-page heading="TierSaver">
+      <NoticeBanners notices={view.notices} busy={busy} renderDismiss={renderDismiss} />
       {planBanner}
       {banner}
 

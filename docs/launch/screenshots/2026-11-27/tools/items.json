@@ -1,0 +1,7 @@
+[
+ {"name":"01-audit","caption":"See which profiles never engaged","crops":["01-home-audit"]},
+ {"name":"02-review-and-approve","caption":"Review the candidates before you approve","crops":["02-review"]},
+ {"name":"03-cleanup-running","caption":"Follow each cleanup, or stop it","crops":["03-cleanup-running"]},
+ {"name":"04-cleanup-log-and-restore","caption":"A log of every cleanup, with Restore","crops":["04-cleanup-completed"]},
+ {"name":"05-settings","caption":"Your criteria, protected lists and schedule","crops":["05-settings-left","05-settings-right"]}
+]

@@ -3,6 +3,7 @@
 > DRAFT. Nothing is posted by a Claude session. Facundo rewrites it in his own words and posts from his own account, in his own name.
 
 - Status: to-review
+- Fase: **1 y 2**. En fase 1 se publica SIN la línea de transparencia (sin nombrar el producto). En fase 2, con la línea solo donde las reglas lo permiten.
 - Dónde sirve: r/klaviyo (si existe), r/emailmarketing, r/ecommerce (sin la línea de transparencia), r/shopify (sin la línea de transparencia), Klaviyo Community (como tema nuevo), LinkedIn (versión corta), Indie Hackers no.
 - Reglas: ver `../../communities.md`. Leer las reglas del lugar el mismo día en que se publica.
 - Un solo lugar por vez. No copiar y pegar el mismo texto en varios foros el mismo día (Shopify Community lo prohíbe de forma expresa; Reddit lo trata como spam).

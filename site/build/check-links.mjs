@@ -11,8 +11,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { SITE_DIR, publishedFiles, resolvePath } from "./assets.mjs";
-
-const ORIGIN = "https://tiersaver.com";
+// The site's public address is set once, in build.mjs.
+import { ORIGIN } from "./build.mjs";
 
 /** URL path a published HTML file is served at. */
 function urlOf(file) {

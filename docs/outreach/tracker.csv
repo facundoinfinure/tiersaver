@@ -1,0 +1,2 @@
+date,phase,channel,target_id,action,draft_link,result,next_step,next_step_date,minutes
+2026-12-07,1,contact-form,B09,sent first message (EXAMPLE ROW — delete before first real entry),drafts/phase1/B09.md,no reply yet,send the single follow-up if no reply,2026-12-14,6

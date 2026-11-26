@@ -22,6 +22,7 @@ const form = (_intent: string, button: ReactNode) => <form>{button}</form>;
 
 const base: HomeView = {
   notice: null,
+  notices: [],
   configured: true,
   startUrl: "#",
   connection: null,
@@ -68,6 +69,6 @@ const states: Record<string, HomeView> = {
 // After "Disconnect Klaviyo" on a shop that already ran a cleanup: the way back must be on screen.
 states["home-5-disconnected"] = { ...states["home-4-cleaned"]!, notice: "disconnected", connection: null, scan: null, result: null, simulation: { state: "open", candidates: 696, expiresAt: stamp("2026-11-26T18:58:07Z") } };
 for (const [name, view] of Object.entries(states)) {
-  writeFileSync(join(out, `${name}.html`), page(<HomeScreen view={view} busy={false} renderForm={form} />));
+  writeFileSync(join(out, `${name}.html`), page(<HomeScreen view={view} busy={false} renderForm={form} renderDismiss={(_id, button) => <form>{button}</form>} />));
 }
 console.log(Object.keys(states).join("\n"));

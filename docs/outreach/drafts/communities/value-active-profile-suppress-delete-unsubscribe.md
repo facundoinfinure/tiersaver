@@ -3,6 +3,7 @@
 > DRAFT. Nothing is posted by a Claude session. Facundo rewrites it in his own words and posts from his own account, in his own name.
 
 - Status: to-review
+- Fase: **1 y 2**. En fase 1 se publica SIN la línea de transparencia (sin nombrar el producto). En fase 2, con la línea solo donde las reglas lo permiten.
 - Dónde sirve: r/emailmarketing, r/klaviyo (si existe), r/ecommerce y r/shopify (sin la línea de transparencia), Klaviyo Community, LinkedIn.
 - Reglas: ver `../../communities.md`. Publicarlo al menos una semana después del post 1 y nunca en el mismo lugar el mismo día.
 - Fuente de cada dato: artículos 24263920096027 y 24312135764251 del centro de ayuda de Klaviyo (abiertos el 2026-11-26) y las guías del sitio `site/src/pages/guides/how-klaviyo-counts-active-profiles.html` y `suppress-vs-delete-vs-unsubscribe.html`, que citan además los artículos de facturación y de perfiles suprimidos. Los datos de la tabla que no salen de los dos artículos abiertos hoy (baja global, rebotes, 7 rebotes blandos) vienen de esas guías: releer la fuente antes de publicar.

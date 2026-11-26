@@ -3,6 +3,7 @@
 > DRAFT. Nothing is posted by a Claude session. Facundo rewrites it in his own words and posts from his own account, in his own name.
 
 - Status: to-review
+- Fase: **solo 2** (la app aprobada y con enlace de instalación). En fase 1 no se publica: nadie puede instalarla.
 - Dónde: solo el tablero Ask and Offer, https://community.shopify.com/c/ask-offer/294. En cualquier otro tablero no se nombra la app (ver `../T12.md`).
 - Regla (FAQ, https://community.shopify.com/faq, leída por el índice del buscador el 2026-11-26): "Use the Ask and Offer board if you want to post general information about your app or solicit feedback from members about your app or service." La misma página dice: "AI produced content is subject to removal and highly discouraged." y prohíbe "Copying and pasting the same content across multiple boards or topics."
 - Por eso: este texto es una base. Facundo lo reescribe con sus palabras antes de publicar, lo publica una sola vez y no lo repite en otro tablero.

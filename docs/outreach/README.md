@@ -1,18 +1,44 @@
 # Prospección: cómo funciona
 
-Armado el 2026-11-26. Documento interno. Todo lo que está en `drafts/` es **borrador**: ninguna sesión de Claude envía, publica ni completa formularios. Facundo revisa y envía.
+PHASE: 1
+
+> **Fase 1 = antes de la aprobación de Shopify. Fase 2 = hay enlace de instalación.** La línea de arriba la cambia Facundo, a mano, el día que Shopify aprueba la app. Las sesiones de Claude la leen y no la tocan.
+>
+> **Aviso sobre los 40 borradores originales de `drafts/`:** los 30 mensajes a agencias piden "run a free audit". Eso **no se puede cumplir antes de la aprobación**: las apps públicas necesitan aprobación de Shopify, no hay instalación por enlace antes, y la revisión se estima en unos 30 días desde el envío (envío hacia el 2026-12-08; instalaciones posibles recién en enero de 2027). Esos originales quedan como versión de **fase 2**. Para la fase 1 están las variantes de `drafts/phase1/` (las 30; las 10 de mayor prioridad son A01, A04, B04, B09, N01, N02, N05, N06, N10, A02), que piden 15 minutos sobre datos de demostración o permiso para avisar el día de la aprobación.
+
+Armado el 2026-11-26 (prospección inicial y, el mismo día, creadores, comunidades, oferta para agencias, calendario y automatización). Documento interno. Todo lo que está en `drafts/` es **borrador**: ninguna sesión de Claude envía, publica ni completa formularios. Facundo revisa y envía.
 
 ## Qué hay en esta carpeta
 
 | Archivo | Qué es |
 | --- | --- |
-| `prospects.csv` | Una fila por prospecto o hilo de comunidad. Es la planilla de seguimiento. |
-| `drafts/<id>.md` | Primer mensaje (menos de 110 palabras), pie obligatorio y un único seguimiento (menos de 50 palabras). Para hilos (`T..`), la respuesta. |
+| `prospects.csv` | Una fila por agencia, freelancer o hilo de comunidad (53). Es la planilla de seguimiento. |
+| `creators.csv` | Una fila por canal de YouTube, podcast, newsletter o cuenta que publica sobre Klaviyo, email para Shopify o retención (40; 4 en español). 27 están `on-hold` porque falta el nombre del canal o un contacto publicado. |
+| `drafts/<id>.md` | Agencias, versión de fase 2: primer mensaje (menos de 110 palabras), pie obligatorio y un único seguimiento (menos de 50 palabras). Para hilos (`T..`), la respuesta. |
+| `drafts/phase1/<id>.md` | Agencias, variante de fase 1. |
+| `drafts/creators/<id>.md` | Creadores: mensaje PHASE 1 y mensaje PHASE 2, pie y seguimiento. |
+| `drafts/communities/*.md` | Posts listos por comunidad: dos posts de valor, Ask and Offer, historia de fundador (3 variantes), Show HN, Product Hunt, X y LinkedIn. |
+| `drafts/README.md` | Índice de borradores y a qué fase corresponde cada grupo. |
+| `communities.md` | Reglas de autopromoción de cada comunidad (con cita y URL, o "sin verificar"), qué se permite y qué borrador usar. |
+| `agency-offer.md` | La oferta para agencias en una página (fase 1 y fase 2), objeciones y respuestas, guion de demo de 15 minutos y las opciones de programa que decide Facundo. |
+| `sequence.md` | Calendario: fase 1 (día D−7 a D+30) y fase 2 (día A a A+30), metas y métrica de cada semana. |
+| `tracker.csv` | Registro diario de lo que Facundo hizo: fecha, canal, id, acción, borrador, resultado, próximo paso. |
+| `AUTOMATION.md` | Qué puede hacer una sesión programada y qué no, requisitos y el texto listo para pegar. |
+| `tools/check_outreach.py` | Verificador de frases prohibidas, montos, largos y evidencia. Se corre antes de cada commit. |
 | `do-not-contact.csv` | Lista de supresión. Quien pide no ser contactado va acá y no se le escribe nunca más. |
 
-Segmentos del CSV: `A` (publicaron sobre limpieza de lista), `B` (boutiques y freelancers), `C` (Elite Master, sin borrador: el plan dice solo con un caso real), `new` (encontrados por búsqueda el 2026-11-26), `community` (hilos).
+Segmentos de `prospects.csv`: `A` (publicaron sobre limpieza de lista), `B` (boutiques y freelancers), `C` (Elite Master, sin borrador: el plan dice solo con un caso real), `new` (encontrados por búsqueda el 2026-11-26), `community` (hilos).
 
-Valores de `type`: agency, freelancer, consultant, community-thread, newsletter. Valores de `contact_channel`: email, contact-form, linkedin, community.
+Valores de `type`: agency, freelancer, consultant, community-thread, newsletter. Valores de `contact_channel`: email, contact-form, linkedin, community. En `creators.csv`: `type` youtube, podcast, newsletter, blog, blog-training, creator-guest, x, x-newsletter; `contact_channel` contact-form, substack, not-found.
+
+## Rutina diaria de 10 minutos (Facundo)
+
+1. **Respuestas (3 min).** Abrir la casilla y los canales donde hubo envíos. Cada respuesta se anota en `tracker.csv` y cambia el `status` de la fila. Una baja va a `do-not-contact.csv` en el momento.
+2. **Seguimientos (2 min).** Mirar en `tracker.csv` qué `next_step_date` es hoy. Enviar el único seguimiento que corresponda. No hay tercero.
+3. **Envíos nuevos (4 min).** Tomar hasta 2 filas `approved` del día según `sequence.md`, abrir su borrador de la fase vigente, enviarlo a mano. Anotar fecha y `sent`.
+4. **Registro (1 min).** Una línea por acción en `tracker.csv`, con los minutos que llevó.
+
+La revisión de evidencia y contacto (pasar filas de `to-review` a `approved`) no entra en los 10 minutos: se hace una vez por semana, en tanda (ver "Ritmo semanal"). Si existe la tarea programada de `AUTOMATION.md`, el paso 3 arranca desde su resumen "las 10 acciones de hoy".
 
 ## Límite de esta primera corrida (leer antes de usar la planilla)
 
@@ -22,6 +48,12 @@ La sesión que armó esto tenía la red restringida a Klaviyo, Shopify y Cloudfl
 - Solo se abrieron directamente dos artículos del centro de ayuda de Klaviyo (los pasos manuales de las respuestas en comunidades).
 - Reddit no es accesible para el buscador: no hay ningún hilo de Reddit.
 - Antes de enviar cualquier mensaje, Facundo (o una sesión con red abierta) tiene que abrir `evidence_url` y `contact_source_url` y confirmar que el dato sigue ahí. Hasta entonces el estado es `to-review`.
+
+Segunda corrida (2026-11-26, creadores y comunidades): la red solo dejó abrir `help.klaviyo.com`. YouTube, Reddit, Hacker News, Product Hunt, Indie Hackers, LinkedIn, X, la FTC, las dos comunidades y los sitios de creadores **no se abrieron**; todo salió del índice del buscador. Consecuencias:
+
+- El buscador no muestra el nombre del canal de los videos de YouTube: 14 filas de `creators.csv` tienen el video como evidencia y el canal sin identificar (`on-hold`).
+- No apareció ningún mail comercial de creadores: el contacto es el sitio o "not-found". `audience_size` quedó vacío en las 40 filas porque ningún resultado mostró la cifra.
+- Los dos artículos de Klaviyo (24263920096027 y 24312135764251) sí se abrieron de forma directa y de ahí salen los pasos de los posts de valor.
 
 ## Estados (`status`)
 
@@ -67,7 +99,8 @@ Orden sugerido: prioridad 1 primero (ver columna `priority`), mezclando canales 
 
 ## Reglas para los borradores
 
-- Un solo pedido: probar la auditoría gratis en una cuenta y dar una opinión honesta. No es una venta, no se pide reseña y no se ofrece nada a cambio.
+- Un solo pedido. **Fase 1:** 15 minutos para mostrar la simulación con datos de demostración y escuchar qué falta, o permiso para avisar el día de la aprobación. **Fase 2:** probar la auditoría gratis en una cuenta y dar una opinión honesta. En ninguna de las dos es una venta, no se pide reseña ni mención y no se ofrece nada a cambio.
+- La auditoría a mano con una clave privada de Klaviyo de solo lectura es una opción que decide Facundo (`agency-offer.md`); ningún borrador la ofrece.
 - Se vende higiene de lista con "the criteria Klaviyo publishes". Nunca ahorro, nunca pagarle menos a Klaviyo, nunca "Klaviyo recommends/recommended".
 - La auditoría nunca es "read-only": no cambia ningún perfil, pero crea un segmento.
 - Sin cifras, clientes ni testimonios inventados. Se dice que la app todavía no está en el Shopify App Store.
@@ -140,7 +173,29 @@ Un mensaje comercial enviado por formulario también puede contar como publicida
 
 - Klaviyo Community: se puede mencionar un producto si es pertinente al mensaje original y ayuda de forma directa. Guía: https://community.klaviyo.com/getting-started-with-the-community-50
 - Shopify Community: las recomendaciones de apps solo van en el foro "Ask and Offer", sea la app propia o ajena; promocionar en otros foros cuenta como spam y los mensajes privados no solicitados están prohibidos. Guía: https://community.shopify.com/guidelines. Por eso el borrador para el hilo de Shopify no menciona TierSaver.
-- Reddit: sin acceso. Antes de responder en cualquier subreddit hay que leer sus reglas; la mayoría limita la autopromoción (de memoria, sin verificar).
+- Reddit: sin acceso directo. Lo que se pudo saber de cada subreddit está en `communities.md`; antes de publicar hay que leer sus reglas.
+- El resto (Indie Hackers, Hacker News, Product Hunt, X, LinkedIn, grupos): `communities.md`.
+
+### Plataformas: automatización y autopromoción
+
+- **Reddit.** Las reglas del sitio y de cada subreddit no se pudieron abrir: **sin verificar — leer antes de postear** (https://www.redditinc.com/policies/content-policy y las reglas de cada subreddit). Fuentes secundarias: una cuenta que casi solo se promociona se trata como spam, y publicar lo mismo en varios subreddits a la vez también. Nada automatizado; una cuenta, la de Facundo.
+- **LinkedIn.** Su ayuda dice que no permite software ni extensiones de terceros que extraigan datos o automaticen actividad en el sitio (https://www.linkedin.com/help/linkedin/answer/a1341387, por el índice). Los mensajes salen a mano, uno por uno.
+- **X.** "You may not send automated posts or Direct Messages that are spam, or otherwise engage in spamming activity." (https://help.x.com/en/rules-and-policies/x-automation, por el índice). Sin mensajes directos a desconocidos.
+- **YouTube.** Políticas de spam y de comentarios: **sin verificar**. No se comenta en videos ajenos para nombrar el producto.
+- Detalle por comunidad en `communities.md`; qué queda manual, en `AUTOMATION.md`.
+
+### Creadores: transparencia (guías de la FTC)
+
+- Una línea: **quien mencione TierSaver en público y tenga cualquier vínculo con nosotros (acceso anticipado, algo gratis, pago, relación personal) tiene que decirlo de forma clara en la misma pieza.** La FTC llama a eso "material connection" e incluye que la marca le pague o le dé productos o servicios gratis o con descuento. Fuentes (por el índice, sin abrir): https://www.ftc.gov/business-guidance/resources/disclosures-101-social-media-influencers y https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking
+- No se paga por menciones ni se ofrece nada a cambio. Por eso cada borrador a creadores lo dice y pide la aclaración si alguna vez hablan de la app.
+- Si Facundo decide alguna vez pagar un patrocinio o un referido, se informa siempre, por escrito y en la pieza. No es asesoramiento legal.
+
+### Reseñas y votos
+
+- **No se compran reseñas, votos ni seguidores**, en ningún sitio, ni se le pide a conocidos que voten.
+- **Shopify App Store.** Requisito 1.3 ("Always use honest and transparent review practices"): "It is forbidden to offer incentives or withhold features in exchange for reviews, regardless of whether this occurs through the app or external channels." Tampoco se pide una reseña positiva. Fuente (por el índice): https://shopify.dev/docs/apps/launch/shopify-app-store/app-store-requirements. Shopify informó en 2026 que despublica reseñas que no pasan su control de autenticidad y que las sanciones llegan a quitar la app o cerrar la cuenta de partner.
+- **Prohibido el "review gating":** el pedido de reseña va igual para todos los que terminaron su primera limpieza, sin filtrar por conformidad y sin desviar a los disconformes (guion 6 de `docs/05-GO-TO-MARKET.md`).
+- A agencias y creadores no se les pide reseña en el App Store: solo puede opinar quien tiene la app instalada, y nunca a cambio de algo.
 
 ## Pie obligatorio de todo mail
 
@@ -181,3 +236,7 @@ If you'd rather not hear from me again, reply "no thanks" and I won't write agai
 - **LOOP** es ambiguo: hay dos fichas en el directorio (Milán, Platinum Master; Salzburgo, sin nivel).
 - **Digital Heroes** no es una agencia de retención sino una agencia de software y Shopify de unas 115 personas.
 - **UpTempo** y **&BAM** no se pudieron verificar.
+- **Segmento de 180 días:** el artículo 24263920096027 (reabierto el 2026-11-26) lista diez condiciones; las dos primeras son "Person can receive email marketing" y "Email is set". La tabla de `docs/12-CUMPLIMIENTO-KLAVIYO.md` 1.2.1 no las nombra (sí están en `site/src/pages/guides/klaviyo-list-hygiene.html`). Los posts de valor usan las diez. Conviene completar la tabla de `12`.
+- **Regla de 90 días:** Klaviyo la cuenta desde la supresión anterior ("cannot be manually suppressed again until 90 days after the previous suppression"), no desde que se quita. `drafts/T05.md` y `T12.md` dicen "if you unsuppress a profile, you cannot suppress it again by hand for 90 days": ajustar la frase antes de publicarlas.
+- **Comisión para partners:** el guion 4 de `docs/05-GO-TO-MARKET.md` ofrece "25% recurring commission or three free months". `agency-offer.md` no compromete nada y lo deja como opción abierta. Hay que decidir y corregir uno de los dos.
+- **`docs/12` 3.2** todavía muestra como permitido "using Klaviyo's own recommended criteria"; `brand/messaging.md` lo prohíbe. Los borradores siguen a `messaging.md`.

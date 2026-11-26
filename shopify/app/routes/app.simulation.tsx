@@ -2,9 +2,10 @@ import { env } from "cloudflare:workers";
 import { RULE_LIMITS, SIMULATION_TTL_MS, type CandidateReason, type ProtectionReason } from "@tiersaver/core";
 import { useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { flags, Metric } from "../components/home-screen";
+import { NoticeBanners } from "../components/notices";
 import { downloadFile, errorFocus, number, Row, Time, useRevealError } from "../components/ui";
 import { approveCleanup } from "../billing/approval";
 import { LARGEST_PLAN_PROFILES, PLAN_INTERVAL_DAYS, planCoversList, planForListSize, refreshPlan, requestPlanFor, usd, type BillingStatus } from "../billing/billing";
@@ -14,6 +15,7 @@ import { sessionActor } from "../data/events-log";
 import { getConnection } from "../klaviyo/connection.server";
 import { embeddedAppUrl } from "../klaviyo/flow.server";
 import { legalUrls, TERMS_VERSION } from "../legal";
+import { visibleNotices } from "../notices";
 import { suppressionAllowed } from "../runs/gateway.server";
 import { startScan } from "../scans/start.server";
 import { shopTimeZone, stamp } from "../settings/timezone";
@@ -46,8 +48,13 @@ function planStanding(billing: BillingStatus | null, activeProfiles: number): Pl
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin, sessionToken } = await authenticate.admin(request);
-  const [found, connection] = await Promise.all([latestSimulation(db, session.shop), getConnection(db, session.shop)]);
-  if (!found) return { simulation: null, connected: connection?.status === "connected" };
+  // A change to the terms or the prices stays on this screen, where both are accepted, until the merchant dismisses it.
+  const [found, connection, notices] = await Promise.all([
+    latestSimulation(db, session.shop),
+    getConnection(db, session.shop),
+    visibleNotices(db, session.shop, { screen: "review" }),
+  ]);
+  if (!found) return { simulation: null, connected: connection?.status === "connected", notices };
 
   const { simulation, state } = found;
   const summary = simulation.summary as ScanSummary;
@@ -73,6 +80,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Why the schedule did not start this cleanup by itself (automatic mode), if it did not.
   const waiting = state === "open" && simulation.origin === "scheduled" ? await automaticReview(db, { shop: session.shop, simulationId: simulation.id }) : null;
   return {
+    notices,
     connected: connection?.status === "connected",
     simulation: {
       id: simulation.id,
@@ -266,10 +274,24 @@ export default function Simulation() {
   const submitting = (intent: string) => navigation.state !== "idle" && navigation.formData?.get("intent") === intent;
   const sim = data.simulation;
   useRevealError(result, Boolean(result?.error));
+  const dismiss = useFetcher();
+  const notices = (
+    <NoticeBanners
+      notices={data.notices}
+      busy={dismiss.state !== "idle"}
+      renderDismiss={(noticeId, button) => (
+        <dismiss.Form method="post" action="/app/notices/dismiss">
+          <input type="hidden" name="noticeId" value={noticeId} />
+          {button}
+        </dismiss.Form>
+      )}
+    />
+  );
 
   if (!sim || !("plan" in data)) {
     return (
       <s-page heading="Review cleanup">
+        {notices}
         <s-section heading="No simulation yet">
           <s-stack gap="base">
             <s-paragraph>
@@ -334,6 +356,7 @@ export default function Simulation() {
 
   return (
     <s-page heading="Review cleanup">
+        {notices}
       {!data.connected ? (
         <s-banner tone="warning" heading="Klaviyo is not connected">
           <s-stack gap="base">

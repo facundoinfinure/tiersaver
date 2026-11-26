@@ -20,6 +20,8 @@ import { legalUrls, TERMS_VERSION } from "../legal";
 import { ensureShop } from "../orders/purchases";
 import { effectiveBillingDay } from "../schedule/schedule";
 import { isKlaviyoRecommended, LEAD_DAYS_LIMITS, MAX_PROTECTED_GROUPS, rulesOf, saveSettings, type SettingsField, type SettingsInput } from "../settings/settings";
+import { NoticeList } from "../components/notices";
+import { noticeArchive } from "../notices";
 import { dayStamp, shopTimeZone } from "../settings/timezone";
 import { authenticate } from "../shopify.server";
 
@@ -149,6 +151,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     price: price.text,
     plan,
     legal: legalUrls(env),
+    // Every notice of the last 12 months, dismissed or not (app/notices.ts).
+    notices: noticeArchive(),
     // Customer data requests Shopify sent for this shop in the last 90 days. Dates are formatted here, in the shop's time zone.
     dataRequests: requests.map((r) => ({
       id: r.id,
@@ -657,6 +661,8 @@ export default function Settings() {
       </s-section>
 
       <DataRequests requests={data.dataRequests} />
+
+      <NoticeList notices={data.notices} />
 
       <s-section slot="aside" heading="Help">
         <s-stack gap="small">

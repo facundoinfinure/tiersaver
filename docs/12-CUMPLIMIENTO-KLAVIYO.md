@@ -321,7 +321,7 @@ Los documentos internos no los lee Klaviyo, pero definen qué construyen las pr�
 
 **Se puede decir** (ficha, sitio, app, outreach):
 
-- Qué hace: "Keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria."
+- Qué hace: "Keeps your Klaviyo list clean by suppressing profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles." (Corregido el 2026-11-26: los requisitos de ficha de Klaviyo no permiten juntar su nombre con "recommended".)
 - Cómo protege: simulación, aprobación, registro, nada se borra.
 - El efecto en el plan, como hecho citado de Klaviyo y en segundo plano: "Suppressed profiles don't count toward your Klaviyo plan. If your active profile count drops, you can move to a lower plan in Klaviyo's billing settings."
 - "Runs monthly and finishes before your plan renews, so Klaviyo's count is up to date."

@@ -10,7 +10,7 @@
  *         src/data.ts           siteData(): values for {{token}} placeholders
  *         src/check/main.ts     browser script for the list health check
  * Output: one .html per page (same relative path, in the site root),
- *         sitemap.xml and assets/list-check.js.
+ *         sitemap.xml, robots.txt and assets/list-check.js.
  *
  * The site root is also the web root (see wrangler.jsonc), so the generated
  * files are committed. test/site.test.ts fails when they are out of date.
@@ -42,12 +42,17 @@ import { pathToFileURL } from "node:url";
 import { build as esbuild } from "esbuild";
 import { SITE_DIR } from "./assets.mjs";
 
-export { SITE_DIR, AUDIT_CTA_URL, AUDIT_CTA_LABEL, LEGAL_DRAFT };
+export { SITE_DIR, ORIGIN, AUDIT_CTA_URL, AUDIT_CTA_LABEL, LEGAL_DRAFT };
 
 const SRC_DIR = join(SITE_DIR, "src");
 const PAGES_DIR = join(SRC_DIR, "pages");
 const PARTIALS_DIR = join(SRC_DIR, "partials");
 
+/**
+ * The public address of the site, written here and nowhere else in site/: canonical URLs, Open Graph, structured
+ * data, sitemap.xml, robots.txt and the link checker (check-links.mjs imports it) all read this constant.
+ * The values that change on launch day are listed by `node scripts/dia-d.mjs` at the repo root.
+ */
 const ORIGIN = "https://tiersaver.com";
 const SITE_NAME = "TierSaver";
 const TAGLINE = "Automatic list hygiene for Klaviyo";
@@ -509,6 +514,14 @@ ${urls.map((url) => `  <url><loc>${ORIGIN}${url}</loc></url>`).join("\n")}
 `;
 }
 
+function robots() {
+  return `User-agent: *
+Allow: /
+
+Sitemap: ${ORIGIN}/sitemap.xml
+`;
+}
+
 /**
  * Generates every output file in memory. Writes nothing.
  * @returns {Promise<Map<string, string>>} content by path relative to SITE_DIR
@@ -538,6 +551,7 @@ export async function generate() {
   const out = new Map();
   for (const page of pages) out.set(page.path, renderPage(page, pages, tokens, partials));
   out.set("sitemap.xml", sitemap(pages));
+  out.set("robots.txt", robots());
   out.set(join("assets", "list-check.js"), script);
   return out;
 }

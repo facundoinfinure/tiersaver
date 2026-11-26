@@ -3,7 +3,7 @@ import { DEFAULT_SCHEDULE, formatCalendarDate, planNextCleanup, SIMULATION_TTL_M
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useEffect } from "react";
-import { Form, useLoaderData, useNavigation, useRevalidator } from "react-router";
+import { Form, useFetcher, useLoaderData, useNavigation, useRevalidator } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { LARGEST_PLAN_PROFILES, PLAN_INTERVAL_DAYS, PLANS, storedPlanState, usd } from "../billing/billing";
 import { HomeScreen, type HomeView, type Notice } from "../components/home-screen";
@@ -11,6 +11,7 @@ import { db, schema } from "../db.server";
 import { logEvent, sessionActor } from "../data/events-log";
 import { disconnect, getConnection } from "../klaviyo/connection.server";
 import { legalUrls } from "../legal";
+import { visibleNotices } from "../notices";
 import { dayStamp, formatCalendarDay, safeTimeZone, stamp } from "../settings/timezone";
 import { klaviyoStartUrl } from "../klaviyo/flow.server";
 import { ensureShop } from "../orders/purchases";
@@ -32,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView>
 
   // The plan as last seen (kept current by the review and settings pages, every cleanup and Shopify's webhook):
   // the home page does not ask Shopify on every load.
-  const [audit, simulation, lastRun, settings, periodAudit, shopRow, storedPlan] = await Promise.all([
+  const [audit, simulation, lastRun, settings, periodAudit, shopRow, storedPlan, notices] = await Promise.all([
     connected ? loadAuditView(session.shop) : null,
     latestSimulation(db, session.shop),
     db.query.runs.findFirst({ where: and(eq(schema.runs.shop, session.shop), eq(schema.runs.kind, "suppress")), orderBy: desc(schema.runs.createdAt) }),
@@ -40,6 +41,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView>
     db.query.audits.findFirst({ where: and(eq(schema.audits.shop, session.shop), isNotNull(schema.audits.periodEnd)), orderBy: desc(schema.audits.createdAt), columns: { periodEnd: true } }),
     db.query.shops.findFirst({ where: eq(schema.shops.shop, session.shop), columns: { ianaTimezone: true, purchasesCoveredSince: true, readAllOrdersGranted: true } }),
     storedPlanState(db, session.shop),
+    visibleNotices(db, session.shop),
   ]);
   // Every date is formatted here, in the shop's time zone (UTC until Shopify has told us), never in the browser.
   const zone = safeTimeZone(shopRow?.ianaTimezone);
@@ -57,6 +59,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView>
 
   return {
     notice,
+    notices,
     configured,
     // A fresh ticket on every load; it is valid for ten minutes.
     startUrl: configured && !connected ? await klaviyoStartUrl(env, session.shop) : null,
@@ -118,6 +121,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const view = useLoaderData<typeof loader>();
   const busy = useNavigation().state !== "idle";
+  // "Got it" on a notice is recorded without leaving the page; the loader then runs again without that notice.
+  const dismiss = useFetcher();
   const scanning = view.scan?.status === "queued" || view.scan?.status === "running";
   const revalidator = useRevalidator();
   // A cleanup in progress is shown on this page too, so it is polled like an audit.
@@ -133,7 +138,13 @@ export default function Index() {
   return (
     <HomeScreen
       view={view}
-      busy={busy}
+      busy={busy || dismiss.state !== "idle"}
+      renderDismiss={(noticeId, button) => (
+        <dismiss.Form method="post" action="/app/notices/dismiss">
+          <input type="hidden" name="noticeId" value={noticeId} />
+          {button}
+        </dismiss.Form>
+      )}
       renderForm={(intent, content) => (
         <Form method="post">
           <input type="hidden" name="intent" value={intent} />

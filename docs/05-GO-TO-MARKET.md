@@ -112,7 +112,7 @@ Quick question: how do you handle profile cleanup across your client accounts to
 
 TierSaver does it every month for Shopify stores: audit, simulation, approval, then suppression of the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles. Buyers are protected with Shopify order data, every cleanup is logged, and nothing is deleted. It is free until the first cleanup; after that it is a monthly plan by list size, billed through Shopify every 30 days until cancelled.
 
-For partners we offer either 25% recurring commission or three free months for your clients. Could I show you a 10-minute audit on one of your accounts this week?
+Could I show you a 10-minute walkthrough on demo data this week? I would value your honest view of what is missing.
 
 [Your name], TierSaver
 
