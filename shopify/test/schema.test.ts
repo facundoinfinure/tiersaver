@@ -28,6 +28,7 @@ describe("migrations match the Drizzle schema", () => {
         "shops",
         "simulation_candidates",
         "simulations",
+        "unpaid_cleanups",
         "usage_charges",
       ].sort(),
     );

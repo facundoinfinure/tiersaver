@@ -7,6 +7,8 @@ import { KlaviyoClient } from "../app/klaviyo/client";
 import { KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import { saveConnection } from "../app/klaviyo/connection.server";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
+import { chargedWithoutWindow, recordUnpaidCleanups } from "../app/billing/unpaid";
+import { deleteShopData } from "../app/data/privacy";
 import { advanceChargeConfirmation } from "../app/runs/confirm";
 import { createSuppressionRun, createUndoRun, executeRun, renewalSince } from "../app/runs/engine";
 import { createSuppressionGateway, type GatewayEnv } from "../app/runs/gateway.server";
@@ -490,6 +492,40 @@ describe("charging a cleanup", () => {
     expect(reads).toBe(7);
     expect((await db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }))?.lastAttemptAt).not.toBeNull();
     expect((await settleRunCharge({ db, graphql: fakeAdmin().graphql, now: AFTER_HOLD }, runId, done)).status).toBe("charged");
+  });
+
+  it("uninstalling inside the undo window leaves a record for the Klaviyo account: its next cleanup is charged without the window", async () => {
+    const secrets = { TOKEN_ENCRYPTION_KEY: btoa(String.fromCharCode(...Array.from({ length: 32 }, (_, i) => i))), KLAVIYO_CLIENT_ID: "id", KLAVIYO_CLIENT_SECRET: "secret" };
+    const account = `ACC-${crypto.randomUUID()}`;
+    const connect = (shop: string) =>
+      saveConnection({ db, env: secrets }, { shop, klaviyoAccountId: account, tokens: { accessToken: "a", refreshToken: "r", expiresAt: new Date(Date.now() + 3600_000), scope: KLAVIYO_SCOPES.join(" ") } });
+
+    const first = await finishedCleanup(3);
+    await connect(first.shop);
+    const admin = fakeAdmin();
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, first.runId, CONFIRMED)).status).toBe("held");
+    expect(await chargedWithoutWindow(db, first.shop)).toBe(false);
+    // Uninstall with the charge still waiting.
+    expect(await recordUnpaidCleanups(db, first.shop)).toBe(true);
+    await deleteShopData(db, first.shop);
+    expect(await db.select().from(schema.unpaidCleanups).where(eq(schema.unpaidCleanups.feeCents, 1500))).not.toHaveLength(0);
+
+    // The same Klaviyo account comes back under another store.
+    const second = await finishedCleanup(3);
+    await connect(second.shop);
+    expect(await chargedWithoutWindow(db, second.shop)).toBe(true);
+    expect((await settleRunCharge({ db, graphql: admin.graphql }, second.runId, CONFIRMED)).status).toBe("charged"); // no window
+    expect(admin.records).toHaveLength(1);
+    expect(await chargedWithoutWindow(db, second.shop)).toBe(false); // paid: the window is back
+
+    // A cleanup restored in full before the uninstall owes nothing.
+    const third = await finishedCleanup(2);
+    await saveConnection({ db, env: secrets }, { shop: third.shop, klaviyoAccountId: `ACC-${crypto.randomUUID()}`, tokens: { accessToken: "a", refreshToken: "r", expiresAt: new Date(Date.now() + 3600_000), scope: "x" } });
+    await settleRunCharge({ db, graphql: admin.graphql }, third.runId, CONFIRMED);
+    const undo = await createUndoRun(db, { shop: third.shop, runId: third.runId, createdBy: "user:1", confirmAfterRenewal: true });
+    if (!undo.ok) throw new Error(undo.reason);
+    await executeRun({ db, gateway: new FakeGateway(), step: new FakeSteps() }, undo.runId);
+    expect(await recordUnpaidCleanups(db, third.shop)).toBe(false);
   });
 
   it("stays open and can be retried when Shopify has no subscription or rejects the record", async () => {

@@ -399,6 +399,19 @@ async function selectForUndo(db: Db, client: KlaviyoClient, request: BatchReques
   return emails;
 }
 
+/** True when another installed store is connected to the same Klaviyo account. The earliest connection keeps it. */
+async function sharedWithAnotherStore(db: Db, shop: string, klaviyoAccountId: string | null): Promise<boolean> {
+  if (!klaviyoAccountId) return false;
+  const rows = await db
+    .select({ shop: schema.klaviyoConnections.shop, connectedAt: schema.klaviyoConnections.connectedAt })
+    .from(schema.klaviyoConnections)
+    .innerJoin(schema.shops, eq(schema.shops.shop, schema.klaviyoConnections.shop))
+    .where(and(eq(schema.klaviyoConnections.klaviyoAccountId, klaviyoAccountId), eq(schema.shops.status, "installed")));
+  if (rows.length < 2) return false;
+  const first = [...rows].sort((a, b) => (a.connectedAt?.getTime() ?? 0) - (b.connectedAt?.getTime() ?? 0) || a.shop.localeCompare(b.shop))[0]!;
+  return first.shop !== shop;
+}
+
 export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: GatewayDeps = {}): SuppressionGateway {
   const clock = deps.now ?? (() => new Date());
   let segmentCheck: { id: string; at: number } | null = null;
@@ -422,6 +435,8 @@ export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: Ga
         if (!connection) refuse("klaviyo_not_connected");
         if (connection.status !== "connected") refuse(`klaviyo_${connection.status}`);
         if (request.kind !== "undo" && !suppressionAllowed(env, connection.klaviyoAccountId)) refuse("suppression_not_allowed_for_account");
+        // One store per Klaviyo account: a second store on the same account could clean it under another store's billing.
+        if (request.kind !== "undo" && (await sharedWithAnotherStore(db, shop, connection.klaviyoAccountId))) refuse("klaviyo_account_used_by_another_store");
 
         const client = createKlaviyoClient(connectionDeps, shop);
         const skipReasons: Record<string, string> = {};

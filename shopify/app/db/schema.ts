@@ -551,3 +551,15 @@ export const privacyRequests = sqliteTable(
   },
   (t) => [index("privacy_requests_shop_idx").on(t.shop, t.receivedAt)],
 );
+
+/**
+ * Cleanups that could not be charged because the store uninstalled inside the undo window. Keyed by a keyed hash
+ * of the Klaviyo account id and deliberately NOT tied to `shops`: it survives uninstall and shop/redact. Holds no
+ * customer data. See billing/unpaid.ts.
+ */
+export const unpaidCleanups = sqliteTable("unpaid_cleanups", {
+  accountKey: text("account_key").primaryKey(),
+  cleanedAt: timestamp("cleaned_at").notNull(),
+  feeCents: integer("fee_cents").notNull(),
+  createdAt: timestamp("created_at").notNull().default(now),
+});

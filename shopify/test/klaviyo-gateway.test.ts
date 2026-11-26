@@ -19,6 +19,7 @@ const emailOf = (profileId: string) => `${profileId.toLowerCase()}@customers-of-
 async function setup(opts: { candidates?: number; enabled?: string | null; connect?: boolean } = {}) {
   const fake = new FakeKlaviyo();
   const { shop, simulationId, profileIds } = await seedSimulation({ candidates: opts.candidates ?? 130 });
+  fake.accountId = `ACC-${shop}`; // one store per Klaviyo account
   for (const id of profileIds) {
     fake.profiles.set(id, { id, email: emailOf(id) });
     // The simulation stored the hash of the email it evaluated.
@@ -148,6 +149,18 @@ describe("safety switches", () => {
     expect(await rejection(gateway.submitBatch({ ...batch(0), profileIds: tooMany }))).toMatchObject({ message: "batch_invalid_size" });
     expect(profileIds).toHaveLength(5);
     expect(fake.requests).toHaveLength(0);
+  });
+});
+
+describe("one store per Klaviyo account", () => {
+  it("refuses to suppress from a second store connected to the same Klaviyo account; the first keeps working", async () => {
+    const a = await setup({ candidates: 3 });
+    const b = await setup({ candidates: 3 });
+    // The second store connects to the first store's account, later.
+    await db.update(schema.klaviyoConnections).set({ klaviyoAccountId: a.fake.accountId, connectedAt: new Date(Date.now() + 60_000) }).where(eq(schema.klaviyoConnections.shop, b.shop));
+    expect((await rejection(b.gateway.submitBatch(b.batch(0)))).message).toBe("klaviyo_account_used_by_another_store");
+    expect(b.fake.jobs).toHaveLength(0);
+    expect((await a.gateway.submitBatch(a.batch(0))).jobId).toBeTruthy();
   });
 });
 

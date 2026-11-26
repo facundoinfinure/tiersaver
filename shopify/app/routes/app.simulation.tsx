@@ -15,6 +15,7 @@ import { embeddedAppUrl } from "../klaviyo/flow.server";
 import { legalUrls, TERMS_VERSION } from "../legal";
 import { suppressionAllowed } from "../runs/gateway.server";
 import { CHARGE_HOLD_HOURS } from "../runs/labels";
+import { chargedWithoutWindow } from "../billing/unpaid";
 import { startScan } from "../scans/start.server";
 import { shopTimeZone, stamp } from "../settings/timezone";
 import { startSuppressionRun } from "../runs/start.server";
@@ -82,7 +83,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     terms: subscriptionTerms(),
     // Every figure about the charge comes from the code that charges, never from this page.
     charge: {
-      holdHours: CHARGE_HOLD_HOURS,
+      holdHours: (await chargedWithoutWindow(db, session.shop)) ? 0 : CHARGE_HOLD_HOURS,
       cap: formatUsd(CAPPED_AMOUNT_CENTS),
       minDaysBetweenCharges: DEFAULT_FEE_POLICY.minDaysBetweenCharges,
       largestTier: number(Math.max(...DEFAULT_FEE_POLICY.tiers.map((t) => t.maxProfiles))),
@@ -356,7 +357,7 @@ export default function Simulation() {
               <Metric
                 label="TierSaver price for this cleanup"
                 value={sim.price ? (sim.wouldCharge ?? "$0") : "By agreement"}
-                detail={sim.price ? (sim.wouldCharge ? `Charged through Shopify ${charge.holdHours} hours after the cleanup` : `Already charged in the last ${charge.minDaysBetweenCharges} days`) : "Nothing is charged automatically"}
+                detail={sim.price ? (sim.wouldCharge ? (charge.holdHours > 0 ? `Charged through Shopify ${charge.holdHours} hours after the cleanup` : "Charged through Shopify once Klaviyo confirms the cleanup") : `Already charged in the last ${charge.minDaysBetweenCharges} days`) : "Nothing is charged automatically"}
               />
             ) : null}
           </s-grid>
@@ -430,13 +431,23 @@ export default function Simulation() {
                   <s-list-item>
                     <s-text type="strong">{priceLine}</s-text>
                   </s-list-item>
-                  <s-list-item>
-                    It is charged through Shopify {charge.holdHours} hours after the cleanup finishes, once Klaviyo has confirmed it.
-                  </s-list-item>
-                  <s-list-item>
-                    If you restore the whole cleanup within those {charge.holdHours} hours, it is not charged. Restoring later, or restoring only
-                    part of it, does not refund the charge.
-                  </s-list-item>
+                  {charge.holdHours > 0 ? (
+                    <>
+                      <s-list-item>
+                        It is charged through Shopify {charge.holdHours} hours after the cleanup finishes, once Klaviyo has confirmed it.
+                      </s-list-item>
+                      <s-list-item>
+                        If you restore the whole cleanup within those {charge.holdHours} hours, it is not charged. Restoring later, or restoring only
+                        part of it, does not refund the charge.
+                      </s-list-item>
+                    </>
+                  ) : (
+                    <s-list-item>
+                      It is charged through Shopify as soon as Klaviyo confirms the cleanup, and restoring the cleanup does not refund it. There is
+                      no free restore period this time, because an earlier cleanup on this Klaviyo account was left unpaid when the app was
+                      uninstalled. The period returns after this charge.
+                    </s-list-item>
+                  )}
                   <s-list-item>At most one charge every {charge.minDaysBetweenCharges} days. The audit is free.</s-list-item>
                   <s-list-item>
                     Shopify's approval screen shows a maximum of {charge.cap} per 30 days. That is the price for the largest list size (up to{" "}

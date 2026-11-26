@@ -37,6 +37,7 @@ async function world(candidates: number, configure?: (fake: FakeKlaviyo) => void
   const fake = new FakeKlaviyo();
   configure?.(fake);
   const s = await seedSimulation({ candidates });
+  fake.accountId = `ACC-${s.shop}`; // one store per Klaviyo account
   for (const id of s.profileIds) {
     fake.profiles.set(id, { id, email: emailOf(id) });
     await db.update(schema.simulationCandidates).set({ emailHash: await hashShopEmail(s.shop, emailOf(id)) }).where(eq(schema.simulationCandidates.profileId, id));

@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
 import { CHARGE_HOLD_HOURS } from "../runs/labels";
+import { chargedWithoutWindow, clearUnpaidCleanup } from "./unpaid";
 
 /**
  * TierSaver's own charge, through Shopify's Billing API ("Manual Pricing"):
@@ -278,7 +279,9 @@ export async function settleRunCharge(
     charge = { ...charge, profilesSuppressed: confirmed, confirmedAt };
   }
 
-  const chargeAt = (run.finishedAt ?? charge.createdAt).getTime() + CHARGE_HOLD_MS;
+  // An account that left a cleanup unpaid by uninstalling inside the window gets no window (billing/unpaid.ts).
+  const noWindow = await chargedWithoutWindow(db, run.shop);
+  const chargeAt = (run.finishedAt ?? charge.createdAt).getTime() + (noWindow ? 0 : CHARGE_HOLD_MS);
   if (now.getTime() < chargeAt) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(chargeAt).toISOString() };
   // A restore that is still running when the window ends decides the charge: wait for it (an hour at a time).
   const undoing = await db.query.runs.findFirst({
@@ -327,6 +330,7 @@ export async function settleRunCharge(
         .values({ id: `run:${runId}:charged`, shop: run.shop, at: now, actor: "system", action: "charge.created", runId, detail: { feeCents: charge.feeCents, test: billing.subscription.test } })
         .onConflictDoNothing(),
     ]);
+    await clearUnpaidCleanup(db, run.shop).catch(() => {});
     return { status: "charged", feeCents: charge.feeCents };
   } catch {
     return fail("shopify_request_failed");
@@ -351,7 +355,7 @@ export async function runsWithOpenCharges(db: Db, now = new Date(), limit = 20):
        LEFT JOIN usage_charges c ON c.run_id = r.id
        WHERE r.kind = 'suppress' AND r.status IN ('completed', 'completed_with_errors', 'failed', 'cancelled')
          AND r.processed_count > 0 AND r.finished_at >= ?1
-         AND (c.id IS NULL OR c.status = 'failed' OR (c.status = 'pending' AND r.finished_at <= ?3))
+         AND (c.id IS NULL OR c.status = 'failed' OR (c.status = 'pending' AND (r.finished_at <= ?3 OR c.confirmed_at IS NULL)))
        ORDER BY COALESCE(c.last_attempt_at, 0), r.finished_at LIMIT ?2`,
     )
     .bind(since.getTime(), limit, holdEnded)

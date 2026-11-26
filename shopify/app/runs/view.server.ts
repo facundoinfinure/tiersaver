@@ -6,6 +6,7 @@ import type { RuleSettings } from "@tiersaver/core";
 import { isKlaviyoRecommended } from "../settings/settings";
 import { NO_JOB_ID } from "./gateway.server";
 import { MAYBE_CHANGED_SQL, renewalSince } from "./engine";
+import { chargedWithoutWindow } from "../billing/unpaid";
 import { CHARGE_HOLD_HOURS } from "./labels";
 
 /** What the history and run screens show. Ids, counts and dates only: no profile data. */
@@ -182,6 +183,7 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       }),
       inProgress: children.some((c) => c.status === "queued" || c.status === "running"),
     };
+    const noWindow = chargeRow ? await chargedWithoutWindow(db, shop) : false;
     charge = chargeRow
       ? {
           status: chargeRow.status,
@@ -191,7 +193,7 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
           // Same instant as billing/billing.ts: the end of the restore window.
           sendAt:
             chargeRow.status === "pending" || chargeRow.status === "failed"
-              ? new Date((run.finishedAt ?? chargeRow.createdAt).getTime() + CHARGE_HOLD_HOURS * 60 * 60 * 1000).toISOString()
+              ? new Date((run.finishedAt ?? chargeRow.createdAt).getTime() + (noWindow ? 0 : CHARGE_HOLD_HOURS) * 60 * 60 * 1000).toISOString()
               : null,
         }
       : null;

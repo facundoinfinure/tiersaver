@@ -41,6 +41,7 @@ export const RUN_ERROR_LABELS: Record<string, string> = {
   suppression_not_allowed_for_account: "Cleanups are not switched on for this Klaviyo account. Nothing was changed in Klaviyo.",
   klaviyo_needs_reauth: "TierSaver's access to Klaviyo ended. Reconnect Klaviyo from the home page.",
   klaviyo_not_connected: "Klaviyo is not connected.",
+  klaviyo_account_used_by_another_store: "This Klaviyo account is already connected to another store that uses TierSaver. Only one store can clean a Klaviyo account. Nothing was changed in Klaviyo.",
   klaviyo_disconnected: "Klaviyo was disconnected.",
   simulation_expired: "The simulation was more than 24 hours old when the cleanup started.",
   simulation_superseded: "Your rules changed after the simulation was approved.",

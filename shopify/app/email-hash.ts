@@ -32,3 +32,9 @@ function shopKey(shop: string): Promise<CryptoKey> {
 export async function hashShopEmail(shop: string, email: string): Promise<string> {
   return hashEmail(email, await shopKey(shop));
 }
+
+/** Keyed hash of a Klaviyo account id, the same for every store (it has to be recognised after a reinstall). */
+export async function hashKlaviyoAccountId(accountId: string): Promise<string> {
+  const hex = Array.from(new TextEncoder().encode(accountId), (b) => b.toString(16).padStart(2, "0")).join("");
+  return hashEmail(hex, await shopKey("global/klaviyo-account"));
+}

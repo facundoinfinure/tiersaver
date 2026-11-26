@@ -43,6 +43,8 @@ export async function purgeStaleData(db: Db, now = new Date()): Promise<{ scans:
       .bind(nowMs - UNUSED_SIMULATION_CANDIDATES_DAYS * DAY_MS),
     d1.prepare("DELETE FROM klaviyo_oauth_attempts WHERE created_at < ?1").bind(nowMs - DAY_MS),
     d1.prepare("DELETE FROM privacy_requests WHERE received_at < ?1").bind(nowMs - PRIVACY_REQUEST_RETENTION_DAYS * DAY_MS),
+    // Unpaid-cleanup records (billing/unpaid.ts: UNPAID_CLEANUP_RETENTION_DAYS).
+    d1.prepare("DELETE FROM unpaid_cleanups WHERE created_at < ?1").bind(nowMs - 400 * DAY_MS),
   ]);
   // One shop per statement and only a few per tick: each delete cascades through every table of that shop.
   const gone = await d1
