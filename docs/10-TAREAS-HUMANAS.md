@@ -1,5 +1,7 @@
 # Tareas que solo puede hacer Facundo
 
+> 2026-11-26: el orden vigente de estas tareas es el del camino crítico de `18-RUNBOOK-LANZAMIENTO.md`.
+
 Una sesión de Claude no crea cuentas, no escribe contraseñas ni datos bancarios, no acepta términos, no paga y no envía mensajes sin aprobación.
 
 ## Bloqueantes para empezar (Fase 0)
@@ -34,9 +36,9 @@ Condiciones: el dominio tiene que tener más de 10 días de registrado y el mail
 | 8 | Elegir entre las tres opciones de logo | Fase 2 |
 | 9 | Crear la app OAuth en Klaviyo si se confirma ese camino (requiere rol owner, admin o manager) | Fase 3 |
 | 10 | Cargar los registros DNS de tiersaver.com en Cloudflare con los valores que dé la sesión, o conectar el conector nuevo de Cloudflare | Fase 4 |
-| 11 | Crear casilla de soporte (por ejemplo support@tiersaver.com) | Fase 4 |
+| 11 | Crear las casillas hello@ y support@. **Nota del 2026-11-26**: Email Routing de Cloudflare solo recibe ("does not support sending or replying from your Cloudflare domain"); para enviar desde hello@ hace falta una casilla en un proveedor de mail, con costo. Opciones en `18-RUNBOOK-LANZAMIENTO.md`, sección 1.5 | Día D |
 | 12 | Hacer revisar por un abogado los términos de servicio propios de TierSaver, la política de privacidad y la limitación de responsabilidad frente a merchants (ventas perdidas por una supresión aprobada, cuenta de Klaviyo suspendida). Es una revisión de plantilla, recomendada antes de lanzar. **Ya no es bloqueante por la cláusula de la AUP de Klaviyo sobre evadir cargos**: con el precio fijo y los guardarraíles adoptados el 2026-11-25, esa consulta dejó de ser necesaria (`12-CUMPLIMIENTO-KLAVIYO.md`, sección 5). Ese documento es un análisis de políticas, no asesoramiento legal | Antes de lanzar |
-| 12b | En el Dev Dashboard de Shopify, pedir `read_all_orders` y acceso a datos protegidos nivel 2 (email), con la justificación que redacta la sesión | Fase 3 |
+| 12b | En el Dev Dashboard de Shopify, pedir `read_all_orders` y acceso a datos protegidos nivel 2 (email), con los textos de `18-RUNBOOK-LANZAMIENTO.md`, sección 6. **Nota del 2026-11-26**: exige elegir antes la distribución pública, y los datos protegidos no se pueden pedir con la app ya en revisión. Va **ahora**, antes del dominio | Ahora (antes: Fase 3) |
 
 ## Para lanzar
 
@@ -60,7 +62,7 @@ Tareas y decisiones que propone `12-CUMPLIMIENTO-KLAVIYO.md`. Ninguna está apli
 
 Otras decisiones abiertas que salen de la misma revisión:
 
-- Si el cobro pasa de la Billing API a Shopify App Pricing, que con precio fijo es posible. Hoy sigue la Billing API con tope de US$ 149 (`04-PRECIO-Y-COBRO.md`).
+- Si el cobro pasa de la Billing API a Shopify App Pricing. **Actualizado el 2026-11-26**: ya no hay tope de US$ 149 (el cobro es un plan mensual fijo). Dónde se elige el método y qué hacer en cada caso: `18-RUNBOOK-LANZAMIENTO.md`, sección 1.3.
 - El umbral del corte de la semana 5 en `08-RIESGOS-Y-METRICAS.md`, que estaba definido sobre el ahorro en dólares.
 - Volver a aprobar los mensajes: `brand/messaging.md` se revisó después de la aprobación del 2026-11-25.
 - Si se le escribe a la agencia cuya receta publicada suprime y vuelve a activar perfiles (`05-GO-TO-MARKET.md`, prioridad A).

@@ -1,5 +1,7 @@
 # Lanzamiento en el Shopify App Store
 
+> 2026-11-26: el orden de los pasos, los plazos y las condiciones para lanzar están en `18-RUNBOOK-LANZAMIENTO.md`. Este documento conserva el checklist y el borrador de la ficha.
+
 Los requisitos cambian. Antes de preparar el envío, leer la página vigente: https://shopify.dev/docs/apps/launch/shopify-app-store/app-store-requirements
 
 ## Lo verificado el 25 de noviembre de 2026
@@ -88,6 +90,6 @@ Opción: skill brag (github.com/latent-spaces/brag), que arma un video corto de 
 
 ## Después del envío
 
-- La revisión suele tardar una o dos semanas (estimación; no es un plazo garantizado).
+- ~~La revisión suele tardar una o dos semanas.~~ **Corregido el 2026-11-26**: la documentación de Shopify no publica ningún plazo; respuestas de su personal en el foro hablan de unos 30 días (sin verificar). Ver `18-RUNBOOK-LANZAMIENTO.md`, sección 1.2.
 - Responder las observaciones el mismo día.
-- Mientras tanto: beta con las tiendas que lleguen por agencias, usando el link de instalación directo.
+- ~~Mientras tanto: beta con las tiendas que lleguen por agencias, usando el link de instalación directo.~~ **Corregido el 2026-11-26**: una app pública no se puede instalar en tiendas reales antes de la aprobación (shopify.dev/docs/apps/launch/distribution: "Approval required: Yes"). La beta se hace después de aprobada, con visibilidad limitada y el link de la ficha. Ver `18-RUNBOOK-LANZAMIENTO.md`, sección 1.1.

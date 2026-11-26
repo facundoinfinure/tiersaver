@@ -12,6 +12,8 @@ Hacelos en este orden. Después de cada bloque, avisale a la sesión: hay trabaj
 
 Qué destraba: pedir datos protegidos, la Billing API (cobro) y, más adelante, la ficha del App Store. Elegirla **no** publica la app ni la manda a revisión.
 
+Agregado el 2026-11-26: una app pública **no se puede instalar en tiendas reales hasta que Shopify la apruebe**, y el método de distribución no se puede cambiar después. Apenas la elijas, mirá qué método de precios ofrece la ficha (Partner Dashboard → App distribution → la app → Distribution → Shopify App Store listing → Manage listing → idioma → Pricing content → Manage → Settings → Pricing method) y avisá si aparece "Manual pricing (legacy)". Detalle en `18-RUNBOOK-LANZAMIENTO.md`, secciones 1.1 y 1.3.
+
 ## 2. Datos protegidos de clientes y Read all orders (Shopify)
 
 1. Misma app → **Settings** → **Access requests** (puede llamarse **API access requests**).
@@ -23,7 +25,7 @@ Qué destraba: pedir datos protegidos, la Billing API (cobro) y, más adelante, 
 
 Qué destraba: la regla de compras. Sin esto, con las reglas por defecto un merchant real no tiene candidatos.
 
-**Avisá cuando estén pedidos** (aunque no estén aprobados): la sesión agrega el scope `read_all_orders`, reactiva el webhook `orders/create` en `shopify.app.toml` y redespliega la configuración. En la tienda de desarrollo los datos protegidos funcionan apenas se piden; `read_all_orders` puede necesitar la aprobación.
+**Avisá cuando estén pedidos y cuando llegue cada aprobación.** Corregido el 2026-11-26: el scope `read_all_orders` se declara recién **después** de que Shopify lo apruebe ("After approval, declare the scope and deploy the change", shopify.dev/docs/api/usage/access-scopes); antes decía que se agregaba al pedirlo. El webhook `orders/create` se reactiva cuando el pedido de datos protegidos está guardado. En la tienda de desarrollo los datos protegidos funcionan apenas se guarda el pedido; si `read_all_orders` funciona ahí antes de la aprobación no está verificado. Los textos vigentes para los dos formularios están en `18-RUNBOOK-LANZAMIENTO.md`, sección 6.
 
 ## 3. Ícono de la app (Shopify)
 
@@ -53,7 +55,7 @@ Según developers.klaviyo.com/en/docs/submit_your_app_for_review (leída el 2026
 ## 5. Probar el cobro (después del paso 1)
 
 1. En la tienda de desarrollo: app → correr la auditoría → **Review cleanup** → aprobar → **Review pricing in Shopify**.
-2. Shopify tiene que mostrar la pantalla de aprobación con el texto de precios y el tope de US$ 149. En una tienda de desarrollo es un cargo de prueba: no se cobra nada.
+2. Shopify tiene que mostrar la pantalla de aprobación con el plan mensual del tamaño de lista (US$ 9, 19, 39 o 79 por mes). Corregido el 2026-11-26: antes decía "tope de US$ 149", que era del modelo de cobro por limpieza. En una tienda de desarrollo es un cargo de prueba: no se cobra nada.
 3. Aceptar y avisar. La sesión revisa que la suscripción quedó activa.
 
 Para probar un cargo real de punta a punta hace falta además encender la supresión para la cuenta de prueba (lo hace la sesión, con tu ok).
