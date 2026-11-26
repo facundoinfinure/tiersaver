@@ -1,53 +1,56 @@
 <!--
 title: Simulation and approval
 nav: Simulation and approval
-description: TierSaver never suppresses a Klaviyo profile without a simulation you approved. What a simulation shows, how long an approval lasts and how monthly runs are approved.
-summary: Nothing is suppressed without a simulation you approved. What it shows and how long it stays valid.
-lead: Nothing is suppressed without a simulation that you approved. There is no path past that step, in the app or behind it.
+description: Nothing is suppressed until you approve a simulation. What a simulation shows, how long an approval lasts and how monthly cleanups are approved.
+summary: Nothing is suppressed until you approve a simulation. What it shows and how long it stays valid.
+lead: Nothing is suppressed until you approve a simulation. Automatic mode, if you later turn it on, only repeats criteria you have already approved.
+footer: yes
 layout: doc
 group: help
 order: 3
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>What a simulation shows</h2>
 <ul>
-  <li>How many profiles were evaluated, how many would be suppressed, how many are kept and how many were skipped.</li>
-  <li>For kept profiles, the reason. A profile can be kept for several reasons at once.</li>
-  <li>A sample of the candidates, so you can check them before you approve.</li>
-  <li>How many active profiles you would have afterwards.</li>
+  <li>Your active profiles now, how many this cleanup would suppress, and how many active profiles you would have afterwards.</li>
+  <li>How many profiles meet the criteria Klaviyo publishes, and how many of those are kept active, with the reason. A profile can be kept for several reasons at once.</li>
+  <li>The full list of candidates, as CSV files you can download and check before you approve. A long list comes in parts of up to {{app.csvPartSize}} profiles. The download is available while the simulation is open, that is, until you approve it or it expires. Email addresses are read from Klaviyo for the download and are not stored by TierSaver.</li>
+  <li>The price of the cleanup, or the reason it would not be charged.</li>
 </ul>
 <p>A simulation changes nothing in Klaviyo.</p>
 
 <h2>Approving</h2>
-<p>When you approve a simulation, TierSaver suppresses exactly the profiles in that simulation and no others. Before it sends each batch to Klaviyo it leaves out any profile that should no longer be suppressed.</p>
+<p>On the "Review cleanup" page, read the notices, tick the box and select "Approve simulation". Ticking the box also accepts TierSaver's terms of service. Approving does not suppress anyone yet: the cleanup starts when you select "Start cleanup". Before your first cleanup Shopify asks you to accept TierSaver's pricing; see <a href="/help/billing">billing and charges</a>.</p>
+<p>The cleanup suppresses the profiles in that simulation and no others. Before it sends each batch to Klaviyo it leaves out any profile that is no longer in Klaviyo, has no email address, or whose address changed since the simulation.</p>
 <p>An approval is tied to one simulation:</p>
 <ul>
-  <li><strong>It expires after {{sim.ttlHours}} hours.</strong> Lists change. If more time has passed, you get a fresh simulation to review.</li>
+  <li><strong>It expires after {{sim.ttlHours}} hours.</strong> Lists change. A simulation can be approved and run for {{sim.ttlHours}} hours after it was computed; after that, run the audit again to get a current one.</li>
   <li><strong>It runs once.</strong> A simulation cannot be used for a second cleanup.</li>
-  <li><strong>Changing your criteria replaces it.</strong> If you edit the <a href="/help/cleanup-criteria">cleanup criteria</a> or a protected list, pending simulations are discarded.</li>
+  <li><strong>Changing your criteria replaces it.</strong> If you edit the <a href="/help/cleanup-criteria">cleanup criteria</a> or a protected list, simulations that have not run are discarded. A newer audit also replaces an older simulation.</li>
 </ul>
 <p>The app records who approved each simulation, when, and under which criteria.</p>
 
 <h2>The first cleanup is always manual</h2>
-<p>You start the first cleanup yourself, after reviewing its simulation. Monthly cleanups only start after that.</p>
+<p>You approve and start the first cleanup yourself, after reviewing its simulation.</p>
 
 <h2>Monthly cleanups</h2>
-<p>Before each monthly cleanup TierSaver runs a new simulation and emails you a summary. There are two modes:</p>
+<p>The monthly schedule is off by default. If you turn it on in <a href="/help/settings">Settings</a>, TierSaver runs a new audit once a month and its simulation appears on the app's home page. The app does not send email, so open the app around your scheduled day. There are two modes:</p>
 <ul>
-  <li><strong>Approval required</strong> (default). The cleanup waits for you to approve the simulation.</li>
-  <li><strong>Automatic.</strong> An explicit opt-in. The cleanup runs on the scheduled day using the new simulation, and you still receive the summary.</li>
+  <li><strong>Approval required</strong> (default). The simulation waits for you. If it is not approved within {{sim.ttlHours}} hours it expires: nothing is suppressed and nothing is charged. You can run a new audit and approve it at any time.</li>
+  <li><strong>Automatic.</strong> A separate opt-in. It is only available with the default criteria, with the schedule on, and after you have approved and run at least one cleanup yourself. The cleanup then starts from the scheduled simulation without waiting for you, under the criteria you approved. The result is listed under <a href="/help/history">History</a>.</li>
 </ul>
-<p>See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule</a> for when cleanups run.</p>
+<p>See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule</a> for when the audit runs.</p>
 
 <h2>What to know before you approve</h2>
 <ul>
-  <li>Suppressed profiles can no longer receive marketing email from you, even if they later buy.</li>
+  <li>Suppressed profiles stop receiving your marketing email and most flow emails, even if they later buy. See <a href="/help/after-a-cleanup">what changes after a cleanup</a>.</li>
+  <li>A cleanup can be restored from its page in History, with limits. See <a href="/help/undo">undo</a>.</li>
   <li>If you remove a suppression, Klaviyo does not let that profile be suppressed again for {{klaviyo.resuppressDays}} days from the previous suppression.</li>
   <li>Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</li>
 </ul>
 
 <h2>While a cleanup runs</h2>
-<p>Profiles are suppressed in batches. The app shows the state of the run: queued, running, completed, or completed with errors. If a run is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If a batch keeps failing, the run stops and the remaining profiles are left untouched.</p>
+<p>Profiles are suppressed in batches, and the cleanup's page shows how many have been sent to Klaviyo so far; you can leave the page. If a cleanup is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If it stops early, the profiles it did not reach are left untouched. <a href="/help/history">History</a> explains each status.</p>
 
 <h2>Sources</h2>
 <ul class="sources">

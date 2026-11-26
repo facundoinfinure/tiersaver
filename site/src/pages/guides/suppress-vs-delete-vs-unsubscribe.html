@@ -1,5 +1,6 @@
 <!--
 title: Suppress, delete or unsubscribe in Klaviyo: what each one does
+seoTitle: Suppress vs delete vs unsubscribe in Klaviyo
 nav: Suppress, delete or unsubscribe
 description: The difference between suppressing, deleting and unsubscribing a profile in Klaviyo: what happens to the profile, its history and its consent, and which ones can be reversed.
 summary: What each action does to a profile, its history and its consent, and which can be reversed.
@@ -8,7 +9,7 @@ kicker: Guide
 layout: doc
 group: guide
 order: 3
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>At a glance</h2>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Suppress, delete and unsubscribe compared">
@@ -20,7 +21,7 @@ updated: 2026-11-25
       <tr><th scope="row">What it is</th><td>A status that blocks marketing email to the profile</td><td>Permanent removal of the profile</td><td>The recipient's choice, recorded as an Unsubscribed consent status</td></tr>
       <tr><th scope="row">Profile and history</th><td>Stay in your account</td><td>Removed; you can no longer view the profile or its activity</td><td>Stay in your account</td></tr>
       <tr><th scope="row">Can receive marketing email</th><td>No, even with consent</td><td>No</td><td>No</td></tr>
-      <tr><th scope="row">Counts toward the email plan's active profiles</th><td>No</td><td>No</td><td>No</td></tr>
+      <tr><th scope="row">Counts toward the email plan's active profiles</th><td>No (on the Advanced KDP plan it can still count toward billing)</td><td>No</td><td>No</td></tr>
       <tr><th scope="row">Changes consent</th><td>No. A Subscribed profile remains Subscribed</td><td>Not applicable</td><td>Yes</td></tr>
       <tr><th scope="row">Can it be reversed</th><td>Yes, a manual suppression can be removed</td><td>No</td><td>Not by removing a suppression</td></tr>
     </tbody>
@@ -28,7 +29,7 @@ updated: 2026-11-25
 </div>
 
 <h2>Suppress</h2>
-<p>A suppressed profile stays in your account but cannot receive marketing email, even if the person gave consent. Klaviyo skips it at send time. SMS and push eligibility are not affected.</p>
+<p>A suppressed profile stays in your account but stops receiving marketing email, campaigns and most flow emails, even if the person gave consent. Klaviyo skips it at send time. Flow emails that Klaviyo has approved as transactional can still be sent, and SMS and push eligibility are not affected.</p>
 <p>Profiles become suppressed in several ways, according to Klaviyo:</p>
 <ul>
   <li>you suppress them manually, one at a time, in bulk for a list or segment, or by uploading a file;</li>
@@ -37,7 +38,7 @@ updated: 2026-11-25
   <li>the suppression was carried over from a previous email provider.</li>
 </ul>
 <p>A manual suppression is removed when the profile resubscribes to email marketing, or when you remove it. Removing it does not change consent and does not clear a bounce suppression. Once removed, Klaviyo does not let the same profile be manually suppressed again until {{klaviyo.resuppressDays}} days after the previous suppression.</p>
-<p><strong>Use it when</strong> you no longer want to email someone but want to keep their data for analysis and a complete picture of your customers. This is what Klaviyo generally recommends.</p>
+<p><strong>Use it when</strong> you no longer want to email someone but want to keep their data for analysis and a complete picture of your customers. This is Klaviyo's general guidance.</p>
 
 <h2>Delete</h2>
 <p>Deleting removes the profile from your account. You can no longer open it or see its activity, and Klaviyo states that the action cannot be undone. If the same person engages with your site again, for example through a sign-up form, they enter your account as a new profile.</p>

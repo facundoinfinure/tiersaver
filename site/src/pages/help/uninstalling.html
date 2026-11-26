@@ -1,31 +1,41 @@
 <!--
-title: What happens when you uninstall
-nav: What happens on uninstall
-description: When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted immediately and the rest of your store's data is deleted when Shopify sends its deletion request.
+title: What happens when you uninstall or disconnect
+nav: Uninstalling and disconnecting
+description: When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted at once and the rest of your store's data follows.
 summary: Suppressed profiles stay suppressed. Tokens are deleted at once, the rest of your data when Shopify asks.
 lead: Uninstalling stops TierSaver. It does not change your Klaviyo list.
 layout: doc
 group: help
 order: 8
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>Your Klaviyo list</h2>
 <p>Profiles that were suppressed stay suppressed. TierSaver does not restore anyone when you uninstall. You can remove suppressions from Klaviyo at any time: Klaviyo lets you do it one profile at a time, or in bulk for a list or segment.</p>
-<p>If a run needs correcting, <a href="/help/undo">undo it</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its run log is deleted.</p>
-<p>Monthly cleanups stop. Nothing further is suppressed.</p>
+<p>If a cleanup needs correcting, <a href="/help/undo">restore it</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its cleanup log is deleted.</p>
+<p>The monthly schedule stops. Nothing further is suppressed.</p>
+<p>The segment TierSaver created in your Klaviyo account, "{{app.segmentName}}", is not removed by the app. You can delete it in Klaviyo once you no longer use TierSaver.</p>
 
 <h2>Your data</h2>
 <ul>
-  <li><strong>Immediately:</strong> TierSaver deletes its access tokens for your Shopify store and your Klaviyo account. From that moment it cannot read or change anything.</li>
-  <li><strong>When Shopify sends its shop deletion request:</strong> TierSaver deletes everything else it stored for your store, including settings, audits, simulations, run logs and hashed purchase records. Shopify sends that request 48 hours after an app is uninstalled.</li>
+  <li><strong>Immediately:</strong> TierSaver asks Klaviyo to revoke its access and deletes its access tokens for your Shopify store and your Klaviyo account. From that moment it cannot read or change anything.</li>
+  <li><strong>When Shopify sends its shop deletion request:</strong> TierSaver deletes everything else it stored for your store, including settings, audits, simulations, cleanup logs and hashed purchase records. Shopify sends that request 48 hours after an app is uninstalled.</li>
 </ul>
 <p>What is stored in the first place is listed in <a href="/help/data-and-privacy">data and privacy</a>.</p>
 
 <h2>Billing</h2>
 <p>Charges go through Shopify. After you uninstall, TierSaver creates no further charges.</p>
 
-<h2>If only the Klaviyo connection is lost</h2>
-<p>If TierSaver's access to Klaviyo expires or is withdrawn while the app is still installed, the app shows Klaviyo as disconnected, stops all cleanups and does nothing until you reconnect. Profiles already suppressed stay as they are.</p>
+<h2>Disconnecting Klaviyo without uninstalling</h2>
+<p>On the app's home page, under "Klaviyo connection", the "Disconnect Klaviyo" button removes TierSaver's access to your Klaviyo account: the app asks Klaviyo to revoke it and deletes the tokens it stored.</p>
+<ul>
+  <li>Suppressed profiles stay suppressed and nothing is deleted in Klaviyo.</li>
+  <li>Your settings and your cleanup history stay in the app.</li>
+  <li>Audits, cleanups, restores and the monthly schedule do not run while Klaviyo is disconnected.</li>
+  <li>To connect again, select "Connect Klaviyo" on the home page and approve access in Klaviyo.</li>
+</ul>
+
+<h2>If the Klaviyo connection is lost</h2>
+<p>If TierSaver's access to Klaviyo expires or is removed in Klaviyo while the app is still installed, the home page shows "Reconnect Klaviyo" and cleanups are paused until you connect again. Profiles already suppressed stay as they are.</p>
 
 <h2>Sources</h2>
 <ul class="sources">

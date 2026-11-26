@@ -1,14 +1,15 @@
 <!--
 title: Klaviyo list hygiene: how to find and suppress profiles that never engaged
+seoTitle: Klaviyo list hygiene by hand: a step-by-step guide
 nav: Klaviyo list hygiene by hand
-description: A step-by-step guide to list hygiene in Klaviyo using the criteria Klaviyo publishes: find profiles that never engaged, check them against your orders, suppress them and repeat. No app required.
+description: A step-by-step guide to list hygiene in Klaviyo: find profiles that never engaged, check them against your orders, suppress them and repeat. No app required.
 summary: The manual method, using the criteria Klaviyo publishes: find, check against orders, suppress, repeat.
 lead: Klaviyo documents how to find and suppress profiles that have never engaged. These are the steps, by hand. No app required.
 kicker: Guide
 layout: doc
 group: guide
 order: 1
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>What list hygiene means here</h2>
 <p>Klaviyo distinguishes two jobs that are often mixed up:</p>
@@ -20,7 +21,8 @@ updated: 2026-11-25
 <h2>Before you start</h2>
 <ul>
   <li><strong>Suppression is a decision to stop emailing someone.</strong> Klaviyo warns that suppressing too early can cost revenue, and that a suppressed profile stays suppressed even if that person later starts a checkout or buys.</li>
-  <li><strong>Try to win them back first.</strong> Klaviyo recommends running long-inactive profiles through a last sunset flow before suppressing them.</li>
+  <li><strong>Try to win them back first.</strong> Klaviyo's advice is to run long-inactive profiles through a last sunset flow before suppressing them.</li>
+  <li><strong>Know what stops and what does not.</strong> Suppressed profiles stop receiving campaigns and most flow emails. Flows that Klaviyo has approved as transactional still send, and SMS and push are not affected.</li>
   <li><strong>Suppress, do not delete.</strong> Deleting cannot be undone. See <a href="/guides/suppress-vs-delete-vs-unsubscribe">suppress, delete or unsubscribe</a>.</li>
   <li><strong>Check your role.</strong> Owners, Admins and Managers can suppress profiles.</li>
 </ul>
@@ -44,8 +46,8 @@ updated: 2026-11-25
 </ul>
 <p>Creating the segment does not suppress anyone.</p>
 
-<h3>Use Klaviyo's suppression recommendations</h3>
-<p>On the Suppressed profiles page (Audience, Profiles, View suppressed profiles), Klaviyo may show a banner recommending profiles to suppress. Its criteria: can receive email marketing with no suppression added in the last 90 days, created at least 365 days ago, received 5 or more emails over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+<h3>Use the profiles Klaviyo suggests</h3>
+<p>On the Suppressed profiles page (Audience, Profiles, View suppressed profiles), Klaviyo may show a banner that suggests profiles to suppress. The criteria Klaviyo publishes for it: can receive email marketing with no suppression added in the last 90 days, created at least 365 days ago, received 5 or more emails over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
 
 <h3>Use "Suppress inactive profiles" on a list or segment</h3>
 <p>When you bulk suppress a list or segment, Klaviyo may offer to suppress only inactive profiles. That option keeps active anyone in the group who is subscribed, has not marked your emails as spam, and has clicked an email or placed an order within the last 182 days. Klaviyo says the option is unavailable when your deliverability score for the last 30 days is 60 or lower, or when more than 120,000 profiles qualify as inactive.</p>
@@ -67,10 +69,10 @@ updated: 2026-11-25
 <p>Remember the waiting period: once a profile is suppressed and then unsuppressed, Klaviyo does not let it be manually suppressed again until {{klaviyo.resuppressDays}} days after the previous suppression.</p>
 
 <h2>Step 5. Repeat every month</h2>
-<p>Klaviyo's advice is to manage your active profiles on an ongoing basis. A bulk suppression does not repeat by itself, so put it in your calendar. If you also want Klaviyo's profile count to be current when your plan renews, allow a few days: Klaviyo says the count shown in billing may take up to 72 hours to refresh after a large cleanup. <a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a> explains the rest.</p>
+<p>Klaviyo's advice is to manage your active profiles on an ongoing basis. A bulk suppression does not repeat by itself, so put it in your calendar. Klaviyo says the count shown in billing may take up to 72 hours to refresh after a large cleanup. On Klaviyo's Advanced KDP plan, suppressed profiles can still count toward billing. <a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a> explains the rest.</p>
 
 <h2>Where TierSaver fits</h2>
-<p>Everything above works by hand. TierSaver is for Shopify stores that want it done every month: it finds profiles using the same published criteria, checks every candidate against Shopify orders (step 2), shows a simulation for you to approve, keeps the record (step 4) and can undo a run. It never deletes profiles. <a href="/#how-it-works">See how it works</a>.</p>
+<p>Everything above works by hand. TierSaver is for Shopify stores that want the routine done for them: it finds profiles using the criteria Klaviyo publishes for suppressing unengaged profiles, checks every candidate against Shopify orders (step 2), shows a simulation for you to approve, keeps the record (step 4) and can restore a cleanup. It never deletes profiles. <a href="/#how-it-works">See how it works</a>.</p>
 
 <h2>Sources</h2>
 <ul class="sources">

@@ -61,6 +61,14 @@ export const shops = sqliteTable("shops", {
    * yet, so the purchase rule protects everyone (insufficient_purchase_history).
    */
   purchasesCoveredSince: timestamp("purchases_covered_since"),
+  /**
+   * Instant up to which `purchase_hashes` is complete: the last successful read
+   * of the store's orders (app/orders/sync.ts). null or older than
+   * PURCHASE_DATA_MAX_AGE_HOURS at scan time = the purchase rule protects everyone.
+   */
+  purchasesCoveredUntil: timestamp("purchases_covered_until"),
+  /** Last time the hourly cron handed this shop to the orders sync (rotation). */
+  purchasesSyncAttemptedAt: timestamp("purchases_sync_attempted_at"),
   installedAt: timestamp("installed_at").notNull().default(now),
   uninstalledAt: timestamp("uninstalled_at"),
   updatedAt: timestamp("updated_at").notNull().default(now),
@@ -328,6 +336,8 @@ export const runs = sqliteTable(
     processedCount: integer("processed_count").notNull().default(0),
     skippedCount: integer("skipped_count").notNull().default(0),
     failedCount: integer("failed_count").notNull().default(0),
+    /** Profiles whose request went out but whose outcome is unknown (may be suppressed; undo includes them). */
+    unknownCount: integer("unknown_count").notNull().default(0),
     /** Plan profile limit (Billing Usage `usage_max`) read right before the run, to verify the tier drop later. */
     usageMaxBefore: integer("usage_max_before"),
     /** Short machine-readable error; never contains personal data. */
@@ -335,10 +345,16 @@ export const runs = sqliteTable(
     createdAt: timestamp("created_at").notNull().default(now),
     startedAt: timestamp("started_at"),
     finishedAt: timestamp("finished_at"),
+    /** Heartbeat: written when the run starts and at every batch attempt. Stalled runs are found by it (runs/recovery.ts). */
+    lastProgressAt: timestamp("last_progress_at"),
+    /** Set by "Stop cleanup": the run stops before its next batch and ends as `cancelled`. */
+    stopRequestedAt: timestamp("stop_requested_at"),
+    stopRequestedBy: text("stop_requested_by"),
   },
   (t) => [
     uniqueIndex("runs_simulation_unique").on(t.simulationId),
     index("runs_shop_created_idx").on(t.shop, t.createdAt),
+    index("runs_open_idx").on(t.status, t.lastProgressAt),
   ],
 );
 
@@ -349,8 +365,12 @@ export const RUN_PROFILE_STATUSES = [
   "submitting",
   /** Accepted by Klaviyo in a bulk job. */
   "submitted",
-  /** Left untouched (for example no longer exists, or became protected). */
+  /** Left untouched (for example no longer exists, or became protected). `error_code` says why. */
   "skipped",
+  /**
+   * Not confirmed by Klaviyo. With `attempted_at` NULL the profile was never sent and is untouched. With
+   * `attempted_at` set the request went out and the outcome is unknown: it counts as possibly suppressed.
+   */
   "failed",
 ] as const;
 
@@ -378,6 +398,8 @@ export const runProfiles = sqliteTable(
     /** Klaviyo bulk job that carried this profile. */
     klaviyoJobId: text("klaviyo_job_id"),
     errorCode: text("error_code"),
+    /** Stamped right before the Klaviyo request carrying this profile is sent. NULL = never sent. */
+    attemptedAt: timestamp("attempted_at"),
     /** Set when the profile was unsuppressed again by undoing the run. */
     reactivatedAt: timestamp("reactivated_at"),
     updatedAt: timestamp("updated_at").notNull().default(now),
@@ -409,7 +431,39 @@ export const purchaseHashes = sqliteTable(
   ],
 );
 
-export const USAGE_CHARGE_STATUSES = ["pending", "charged", "not_charged", "failed"] as const;
+export const ORDERS_SYNC_KINDS = ["backfill", "incremental"] as const;
+
+/**
+ * The orders read in progress for a shop, if any (app/orders/sync.ts). The
+ * cursor is saved after every page so the read is resumed across Workflow
+ * instances and cron ticks. The row is deleted when the read completes. No
+ * order or customer data.
+ */
+export const ordersSync = sqliteTable("orders_sync", {
+  shop: text("shop")
+    .primaryKey()
+    .references(() => shops.shop, { onDelete: "cascade" }),
+  /** Identifies this read; a runner only advances or completes the read it loaded. */
+  passId: text("pass_id").notNull(),
+  kind: text("kind", { enum: ORDERS_SYNC_KINDS }).notNull(),
+  /** Lower bound of the orders query: processed_at for a backfill, updated_at for an incremental read. */
+  queryFrom: timestamp("query_from").notNull(),
+  /** Backfill only: the start of coverage this read proves once it completes. */
+  coversSince: timestamp("covers_since"),
+  /** Whether the read was planned with read_all_orders (a backfill planned with it is void without it). */
+  readAllOrders: integer("read_all_orders", { mode: "boolean" }).notNull().default(false),
+  /** When the read began. Once complete, purchase data is current up to shortly before this instant. */
+  startedAt: timestamp("started_at").notNull(),
+  /** Cursor of the last page stored; null before the first page. */
+  cursor: text("cursor"),
+  pages: integer("pages").notNull().default(0),
+  /** Failed page reads since the last page that was stored. */
+  failures: integer("failures").notNull().default(0),
+  /** Last progress (a stored page), not the last attempt. */
+  updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const USAGE_CHARGE_STATUSES =["pending", "charged", "not_charged", "failed"] as const;
 
 /**
  * TierSaver's fee for one cleanup: a flat price by list size, created only

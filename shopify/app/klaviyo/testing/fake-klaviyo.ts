@@ -102,6 +102,10 @@ export class FakeKlaviyo {
   }[] = [];
   billingUsage: { id: string; usage_used: number; usage_max: number; unit: string }[] = [];
   suppressed = new Set<string>();
+  /** When each email in `suppressed` got its USER_SUPPRESSED reason (ISO). Missing = the fixed default below. */
+  suppressedAt = new Map<string, string>();
+  /** `completed_at` reported for jobs. */
+  jobCompletedAt = "2026-11-25T12:00:05+00:00";
   jobs: FakeJob[] = [];
 
   requests: FakeRequest[] = [];
@@ -389,7 +393,10 @@ export class FakeKlaviyo {
             can_receive_email_marketing: reasons.length === 0,
             consent: p.emailConsent ?? "SUBSCRIBED",
             consent_timestamp: p.emailConsentTimestamp ?? null,
-            suppression: reasons.map((reason) => ({ reason, timestamp: "2026-01-01T00:00:00+00:00" })),
+            suppression: reasons.map((reason) => ({
+              reason,
+              timestamp: (reason === "USER_SUPPRESSED" && p.email ? this.suppressedAt.get(p.email) : undefined) ?? "2026-01-01T00:00:00+00:00",
+            })),
           },
         },
       };
@@ -484,7 +491,8 @@ export class FakeKlaviyo {
     if (only) all = all.filter((p) => only.has(p.id));
     const filter = q.get("filter");
     if (filter) {
-      const m = filter.match(/^any\(id,\[(.*)\]\)$/);
+      // GET /api/profiles filters by `id`; the members of a list or segment are filtered by `profile_id`.
+      const m = filter.match(only ? /^any\(profile_id,\[(.*)\]\)$/ : /^any\(id,\[(.*)\]\)$/);
       if (!m) return apiError(400, "invalid", "unsupported filter");
       const ids = [...m[1]!.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((x) => x[1]!);
       all = all.filter((p) => ids.includes(p.id));
@@ -525,7 +533,7 @@ export class FakeKlaviyo {
         total_count: job.emails.length,
         completed_count: status === "complete" ? job.emails.length : 0,
         skipped_count: 0,
-        completed_at: status === "complete" ? "2026-11-25T12:00:05+00:00" : null,
+        completed_at: status === "complete" ? this.jobCompletedAt : null,
       },
       links: { self: "https://a.klaviyo.com/api/jobs/" },
     };
@@ -554,8 +562,13 @@ export class FakeKlaviyo {
       emails.push(email);
     }
     for (const email of emails) {
-      if (kind === "suppress") this.suppressed.add(email);
-      else this.suppressed.delete(email);
+      if (kind === "suppress") {
+        if (!this.suppressed.has(email)) this.suppressedAt.set(email, new Date(this.now()).toISOString());
+        this.suppressed.add(email);
+      } else {
+        this.suppressed.delete(email);
+        this.suppressedAt.delete(email);
+      }
     }
     const job: FakeJob = { id: `JOB${String(this.jobs.length + 1).padStart(4, "0")}`, kind, emails };
     this.jobs.push(job);

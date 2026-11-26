@@ -1,39 +1,57 @@
 <!--
-title: Undo: correcting a run
+title: Undo: restoring a cleanup
 nav: Undo
-description: Undo restores exactly the profiles a TierSaver run suppressed. It exists to correct mistakes. Restored profiles are not eligible for cleanup again for 365 days.
-summary: Undo restores exactly the profiles of one run. It is for correcting mistakes, not for switching profiles back and forth.
-lead: Every run can be undone. Undo exists to correct a mistake: it restores exactly the profiles that run suppressed, and nothing else.
+description: Restore removes the manual suppression from the profiles one TierSaver cleanup suppressed. What it does, its limits, and the {{criteria.undoLockDays}} days that follow.
+summary: Restore lifts the suppression from one cleanup's profiles. It is for correcting mistakes, and it has limits.
+lead: A cleanup can be restored from the app. Undo exists to correct a mistake: it removes the suppression from the profiles of that cleanup.
+footer: yes
 layout: doc
 group: help
 order: 5
-updated: 2026-11-25
+updated: 2026-11-26
 -->
-<h2>The run log</h2>
-<p>Each cleanup is recorded: when it ran, whether you started it or the schedule did, who approved it, the criteria in effect, how many profiles were suppressed and how it ended. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what makes undo exact.</p>
+<h2>How to restore a cleanup</h2>
+<ol>
+  <li>Open TierSaver and go to History.</li>
+  <li>Open the cleanup you want to correct.</li>
+  <li>In the section "Undo this cleanup", select the Restore button.</li>
+</ol>
+<p>Restore becomes available once the cleanup has finished and Klaviyo has finished applying it. If you try too early, the app asks you to try again in a minute or two. The restore then appears in History as its own entry.</p>
 
-<h2>What undo does</h2>
+<h2>What Restore does</h2>
 <ul>
-  <li>It removes the suppression from the profiles of one run.</li>
-  <li>It does not touch profiles that were suppressed by you, by Klaviyo or by another run.</li>
-  <li>It does not change consent. A profile that had unsubscribed before stays unsubscribed.</li>
+  <li>It removes the manual suppression from the profiles that cleanup suppressed, so they can receive marketing email again.</li>
+  <li>It does not change consent. Profiles that unsubscribed, bounced or have an invalid address stay unsendable in Klaviyo.</li>
+  <li>It does not touch profiles from other cleanups, or profiles that were never part of a TierSaver cleanup.</li>
 </ul>
-<p>After an undo, the set of profiles suppressed by TierSaver is what it was before that run.</p>
+
+<h2>The limits of Restore</h2>
+<ul>
+  <li><strong>It needs the app installed and connected to Klaviyo.</strong> After you uninstall, remove suppressions in Klaviyo instead.</li>
+  <li><strong>It cannot tell your own later suppressions apart.</strong> Klaviyo records only one kind of manual suppression. If you manually suppressed one of those same profiles yourself after the cleanup, Restore lifts that suppression too. Check before you restore.</li>
+  <li><strong>Emails are not sent later.</strong> Whatever those profiles did not receive while they were suppressed is not sent to them afterwards.</li>
+  <li><strong>The charge.</strong> A cleanup you restore in full within {{fee.holdHours}} hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. See <a href="/help/pricing">how pricing works</a>.</li>
+  <li><strong>Some profiles may be left as they are.</strong> A profile that is no longer in Klaviyo, or has no email address any more, cannot be restored. The restore's page shows the counts.</li>
+</ul>
 
 <h2>What happens to restored profiles</h2>
 <ul>
   <li><strong>They count as active profiles again.</strong> Klaviyo's displayed count may take up to 72 hours to refresh after a large change.</li>
-  <li><strong>TierSaver leaves them alone for {{criteria.undoLockDays}} days.</strong> A restored profile is not eligible for any cleanup during that time. If you undo a run, you are telling TierSaver those profiles should stay.</li>
+  <li><strong>TierSaver leaves them alone for {{criteria.undoLockDays}} days.</strong> A restored profile is left out of every cleanup during that time. If you restore a cleanup, you are telling TierSaver those profiles should stay.</li>
   <li><strong>Klaviyo has its own waiting period.</strong> Its help center says that once a profile is suppressed and then unsuppressed, it cannot be manually suppressed again until {{klaviyo.resuppressDays}} days after the previous suppression. The rule is not active during the first 30 days after a new Klaviyo account is created.</li>
 </ul>
 
 <h2>What undo is not for</h2>
-<p>Undo is not a way to suppress profiles for a while and bring them back later. Suppression is a decision to stop emailing someone. If you expect to email a group again, protect it instead: mark the list or segment as protected in the <a href="/help/cleanup-criteria">cleanup criteria</a> and it will never be selected.</p>
-<p>If an undo is requested for a run that is more than one plan renewal old, the app asks you to confirm.</p>
+<p>Undo is not a way to suppress profiles for a while and bring them back later. Suppression is a decision to stop emailing someone. If you expect to email a group again, protect it instead: mark the list or segment as protected in <a href="/help/settings">Settings</a> and it will not be selected.</p>
+<p>If your Klaviyo plan has renewed, or may have renewed, since the cleanup, the app asks you to confirm that you are restoring the profiles to correct a mistake. Suppressing profiles before a renewal and restoring them afterwards is against TierSaver's terms.</p>
+
+<h2>The cleanup log</h2>
+<p>Each cleanup is recorded: when it started and finished, whether you started it or the schedule did, who approved it, the criteria in effect and how many profiles were suppressed. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what Restore works from. See <a href="/help/history">History</a>.</p>
 
 <h2>Sources</h2>
 <ul class="sources">
   {{src.bulkSuppress}}
   {{src.activeProfileManagement}}
+  {{src.suppressedProfiles}}
   {{src.billing}}
 </ul>

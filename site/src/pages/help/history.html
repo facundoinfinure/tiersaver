@@ -1,0 +1,53 @@
+<!--
+title: History: reading a cleanup's page
+nav: History
+description: How to read TierSaver's History page and the page of each cleanup: statuses, profile counts, the charge, Klaviyo's jobs and the Restore button.
+summary: What the History page lists and how to read a cleanup's statuses, counts, charge and Klaviyo jobs.
+lead: Every cleanup and every restore is listed under History, with what it changed. Nothing in a list hygiene routine should be a mystery afterwards.
+layout: doc
+group: help
+order: 5.5
+updated: 2026-11-26
+-->
+<h2>The History page</h2>
+<p>History lists your most recent cleanups and restores, newest first. Each row shows when it started, whether it is a cleanup or a restore, whether the monthly schedule started it, its status, and how many profiles were sent to Klaviyo out of the total. "Details" opens its page.</p>
+
+<h2>Statuses</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Statuses of a cleanup or restore">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Status</th><th scope="col">Meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Queued</th><td>It has been started and is waiting to begin.</td></tr>
+      <tr><th scope="row">In progress</th><td>Profiles are being sent to Klaviyo in batches. The page updates by itself; you can leave it.</td></tr>
+      <tr><th scope="row">Completed</th><td>Every batch was sent to Klaviyo.</td></tr>
+      <tr><th scope="row">Completed with issues</th><td>It finished, but some profiles were not processed because of an error. The counts show how many.</td></tr>
+      <tr><th scope="row">Did not run</th><td>It could not run. The page gives the reason.</td></tr>
+      <tr><th scope="row">Cancelled</th><td>It was stopped before it finished.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>If a cleanup or restore stopped early, a notice on its page gives the reason, and the profiles it did not reach were left untouched. The reasons are listed in <a href="/help/troubleshooting">troubleshooting</a>.</p>
+
+<h2>The counts</h2>
+<ul>
+  <li><strong>In this cleanup.</strong> The profiles in the simulation you approved.</li>
+  <li><strong>Sent to Klaviyo to be suppressed.</strong> What TierSaver submitted. Klaviyo then applies it in the background.</li>
+  <li><strong>Left untouched.</strong> Profiles that were no longer in Klaviyo, had no email address, or whose address had changed since the simulation.</li>
+  <li><strong>Not processed because of an error.</strong> Shown only when there are any.</li>
+  <li><strong>Restored later.</strong> Shown when part or all of the cleanup was restored.</li>
+</ul>
+
+<h2>The charge</h2>
+<p>A cleanup's page states what happened with its charge: an estimated charge that has not been sent to Shopify yet, the amount charged and when, or the reason nothing was charged. See <a href="/help/billing">billing and charges</a>.</p>
+
+<h2>Klaviyo jobs</h2>
+<p>Klaviyo processes each batch as a background job. "Check jobs in Klaviyo" asks Klaviyo what it reports for them: the status of each job, how many profiles it processed and how many Klaviyo skipped. For a large cleanup the jobs are checked a page at a time. A job that Klaviyo can no longer return is counted as one that could not be read.</p>
+<p>The profile count Klaviyo shows in your account can take up to 72 hours to update after a cleanup.</p>
+
+<h2>Restore</h2>
+<p>The section "Undo this cleanup" has the Restore button and links to any restore already made from that cleanup. See <a href="/help/undo">undo</a> for what Restore does and its limits.</p>
+
+<h2>How long history is kept</h2>
+<p>History stays while the app is installed. It is deleted with the rest of your store's data after you uninstall. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>

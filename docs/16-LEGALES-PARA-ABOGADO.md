@@ -2,23 +2,27 @@
 
 Fecha: 2026-11-26. Redactado por un redactor de SaaS, no por un abogado. No es asesoramiento legal.
 
-Archivos: `site/src/pages/terms.html` y `site/src/pages/privacy.html` (fuentes, en inglés). El sitio publicado (`site/terms.html`, `site/privacy.html`) se genera desde ahí.
+Archivos: `site/src/pages/terms.html`, `site/src/pages/privacy.html` y `site/src/pages/dpa.html` (fuentes, en inglés), más el artículo `site/src/pages/help/data-and-privacy.html`. El sitio publicado (`site/terms.html`, `site/privacy.html`, `site/dpa.html`) se genera desde ahí. Anexo: `docs/16-anexo-privacidad.md`.
+
+Cómo leer este memo: la sección 2 cuenta qué dice cada cláusula y de dónde sale, en tres rondas; la última ("Ronda de cobertura, privacidad y plataformas") es la vigente. La sección 3 es la lista única de preguntas. La 4, las decisiones que son del dueño. La 5, lo que el texto afirma y el código todavía no hace.
 
 ## 1. Qué se le pide
 
-Leer los términos y la política de privacidad de TierSaver for Klaviyo (Digital Solvers LLC, Florida) y decir "ok" o marcar qué cambiar, con foco en la limitación de responsabilidad, la indemnidad, la ley aplicable y las preguntas de la sección 3.
+Leer los términos, la política de privacidad y el Data Processing Addendum de TierSaver for Klaviyo y decir "ok" o marcar qué cambiar, con foco en la limitación de responsabilidad, la indemnidad, la ley aplicable, el reparto de responsabilidades por el marketing del merchant, el DPA y las preguntas de la sección 3. Los textos nombran como contraparte a Digital Solvers LLC (Miami, Florida): esa entidad está **sin confirmar** y es la primera pregunta.
 
-Contexto mínimo: app embebida de Shopify para merchants (B2B). Con autorización del merchant lee su cuenta de Klaviyo, calcula una simulación de perfiles inactivos y, después de que el merchant la aprueba, los suprime en Klaviyo (nunca los borra; cada limpieza se puede deshacer). Precio fijo mensual por tamaño de lista, cobrado solo por la facturación de Shopify. No está afiliada a Klaviyo ni a Shopify.
+Contexto mínimo: app embebida de Shopify para merchants (B2B). Con autorización del merchant lee su cuenta de Klaviyo, calcula una simulación de perfiles inactivos y, después de que el merchant la aprueba, los suprime en Klaviyo (nunca los borra; cada limpieza se puede deshacer, con los límites de la cláusula 4). Precio fijo mensual por tamaño de lista, cobrado solo por la facturación de Shopify. No está afiliada a Klaviyo ni a Shopify.
 
 ## 2. Cláusulas tocadas
 
 ### Términos (`terms.html`)
 
+Las dos primeras tablas son el historial de las rondas anteriores; cuando citan "pregunta 2" o "R5" usan la numeración vieja, que la sección 3 muestra entre paréntesis. La tabla vigente es la de la "Ronda de cobertura, privacidad y plataformas", más abajo.
+
 La numeración cambió: se agregó "13. Indemnification" y "17. General". Limitación de responsabilidad sigue en la 12; ley aplicable pasó de la 14 a la 15.
 
 | Cláusula | Qué dice ahora | De dónde sale | Qué tiene que confirmar el abogado |
 | --- | --- | --- | --- |
-| Fecha de vigencia | November 26, 2026 | Indicación del dueño | Nada. La página sigue con el cartel de borrador hasta su visto bueno (ver sección 4) |
+| Fecha de vigencia | November 26, 2026 | Indicación del dueño | Nada. La página sigue con el cartel de borrador hasta su visto bueno (ver sección 6) |
 | 1. The agreement | Se acepta al instalar o usar. Uso comercial, no como consumidor; capacidad legal para contratar; quien acepta por una empresa declara que puede. Klaviyo y Shopify no son parte | Estándar B2B. No hay un hecho sobre edad mínima: no se puso un número | Si alcanza la aceptación por instalación (clickwrap dentro del flujo de Shopify) y si conviene fijar edad mínima de 18 |
 | 2. What the app does | Agrega que la app mantiene un segmento en la cuenta de Klaviyo; que la primera limpieza siempre requiere aprobación; que el modo automático es una aprobación anticipada | Hechos del producto. El modo automático (opt-in) existe en la app según `docs/STATUS.md`; exige una limpieza anterior aprobada por una persona | Que describir el modo automático como aprobación anticipada sea suficiente |
 | 6. Price and payment | Tabla de precios (sale del código, US$ 15 / 29 / 79 / 149 por tamaño de lista; más de 150.000, por acuerdo). Se cobra solo en un ciclo en que una limpieza suprimió al menos un perfil; como máximo una vez cada 28 días; máximo de US$ 149 por ciclo de 30 días de Shopify; todo por Shopify; sin datos de pago | `docs/04-PRECIO-Y-COBRO.md` | Nada de fondo. Ver si quiere los precios dentro de los términos o solo por referencia |
@@ -74,52 +78,154 @@ Después del borrador, una revisión crítica comparó cada afirmación de los t
 | 10. Sitio | Agrega: sin formularios y sin pedidos a otros sitios | Hechos del sitio | Nada |
 | 12. Children | Agrega que no se recolectan a sabiendas datos de menores | Estándar | Nada |
 
-## 3. Preguntas abiertas
+#### Ronda de cobertura, privacidad y plataformas (2026-11-26)
 
-1. **Arbitraje, renuncia a acciones colectivas y renuncia a juicio por jurados.** No se agregó ninguna de las tres. ¿Conviene alguna para un SaaS B2B de este tamaño?
-2. **Merchants de la UE y del Reino Unido.** ¿Hace falta un DPA aparte con cláusulas contractuales tipo (y el addendum del Reino Unido)? ¿Conviene que Digital Solvers LLC se certifique en el Data Privacy Framework? ¿Hace falta representante en la UE o el Reino Unido (art. 27 GDPR)? La política hoy no afirma ningún mecanismo de transferencia.
-3. **CCPA/CPRA.** ¿Los compromisos de la cláusula 8 de los términos alcanzan como contrato de "service provider"? La política dice "do not sell"; no se usó "share" en el sentido de la CPRA. ¿Hace falta?
-4. **Registros.** ¿Digital Solvers LLC tiene que inscribirse como responsable o encargado ante alguna autoridad (por ejemplo, registros estatales de EE.UU.)?
-5. **Edad mínima.** No se fijó un número. ¿Conviene decir 18?
-6. **Exportación y sanciones.** No hay cláusula. ¿Hace falta una declaración de cumplimiento de controles de exportación y sanciones de EE.UU.?
-7. **Limitación de responsabilidad.** ¿Culpa grave en la salvedad? ¿Tope recíproco o con excepciones (pago, indemnidad, confidencialidad)? ¿Un tope separado y más alto para incidentes de datos?
-8. **Plazo para reclamar.** No se acortó el plazo de prescripción. Entendemos que la ley de Florida no lo permite por contrato; a confirmar.
-9. **Avisos y cambios.** ¿Hace falta un plazo mínimo de aviso para cambios de términos y de precio? Hoy no hay un número.
-10. **Klaviyo.** Los API Terms de Klaviyo exigen indemnidad a favor de Klaviyo, ley de Massachusetts y coordinar con Klaviyo los comunicados ante un incidente (`docs/12-CUMPLIMIENTO-KLAVIYO.md` §1.4). ¿Algo de eso tiene que reflejarse en los términos con el merchant?
-11. **Segmento al desinstalar.** Los textos no dicen qué pasa con el segmento que la app crea en Klaviyo cuando el merchant desinstala. Falta el dato técnico.
-12. **Datos del personal del merchant.** La política dice que el registro de acciones guarda el id de usuario de Shopify. La tabla de sesiones de Shopify tiene columnas para nombre y mail del usuario (`shopify/app/db/schema.ts`). Hay que confirmar con desarrollo que quedan vacías; si no, la política tiene que decirlo.
+Tres revisiones independientes (cobertura legal, privacidad contra el código, requisitos de Shopify y Klaviyo) marcaron huecos. Esta ronda los aplica. **Donde difiera, esta tabla reemplaza a las de arriba.** La numeración de los términos no cambió (siguen siendo 18 cláusulas); lo nuevo entró como subtítulos dentro de cada cláusula. Se creó una página nueva, `site/src/pages/dpa.html` (Data Processing Addendum), incorporada por referencia desde la cláusula 8.
 
-### Preguntas de la revisión de términos
+**Términos (`terms.html`)**
 
-Agregadas el 2026-11-26 por la revisión de los términos contra el código.
+| Cláusula | Qué cambió | Por qué | Qué tiene que mirar el abogado |
+| --- | --- | --- | --- |
+| 1 | Edad mínima de 18. Solo empresas: "in the course of your trade, business or profession and not as a consumer"; las normas de consumo no aplican "to the extent the law allows" | El texto anterior era más débil; unipersonales pueden ser tratados como consumidores | Si la renuncia sirve de algo fuera de EE.UU. (pregunta 9) |
+| 2 | Los criterios por defecto "follow the criteria Klaviyo publishes for suppressing unengaged profiles, with extra protections added by the app". La auditoría no suprime ni edita perfiles (pero sí crea un segmento). La app no obtiene ni registra consentimiento ni procesa bajas | Klaviyo veta "recommended" cuando sugiere aval; "read-only" era inexacto | Nada |
+| 3 | Subtítulo "People who act for you": staff, colaboradores, agencias y freelancers obligan al merchant, también en aprobaciones que generan cargo; la agencia declara tener mandato. Subtítulo "Your marketing and the law": el merchant es el remitente y el responsable; se nombran CAN-SPAM, TCPA, leyes estatales, CASL, GDPR de la UE y del Reino Unido, ePrivacy y PECR; consentimiento, identificación, bajas y registros propios son del merchant; la app no verifica si un perfil puede ser contactado | Pedido expreso del dueño. Antes era una fórmula genérica | Si conviene nombrar las leyes o dejar fórmula general (pregunta 12). Mandato de agencias (pregunta 13) |
+| 4 | Reescrita en tres partes. (a) Qué hace la supresión en Klaviyo: corta campañas y flujos (bienvenida, carrito, back-in-stock, win-back); los mails aprobados como transaccionales se siguen enviando; SMS y push no cambian; volver a suscribirse levanta la supresión; cambia segmentos, reportes y audiencias sincronizadas. Con fecha de lectura de la documentación de Klaviyo. (b) "A suppression is not an unsubscribe": no es registro de baja ni la reemplaza. (c) Límites del deshacer: Klaviyo tiene un solo estado de supresión manual, así que el deshacer también levanta una supresión manual que el merchant haya puesto después en el mismo perfil; no re-suscribe a nadie; desuscriptos, rebotados e inválidos siguen sin poder recibir; puede ser parcial; el merchant debe verificar que puede escribirles. Se agregó que el cruce de compradores es por el mail del pedido | Comprobado en el código y en la documentación de Klaviyo leída el 2026-11-26. Es el punto con más riesgo de reclamo | Si alcanza el aviso o conviene una casilla en cada deshacer (pregunta 14) |
+| 5 | Párrafo sobre productos de Klaviyo que cuentan perfiles totales (Advanced KDP): ahí una limpieza no cambia el conteo | Revisión de plataformas | Nada |
+| 6 | "When you are charged" ahora dice 72 horas (antes solo lo decía "Undo and refunds"). Más de 150.000: "no charge automatically". Subtítulos nuevos: **Automatic mode and recurring charges** (autorización de cargos recurrentes hasta apagarlo o desinstalar; apagar es inmediato y sin costo; no revierte lo ya corrido; los avisos son dentro de la app, no por mail), **Billing questions** (Shopify factura y cobra; reclamo dentro de 60 días de la factura; corrección solo por reembolso o crédito de Shopify; pausa si un cargo queda impago o revertido), **Taxes** (a cargo del merchant, se suman en la factura de Shopify) | Normas de opción negativa; huecos de reembolsos e impuestos | Preguntas 5, 6, 17 y 18. El plazo de 60 días lo propuso la revisión: confirmarlo |
+| 7 | Usos prohibidos nuevos: usar la app como registro de bajas; correr limpiezas y desinstalar antes del cargo para no pagar; acceso automatizado, reventa, producto competidor. Párrafo de datos sensibles (no enviar categorías especiales, de menores, salud, financieros, ubicación precisa) | Cobertura. El segundo sale de la ventana de 72 horas: desinstalar dentro de ella deja la limpieza sin cobrar | Nada |
+| 8 | Reescrita como resumen del DPA: aviso si una instrucción es ilegal; no vender **ni compartir** (CCPA); fines de negocio nombrados; no combinar datos; subencargados con obligaciones equivalentes y aviso en la app 30 días antes; aviso de incidentes sin demora y a más tardar 48 horas desde la confirmación; aviso en 5 días hábiles si ya no se puede cumplir; derecho del merchant a frenar el uso no autorizado; consentimiento a tratar en EE.UU. y, para operación y soporte, desde Argentina. La excepción de "estadísticas" se acotó a conteos agregados del propio servicio. El último párrafo incorpora el DPA, que prevalece en materia de datos | Art. 28(3) GDPR y contrato de "service provider" de la CCPA; Shopify exige "agreements" con los merchants | Preguntas 2, 3, 4 y 20. Los números (30 días, 48 horas) son propuestas: confirmarlos |
+| 9 | TierSaver puede compartir con Klaviyo y Shopify la información que sus términos le obligan a compartir (incidentes, incumplimientos) | Los API Terms de Klaviyo lo exigen | Pregunta 22 |
+| 10 | Subtítulos "No professional advice" (ni legal, ni de cumplimiento, ni fiscal, ni de entregabilidad; la documentación de Klaviyo prevalece; los criterios pueden dejar de coincidir) y "Beta features" | Pedido del dueño; el lanzamiento arranca en beta | Nada |
+| 11 | Se suma que un deshacer puede no restaurar "only the profiles you intended" | Consecuencia de la cláusula 4 | Nada |
+| 12 | Ejemplo nuevo en la exclusión: mensajes enviados a un perfil que un deshacer volvió enviable. El último párrafo pasó a ser "Rights that cannot be excluded": derechos no excluibles (Australia, Reino Unido, UE); remedio limitado a volver a prestar el servicio donde la ley lo permite; muerte o lesiones por negligencia, fraude y dolo fuera de todo límite; la elección de Florida no quita protecciones imperativas del país del merchant | Australia trata como "consumer" a quien compra por debajo de su umbral, también empresas | Pregunta 8. **Nota:** el texto no usa el término técnico "consumer guarantees" porque un test del sitio prohíbe la raíz "guarant" en todas las páginas; si el abogado lo quiere, hay que exceptuar las páginas legales en `site/test/site.test.ts` |
+| 13 | La indemnidad por marketing incluye los mensajes enviados después de un deshacer | Cláusula 4 | Pregunta 10 |
+| 14 | Suspensión también por riesgo para el servicio o para otro merchant, o por cargo impago o revertido. Una limpieza cuyo cargo no se había creado al desinstalar no se cobra. Sobreviven también la 7 y la 16 | Cobertura; hecho ya decidido de la ventana de 72 horas | Nada |
+| 17 | Puntos nuevos: Electronic agreement (la casilla vale como firma; los registros son prueba), Your data (licencia para tratar los datos y actuar en las cuentas), Feedback (licencia perpetua), Confidentiality (mutua), Names and logos, Trade controls (sanciones y exportación de EE.UU., OFAC), Government users, Language (inglés prevalece; frase en francés para Quebec). Notices: hoy solo dentro de la app; el mail es condicional a que exista. Entire agreement menciona el DPA | Pedido expreso del dueño | Preguntas 16, 19 y 23 |
 
-- **R1. Aceptación.** La casilla de aprobación de la simulación incluye la aceptación de los términos, con enlaces, y se registra la versión aceptada. ¿Ese diseño alcanza? ¿Cubre las limpiezas del modo automático, que se aprueban sin casilla? ¿Hace falta volver a pedir aceptación en cada cambio de términos?
-- **R2. Evidencia contra borrado.** La cláusula 3 se apoya en "your approvals are recorded", pero ese registro se borra entero con el `shop/redact` de Shopify (`shopify/app/data/privacy.ts`). ¿Se puede conservar un registro sin datos personales (tienda, fecha, versión de términos, aprobaciones, cargos) durante el plazo de prescripción? ¿Cómo se concilia con Shopify y con los 365 días de logs que pide Klaviyo para listar la app? Es más amplio que la pregunta contable de la tabla de privacidad.
-- **R3. Indemnidad.** ¿La regla de Florida sobre indemnidad por negligencia propia del indemnizado obliga a reescribir la cláusula 13? ¿Conviene exceptuar la culpa grave también ahí, como quedó redactado?
-- **R4. Honorarios.** ¿Conviene una cláusula de honorarios para la parte vencedora, dado que Fla. Stat. §57.105(7) vuelve recíproca cualquier cláusula unilateral?
-- **R5. FDUTPA.** ¿Hay exposición entre empresas por las afirmaciones de precio y de "undo"? ¿Cambia algo el límite de la cláusula 12 frente a un reclamo de ese tipo?
-- **R6. Shopify.** ¿El Partner Program Agreement y los API Terms de Shopify exigen cláusulas en los términos con el merchant (exención a favor de Shopify, reglas de reembolso o créditos)? No se pudieron leer.
-- **R7. Política de privacidad.** ¿Conviene que forme parte del contrato solo donde la cláusula 8 la cita, como quedó, o de otra forma?
-- **R8. Nombre comercial.** Si Digital Solvers LLC opera como "TierSaver", ¿hace falta registrar el nombre de fantasía en Florida (Fla. Stat. §865.09)?
-- **R9. Medidas cautelares.** ¿Conviene exceptuarlas del foro exclusivo, para poder frenar un abuso de la app donde esté el merchant?
-- **R10. Avisos solo dentro de la app.** Hoy la app no envía mails. ¿Un aviso dentro de la app alcanza para cambios de precio y de términos, o hace falta el mail antes de publicar los términos como vigentes?
+**Privacidad (`privacy.html`)**
 
-La pregunta 11 de arriba ya tiene el dato técnico: la app nunca borra el segmento que crea en Klaviyo, y la cláusula 14 ahora lo dice.
+| Sección | Qué cambió | Por qué |
+| --- | --- | --- |
+| 2 | Remite a los términos y al DPA. TierSaver es responsable también de los datos de las personas a las que contacta por TierSaver | DPA nuevo; prospección |
+| 3 | Store details suma permisos de Shopify y fecha desde la que se leyó el historial. Charge records suma tamaño de lista, perfiles suprimidos, monto y motivo de no cobro. Nuevo ítem "Privacy requests". Los hashes pasan a describirse como "keyed, per-store pseudonymised hashes" (HMAC-SHA-256 con clave por tienda, fuera de la base), con subtítulo propio. De Klaviyo se declaran también los nombres de listas y segmentos, si la cuenta es de prueba, y el plan B que pide la cuenta sin limitar campos. "Email from the app": no promete mails; los avisos son dentro de la app | Diferencias texto ↔ código M3, M4, M5 y hallazgo P3 |
+| 4 | "Do not sell or share"; no se combinan datos entre merchants. Subtítulo "Automated processing": reglas fijas elegidas por el merchant; el único efecto es dejar de recibir marketing; sin efecto legal ni similar; sin IA | CCPA; art. 22 GDPR; requisito de Shopify sobre decisiones automatizadas |
+| 5 | El segmento se crea desde la primera auditoría (la auditoría no cambia ningún perfil). Párrafo sobre el deshacer y la supresión manual única de Klaviyo | Coherencia con términos 4 |
+| 6 | Aviso en la app 30 días antes de sumar o cambiar un subencargado. Se puede compartir con Klaviyo y Shopify lo que sus términos exigen | Art. 28(2) GDPR; API Terms de Klaviyo |
+| 7 | Acceso desde Argentina de quien opera y da soporte, con mención de la adecuación de la UE y del Reino Unido. Transferencias bajo cláusulas contractuales tipo y addendum del Reino Unido, vía el DPA | M11; Shopify espera que la política trate la transferencia |
+| 8 | Hashes con clave; acceso limitado a quienes operan TierSaver; aviso de incidentes a más tardar 48 horas desde la confirmación | P3, P5 |
+| 9 | Hashes de compradores: se guardan mientras la app esté instalada, y por qué. Al desinstalar "we ask Klaviyo to revoke" (antes "we revoke") y el merchant puede quitar la integración en Klaviyo. Purga de respaldo dentro de unos 10 días. Pedido de datos de un cliente: se registra y se le entrega al merchant en la app. Copias "Time Travel" de la base: hasta 30 días, no se pueden apagar; se sacó "encrypted" (no confirmado). Logs: los logs por pedido del proveedor están apagados; la app escribe logs propios sin mails, nombres, tokens ni códigos; plazo "limitado, fijado por el proveedor", sin número | M1, M2, M7, M8, M9, P4, P7 |
+| 10 | "Do Not Track / Global Privacy Control". Subtítulo "People we contact about TierSaver" (datos de prospectos: qué, de dónde, base legal, baja, 24 meses) | Pedido expreso del dueño; borradores de outreach en `docs/05` |
+| 11–13 | Derechos también para prospectos; no discriminación. Datos sensibles. Cambios: aviso en la app (ya no "or by email") | T-20, 9.6 |
+
+**DPA (`dpa.html`, nuevo)**
+
+Nueve secciones y tres anexos: partes e incorporación; roles; responsabilidades del merchant; obligaciones de encargado (instrucciones, fines, confidencialidad, seguridad, pedidos de titulares, incidentes en 48 horas, asistencia, borrado y devolución, información y auditoría, aviso si no se puede cumplir); subencargados (autorización general, 30 días, objeción); transferencias (cláusulas contractuales tipo de la Decisión 2021/914, **módulo 2** y módulo 3 si el merchant es encargado, cláusula 7 no aplica, cláusula 9 opción 2 con 30 días, cláusula 11 sin el texto opcional, ley y tribunales de Irlanda; Suiza; **addendum del Reino Unido** con sus cuatro tablas; otros países por pedido); California; Australia, Canadá y Brasil; responsabilidad, duración y cambios. Anexo I (partes, descripción del tratamiento, autoridad), Anexo II (medidas de seguridad: solo las que el código tiene), Anexo III (Cloudflare, Inc.).
+
+Elecciones hechas por el redactor que el abogado tiene que validar: Irlanda como ley y foro de las cláusulas tipo; tabla 4 del addendum del Reino Unido (pueden terminarlo las dos partes); el párrafo de Suiza; auditoría limitada a cuestionario anual salvo que la ley o un regulador pidan más; el tope de responsabilidad de los términos aplicado al DPA; cláusulas de Brasil y Argentina "a pedido" en vez de anexadas.
+
+**Centro de ayuda (`help/data-and-privacy.html`)**: mismos cambios de hashes, cargos, pedidos de datos, borrado, copias de 30 días, dónde corre (EE.UU. y acceso desde Argentina) y enlace al DPA.
+
+## 3. Preguntas abiertas (lista única)
+
+Reemplaza a las listas anteriores (1–12, R1–R10 y las 12 del anexo de privacidad), sin repetidos y ordenada por importancia. Entre paréntesis, el número viejo.
+
+**Bloquean publicar como vigente**
+
+1. **Contraparte.** Los textos nombran a "Digital Solvers LLC, 153 E Flagler St, Miami, FL 33131" y la política dice "We are a United States company". No está confirmado que la LLC exista y esté activa, en qué estado se constituyó, que la dirección (sin suite) sea la registrada, ni que la cuenta de Shopify Partner y la app de Klaviyo estén a su nombre. Quien opera está en Argentina. ¿Qué entidad tiene que firmar, con qué datos, y qué pasa con la limitación de responsabilidad si hoy la cuenta es personal? ¿Registro como foreign LLC en Florida? ¿Nombre de fantasía "TierSaver" (Fla. Stat. §865.09)? ¿Hace falta una página de aviso legal para la UE (Impressum)? (R8, nueva)
+2. **DPA y transferencias.** ¿El DPA publicado, incorporado por referencia y sin firma, alcanza como contrato del art. 28 GDPR? ¿Están bien elegidos el módulo 2 (y 3), Irlanda, la opción 2 de la cláusula 9 y las tablas del addendum del Reino Unido? ¿Conviene además sumarse al Data Privacy Framework? ¿El acceso desde Argentina queda bien cubierto con la mención de adecuación, y esa adecuación sigue vigente en la UE y en el Reino Unido? ¿Hace falta el párrafo de Suiza? (2, A8)
+3. **CCPA/CPRA.** ¿La cláusula 8 más la sección 7 del DPA cumplen el contrato de "service provider" del reglamento (§7051)? No se pudo leer el texto. (3)
+4. **Números comprometidos en esta ronda.** Aviso de incidentes en 48 horas desde la confirmación; aviso de subencargados con 30 días; 5 días hábiles si no se puede cumplir; reclamos de cobro dentro de 60 días; datos de prospectos por 24 meses. ¿Son razonables y sostenibles para una operación de una persona? ¿Cómo se concilia el aviso de incidentes con la obligación de coordinar los comunicados con Klaviyo? (9, A9)
+5. **Modo automático y cargos recurrentes.** ¿ROSCA, la sección 5 de la FTC o alguna ley estatal de renovación automática alcanzan a una venta entre empresas a tiendas chicas? ¿Alcanza la divulgación de la cláusula 6 más la casilla de la app, y un aviso solo dentro de la app antes y después de cada corrida? Hoy la casilla de la app no menciona el cargo y no registra la versión de los términos (ver sección 5). (R1, R10, nueva)
+6. **Aceptación.** ¿Alcanza la aceptación al instalar más la casilla al aprobar una limpieza, con versión registrada? ¿Cubre las limpiezas automáticas? ¿Hay que volver a pedirla en cada cambio de términos, o vale el uso continuado con aviso dentro de la app? ¿La cláusula "Electronic agreement" ayuda? (R1, R10, 9)
+7. **Evidencia contra borrado.** Los términos se apoyan en "your approvals are recorded", pero ese registro se borra entero con el `shop/redact` de Shopify (y como respaldo a los ~10 días). Klaviyo pide logs de 365 días a prueba de manipulación para listar la app. ¿Se puede conservar después de desinstalar un registro mínimo sin datos de clientes (tienda, fechas, versión de términos, aprobaciones, cargos)? ¿Por cuánto tiempo y con qué base? ¿Digital Solvers LLC tiene que conservar registros contables de cada cargo? Hoy la política dice que no se guarda nada. (R2, A5)
+8. **Derechos no excluibles.** ¿Alcanza la cláusula general de la 12 para Australia, Reino Unido (UCTA) y la UE (control de condiciones generales entre empresas, por ejemplo Alemania), o conviene un anexo por país o bloquear la instalación desde alguno? ¿Hace falta el término "consumer guarantees"? ¿El foro de Florida se sostiene frente a esos merchants? (nueva, 1)
+9. **Limitación de responsabilidad.** Validez bajo ley de Florida; si mayúsculas y negrita alcanzan como "conspicuous"; si hay que nombrar la culpa grave en la salvedad; si la exclusión de lucro cesante directo se sostiene; si el tope debe ser recíproco o tener excepciones (pago, indemnidad, confidencialidad); si conviene un tope separado para errores propios de la app (un bug que suprime fuera de la simulación) o para incidentes de datos; si el tope puede aplicarse al DPA. (7, R5)
+10. **Indemnidad.** ¿La regla de Florida sobre indemnidad por negligencia propia obliga a reescribir la 13? ¿Conviene una indemnidad recíproca de TierSaver por infracción de propiedad intelectual? No se agregó. (R3)
+11. **Arbitraje, renuncia a jurado y a acciones colectivas.** No se agregó ninguna, por indicación del dueño. ¿Conviene alguna? ¿La renuncia a jurado es ejecutable entre empresas en Florida? (1)
+
+**Importantes**
+
+12. **Marketing por mail.** ¿Conviene nombrar las leyes (CAN-SPAM, TCPA, CASL, GDPR, ePrivacy, PECR) como quedó, o una fórmula general con ejemplos? (nueva)
+13. **Agencias y staff.** ¿La aceptación de un colaborador de agencia obliga al merchant sin otra prueba de mandato? El registro guarda solo el id de usuario de Shopify. (nueva)
+14. **Deshacer.** El deshacer levanta también una supresión manual puesta después por el merchant. ¿Alcanza el aviso de la cláusula 4 o conviene exigir una casilla ("I have checked...") en cada deshacer? (nueva)
+15. **Publicidad y nombre.** ¿El nombre "TierSaver", sumado al chequeo de lista que muestra tamaños de plan de Klaviyo, es una afirmación de ahorro que requiere sustento (FTC, FDUTPA)? ¿Hay exposición entre empresas por las afirmaciones de precio y de "undo"? ¿"Klaviyo" dentro del nombre del producto es uso nominativo defendible, o hay que pedir consentimiento escrito? (R5, nueva)
+16. **Sanciones y exportación.** ¿Alcanza la cláusula "Trade controls"? ¿Hace falta algún filtro propio además del de Shopify? (6)
+17. **Reembolsos.** ¿"No reembolsable salvo ley" es válido tal cual? ¿El Partner Program Agreement y los API Terms de Shopify exigen cláusulas en los términos con el merchant (exención a favor de Shopify, reglas de reembolso o créditos)? No se pudieron leer. (R6)
+18. **Impuestos.** ¿Quién es el proveedor a efectos de IVA en ventas a la UE y al Reino Unido? Sales tax de EE.UU. sobre software como servicio. Es también tema del contador. (nueva)
+19. **Idioma.** ¿Alcanza la frase en francés para Quebec? (nueva)
+20. **Uso propio de datos.** ¿La excepción de conteos agregados del propio servicio es compatible con el rol de encargado? Hoy no hay código que produzca estadísticas. (ex tabla, M15)
+21. **Retención mientras la app está instalada.** No hay plazo para hashes de compradores, historial de limpiezas ni registro de acciones. La revisión propuso borrar el hash a los 30 días de la limpieza y el detalle por perfil a los 24 meses. ¿Hace falta? Toca la promesa de que todo se puede deshacer. (A4)
+22. **Klaviyo.** Sus API Terms exigen indemnidad a favor de Klaviyo, ley de Massachusetts, borrado "immediately" y coordinar comunicados. ¿Algo más tiene que reflejarse en los términos con el merchant? ¿Las copias de 30 días y la ventana de 48 horas son compatibles con "immediately delete"? (10, A5)
+23. **Confidencialidad, publicidad, feedback, usuarios de gobierno.** Cláusulas estándar agregadas: lectura general. (nueva)
+24. **Pedidos de titulares.** `customers/data_request`: ¿alcanza con registrarlo y poner la información a disposición del merchant en la app? ¿Qué hay que entregar y en qué plazo? Después de un `customers/redact`, ¿se pueden conservar el id de perfil de Klaviyo, el motivo y el estado para poder deshacer? ¿Por cuánto tiempo? Restaurar el marketing de alguien que pidió ser borrado es justo lo que no debería poder pasar. (A2, A3)
+25. **Hashes.** ¿Describir el HMAC con clave por tienda como dato personal seudonimizado es correcto y suficiente? (A1)
+26. **Decisiones automatizadas.** ¿Coincide con la lectura de que el art. 22 GDPR no aplica? (A12)
+27. **Datos del personal del merchant.** Id de usuario de Shopify en el registro de acciones: ¿TierSaver es responsable (como dice la política) o encargado? ¿Qué aviso le corresponde a ese personal? (A7, 12)
+28. **Prospección.** Base legal y alcance geográfico del outreach en frío a agencias y merchants (CAN-SPAM, CASL, PECR y GDPR). ¿Se puede escribir a Canadá, la UE y el Reino Unido? (nueva)
+29. **Programa de agencias con comisión.** ¿Hace falta un acuerdo de referidos aparte, con divulgación de la comisión al cliente? ¿Lo permite Shopify? ¿Retenciones si la agencia es de EE.UU.? No existe el documento. (nueva)
+
+**Menores**
+
+30. Plazo para reclamar: no se acortó la prescripción (entendemos que Florida no lo permite). El plazo de 60 días para reclamos de cobro, ¿choca con eso? (8)
+31. ¿Hace falta un plazo mínimo de aviso para cambios de términos y de precio? Hoy no hay número. (9)
+32. ¿Conviene una cláusula de honorarios para la parte vencedora (Fla. Stat. §57.105(7))? (R4)
+33. ¿Conviene exceptuar las medidas cautelares del foro exclusivo? (R9)
+34. ¿La política de privacidad debe formar parte del contrato solo donde la cláusula 8 la cita? (R7)
+35. ¿Digital Solvers LLC tiene que inscribirse ante alguna autoridad de EE.UU.? ¿Hace falta un DPO? (4)
+36. Cookie estrictamente necesaria de la app: ¿alcanza con declararla, sin banner, para la UE y el Reino Unido? (A6)
+37. Avisos por mail al contacto de la tienda: leer ese mail desde Shopify sería un tratamiento nuevo. Los términos lo dejan condicional. ¿Está bien así? ¿CAN-SPAM aplica si el aviso lleva algo promocional? (A10)
+38. Cuando hello@ y support@ tengan proveedor, ¿debe figurar en la política? (A11)
+39. Brasil (cláusulas de la ANPD) y merchants argentinos (cláusulas modelo de la AAIP): el DPA las ofrece "a pedido". ¿Alcanza hasta que haya merchants de esos países? (nueva)
+40. ¿Hace falta una declaración de accesibilidad del sitio? (nueva)
+
+Ya respondidas por el código: el segmento que la app crea en Klaviyo queda en la cuenta al desinstalar (ex 11); las columnas de nombre y mail de la tabla de sesiones quedan vacías (ex 12, ver anexo).
 
 ### Ventana para deshacer sin cargo (decidida el 2026-11-26)
 
-El dueño eligió una ventana real de 72 horas. El cargo confirmado por Klaviyo se retiene 72 horas desde que termina la limpieza (`CHARGE_HOLD_HOURS` en `shopify/app/runs/labels.ts`, aplicado en `shopify/app/billing/billing.ts`). Si en ese plazo se restauran todos los perfiles de la limpieza, no se cobra. Deshacer una parte, o deshacer después de creado el cargo, no lo cancela ni lo devuelve. La cláusula 6 ("Undo and refunds") ya lo dice así, y la pantalla de la limpieza muestra el mismo plazo.
+El dueño eligió una ventana real de 72 horas. El cargo confirmado por Klaviyo se retiene 72 horas desde que termina la limpieza (`CHARGE_HOLD_HOURS` en `shopify/app/runs/labels.ts`, aplicado en `shopify/app/billing/billing.ts`). Si en ese plazo se restauran todos los perfiles de la limpieza, no se cobra. Deshacer una parte, o deshacer después de creado el cargo, no lo cancela ni lo devuelve. La cláusula 6 lo dice en "When you are charged" y en "Undo and refunds".
 
-Consecuencia aceptada: si el merchant desinstala la app dentro de las 72 horas, Shopify ya no permite crear el cargo y esa limpieza queda sin cobrar.
+Consecuencia aceptada: si el merchant desinstala la app dentro de las 72 horas, Shopify ya no permite crear el cargo y esa limpieza queda sin cobrar. La cláusula 14 ahora lo dice, y la 7 prohíbe hacerlo a propósito.
 
 Dato relacionado, fuera de los términos: si el merchant desconecta Klaviyo entre la limpieza y la confirmación, el cargo no se puede confirmar y a los 10 días deja de reintentarse (`shopify/app/billing/billing.ts`, `runsWithOpenCharges`).
 
-## 4. Qué no se cambió y por qué
+## 4. Decisiones del dueño
 
-- **Cartel de borrador, título "(draft)" y rótulo "Legal · Draft".** Siguen hasta el visto bueno del abogado. El cartel lo genera `site/build/build.mjs` y todavía dice que hay texto entre corchetes por completar: ya no lo hay. Sacar el cartel es un cambio de build y de un test (`legal pages carry the draft banner`), fuera de este encargo.
-- **Arbitraje, acciones colectivas, juicio por jurados.** Quedan como pregunta (decisión del dueño).
-- **Mecanismo de transferencia internacional y DPA firmable.** No existen todavía; no se inventaron.
-- **Plazos en días** (aviso de cambios, retención de logs de Cloudflare, aviso de incidentes). No hay decisiones ni datos; no se pusieron números.
-- **Secciones 3, 4 y 5 de los términos** (responsabilidades del merchant, efectos de la supresión, ninguna promesa sobre el plan o la factura de Klaviyo). Ya cumplían `docs/12` §4.1; solo se unificó "run" por "cleanup".
-- **Lista de datos guardados (privacidad §3) y seguridad (§8).** Coinciden con el esquema de la base. Se mantuvieron la zona horaria de la tienda y el hash del id de cliente de Shopify, que están en el esquema.
-- **Otras páginas del sitio.** No se tocaron. Dos quedan desalineadas con los textos legales: `site/src/pages/help/monthly-schedule-and-your-klaviyo-plan.html` dice que antes de cada limpieza mensual llega un resumen por mail (hoy la app no envía mails), y `site/src/pages/help/data-and-privacy.html` enlaza a "privacy policy (draft)" y no menciona el CSV.
+No son preguntas para el abogado: son decisiones de Facundo, que el abogado puede informar.
+
+1. **Entidad.** Confirmar o constituir la entidad que contrata (pregunta 1) antes de cobrar. Los textos conservan "Digital Solvers LLC" y la dirección tal como estaban; no se agregó estado de constitución ni suite. Si se opera como persona física, hay que reescribir identidad, sacar "We are a United States company" (privacidad 7) y rehacer el Anexo I del DPA.
+2. **Cláusula de "producto competitivo o sustancialmente similar" de Klaviyo.** Sus API Terms prohíben desarrollar un producto "competitive or substantially similar", y Klaviyo ya ofrece supresión de inactivos. Es el motivo más probable de un rechazo del listado o de una revocación, y no se arregla con texto. Decidir con el abogado antes de firmar el Technology Partner Agreement. Relacionado: "Klaviyo" dentro del nombre del producto; tener un nombre de respaldo y pedir consentimiento escrito.
+3. **Inscripción ante la AAIP (Ley 25.326).** Quien accede a la base, a los logs y a los secretos está en Argentina. Consultar a un abogado argentino si corresponde inscribir la base de TierSaver y la de contactos comerciales en el Registro Nacional de Bases de Datos, y hacerlo antes del primer merchant real.
+4. **Representante del art. 27 GDPR** en la UE y, por separado, en el Reino Unido: nombrarlo desde el lanzamiento o fijar por escrito el disparador (primer merchant con clientes en la UE). Cuando exista, va en privacidad 14.
+5. **Políticas internas a adoptar** (las piden Shopify nivel 2 y Klaviyo; no existen): acceso y prevención de pérdida de datos (quién accede, 2FA obligatorio, prohibición de exportar la base, rotación de secretos); respuesta a incidentes (con los avisos a merchants en 48 horas, a Klaviyo y a Shopify); retención; registro de actividades de tratamiento. Además: aceptar y archivar el DPA de Cloudflare, y separar el ambiente de prueba del de producción.
+6. **Modo automático.** Lanzar sin él hasta tener aviso por mail, o mantenerlo con la divulgación de cobro en la casilla y un aviso fijo en el inicio (ver sección 5).
+7. **Números que esta ronda dejó escritos** y que son compromiso suyo: 48 horas, 30 días, 5 días hábiles, 60 días, 24 meses (pregunta 4).
+8. **Retención y registro posterior a la desinstalación** (preguntas 7, 21 y 24): hoy los textos describen el código tal cual está (nada se conserva después del borrado; el id de perfil de Klaviyo queda tras un `customers/redact`).
+9. **Prospección.** Regla interna antes de mandar el primer mail en frío: nombre legal, dirección postal y baja en cada mensaje; lista de supresión propia; no escribir a Canadá, la UE ni el Reino Unido sin base revisada. Pedido de reseñas igual para todos, sin filtrar por satisfacción.
+10. **Buzones.** hello@ y support@ tienen que existir y estar atendidos: los textos los nombran para reclamos de cobro, privacidad y avisos legales.
+
+## 5. Qué necesita un cambio de código o de operación para ser verdad
+
+Los textos describen estos puntos como ya decididos. Hasta que estén desplegados, el texto se adelanta al código:
+
+- **Hashes con clave por tienda (HMAC-SHA-256).** Hoy `packages/core/src/email-hash.ts` usa SHA-256 sin clave. Afecta privacidad 3 y 8, el DPA (Anexos I y II) y el artículo de ayuda.
+- **`customers/data_request`.** El registro del pedido ya está en el código en curso (tabla `privacy_requests`, con id del pedido, id de cliente de Shopify, hash y fechas; se borra a los 90 días, y la política lo dice). **Falta la pantalla** para que el merchant descargue desde la app los datos que tenemos de ese cliente: los textos ya dicen que se los damos en la app.
+- **Purga de respaldo de tiendas desinstaladas (10 días).** Ya está en el código en curso (`UNINSTALLED_SHOP_RETENTION_DAYS` en `shopify/app/data/housekeeping.ts`); falta desplegarlo.
+- **Modo automático.** Los términos dicen que activarlo autoriza cargos recurrentes. La casilla de `shopify/app/routes/app.settings.tsx` no menciona el cargo, y activar el modo no registra la versión de los términos. Textos propuestos en la revisión de cobertura (T-05); conviene sumar una línea al texto de cobro que muestra Shopify (`subscriptionTerms()`).
+- **Aviso en la app 30 días antes de cambiar un subencargado** y aviso en la app ante cambios de términos o de política: hace falta el mecanismo (un banner configurable alcanza).
+- **Aviso de incidentes en 48 horas:** hace falta el procedimiento escrito y una forma de avisar (hoy solo un aviso dentro de la app).
+- **Plan B de la cuenta de Klaviyo** (`getAccount` con `allFields`): la política lo declara; sería mejor quitarlo o pedir solo el id.
+- **Copias de 30 días:** "up to 30 days" vale para el plan pago de D1 (7 días en el gratuito). Región de la base y ausencia de cookies o analítica de Cloudflare en la zona del sitio: verificar en el panel.
+- **`TERMS_VERSION`** (`shopify/app/legal.ts`): sigue en "2026-11-26", igual que la fecha de vigencia impresa. Hay que fijarlo en la fecha real de publicación cuando el abogado dé el visto bueno. `legalUrls()` no conoce `/dpa`.
+
+## 6. Qué no se cambió y por qué
+
+- **Cartel de borrador, títulos "(draft)" y rótulo "Legal · Draft".** Siguen hasta el visto bueno del abogado; la página del DPA los lleva también. El cartel lo genera `site/build/build.mjs` y todavía dice que hay texto entre corchetes: no lo hay. Ojo: la app ya hace aceptar un texto cuya página dice que no rige; sacar el cartel, fijar la fecha de vigencia real y subir `TERMS_VERSION` tienen que pasar el mismo día.
+- **Entidad y domicilio.** Sin tocar (decisión 1). No se aplicó el bloque de identidad propuesto por la revisión.
+- **Arbitraje, renuncia a jurado y a acciones colectivas.** No se agregaron (pregunta 11).
+- **Indemnidad recíproca por propiedad intelectual.** Obligación nueva para TierSaver; queda como pregunta 10.
+- **Plazos de retención mientras la app está instalada, registro mínimo posterior a la desinstalación y borrado del id de perfil tras un `customers/redact`.** Son propuestas de la revisión de privacidad sin decisión ni código. Los textos describen lo que el código hace hoy.
+- **Número de días de los logs.** La documentación de Cloudflare da 3 o 7 días según el plan; la política dice "a limited period that it sets", sin número.
+- **Términos de marca.** Los textos no usan "Klaviyo's recommended" ni "Klaviyo recommends"; dicen "the criteria Klaviyo publishes for suppressing unengaged profiles".
+- **Landing, FAQ, guías y el resto del centro de ayuda.** Fuera de este encargo. Siguen pendientes ahí las correcciones de la revisión de cobertura: absolutos sobre compradores y sobre el deshacer, "read-only", el mail que el help promete, el texto de `help/undo.html` sobre supresiones manuales, y el pie de "no es asesoramiento" en las guías.
+- **Acuerdo de agencias.** No existe; la cláusula de divulgación de comisión propuesta queda para cuando se redacte.
+- **Documentos de Shopify no leídos.** Partner Program Agreement, API License and Terms of Use y pautas de marca (`www.shopify.com` estaba fuera de la red de la sesión). También sin leer: el reglamento de la CCPA, la Ley 25.326 y las normas de la AAIP. Lo que los textos dicen sobre esos temas sale de resúmenes y está marcado como pregunta.

@@ -22,6 +22,10 @@ export interface AuditView {
     seededTestAccount: boolean;
     /** Cycle detector: profiles a cleanup suppressed that are active again without a TierSaver restore. */
     resurfaced: number;
+    /** Profiles that meet the criteria but are left out because they were restored in the last 365 days. */
+    restoreLocked: number;
+    /** Profiles kept active only because the Shopify order history could not vouch for them yet. */
+    unverifiedPurchases: number;
   } | null;
 }
 
@@ -38,7 +42,7 @@ export const KEPT_LABELS: Record<ProtectionReason, string> = {
   unknown_send_history: "Send history could not be read",
   unknown_profile_age: "Creation date could not be read",
   insufficient_engagement_history: "Engagement history is incomplete",
-  insufficient_purchase_history: "Shopify order history does not reach back far enough",
+  insufficient_purchase_history: "Could not be checked against your Shopify order history yet",
 };
 
 const NOTES: Record<string, string> = {
@@ -75,13 +79,13 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
         ? "A protected list or segment could not be read, so every profile was kept active."
         : summary.note
           ? (NOTES[summary.note] ?? null)
-          : simulation.candidateCount === 0 && (summary.protectedByReason?.insufficient_purchase_history ?? 0) > 0
-            ? // Not "your list is clean": we simply cannot tell yet who bought.
-              "TierSaver could not check these profiles against your full Shopify order history yet, so all of them were kept active. Nobody is suppressed until every profile can be checked against your orders."
-            : null,
+          : null,
       price: tier ? formatUsd(tier.monthlyCents) : null,
       seededTestAccount: summary.seededTestAccount === true,
       resurfaced: summary.resurfaced ?? 0,
+      restoreLocked: summary.protectedByReason?.recently_reactivated ?? 0,
+      // Not "your list is clean": we simply cannot tell yet who purchased. The home screen says why (app/components/home-screen.tsx).
+      unverifiedPurchases: summary.protectedByReason?.insufficient_purchase_history ?? 0,
     };
   }
 

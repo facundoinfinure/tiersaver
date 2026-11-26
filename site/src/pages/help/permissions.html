@@ -1,0 +1,61 @@
+<!--
+title: Permissions TierSaver asks for, and why
+seoTitle: Permissions TierSaver asks for
+nav: Permissions
+description: The access TierSaver requests in Shopify and in Klaviyo, what each permission is used for, the one segment it creates and how to remove its access.
+summary: Each Shopify and Klaviyo permission, what it is used for, and how to remove access.
+lead: TierSaver asks for the access it uses and nothing more. This page lists every permission and what the app does with it.
+footer: yes
+layout: doc
+group: help
+order: 0.5
+updated: 2026-11-26
+-->
+<h2>In Shopify</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Shopify permissions">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row"><code>read_orders</code></th><td>Reading your orders, to find which email addresses have bought from your store. A profile matched to an order is kept active. TierSaver stores a one-way hash of the address and the date of the last order, not the order itself.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>TierSaver does not change anything in your store: it has no write permission in Shopify. With this permission alone Shopify only returns recent orders. As long as TierSaver cannot check a profile against enough of your order history, that profile is kept active.</p>
+<p>Charges are created through Shopify's own billing, which you approve separately. See <a href="/help/billing">billing and charges</a>.</p>
+
+<h2>In Klaviyo</h2>
+<p>You approve these on Klaviyo's own screen when you connect. Klaviyo names them as below.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Klaviyo permissions">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row"><code>accounts:read</code></th><td>Identifying which Klaviyo account is connected. Klaviyo requires it for every connected app.</td></tr>
+      <tr><th scope="row"><code>profiles:read</code></th><td>Reading the profiles that meet the criteria and the members of the lists and segments you protect, and reading a profile's email address at the moment it is suppressed or included in your CSV download.</td></tr>
+      <tr><th scope="row"><code>profiles:write</code></th><td>Suppressing profiles in a cleanup you approved. Klaviyo requires it, together with <code>subscriptions:write</code>, for bulk suppression. TierSaver does not edit or delete profiles.</td></tr>
+      <tr><th scope="row"><code>subscriptions:write</code></th><td>Suppressing profiles in a cleanup, and removing that suppression when you restore one.</td></tr>
+      <tr><th scope="row"><code>subscriptions:read</code></th><td>Checking the status of the suppression jobs Klaviyo runs for a cleanup or a restore.</td></tr>
+      <tr><th scope="row"><code>lists:read</code></th><td>Listing your lists so you can mark some as protected, and reading their members.</td></tr>
+      <tr><th scope="row"><code>segments:read</code></th><td>Listing your segments so you can mark some as protected, and reading the members of TierSaver's own segment.</td></tr>
+      <tr><th scope="row"><code>segments:write</code></th><td>Creating and maintaining the one segment described below. No other segment is created, changed or deleted.</td></tr>
+      <tr><th scope="row"><code>metrics:read</code></th><td>Finding the metrics in your account that record opens, clicks, purchases and site activity.</td></tr>
+      <tr><th scope="row"><code>usage:read</code></th><td>Reading Klaviyo's own count of your active profiles and the date your billing period ends, which the monthly schedule can use as your renewal day. It only adds information: no cleanup and no charge depends on it.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>What it does not ask for</h2>
+<p>The lists above are complete. TierSaver has no access to your campaigns, flows or templates, cannot send messages, and does not read your events.</p>
+
+<h2>The one segment it creates</h2>
+<p>The audit creates a segment in your Klaviyo account named "{{app.segmentName}}". It holds the criteria Klaviyo publishes for suppressing unengaged profiles, and Klaviyo itself evaluates it. Do not edit or delete it while you use the app: an audit cannot run on a segment that was changed, and the next audit restores it.</p>
+
+<h2>How to remove access</h2>
+<ul>
+  <li><strong>Klaviyo only:</strong> on the app's home page, under "Klaviyo connection", select "Disconnect Klaviyo". The app asks Klaviyo to revoke its access and deletes its stored tokens.</li>
+  <li><strong>Everything:</strong> uninstall the app in Shopify. That also revokes the Klaviyo access.</li>
+</ul>
+<p>In both cases suppressed profiles stay suppressed. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>

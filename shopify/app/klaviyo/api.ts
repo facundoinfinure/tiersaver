@@ -349,6 +349,80 @@ export async function getProfileEmails(
   return out;
 }
 
+/**
+ * Current state of one profile as the suppression gateway needs it right
+ * before a batch is sent. The email is held in memory for the one request and
+ * must not be stored or logged.
+ */
+export interface ProfileState {
+  id: string;
+  /** Current email; null when the profile has none. */
+  email: string | null;
+  /**
+   * Global email suppressions with the time Klaviyo recorded each one
+   * (`subscriptions.email.marketing.suppression`: reason + timestamp). Null when
+   * Klaviyo did not return the marketing object: the state is then unknown.
+   * The API does NOT say who or what created a suppression.
+   */
+  suppressions: { reason: string; at: Date | null }[] | null;
+}
+
+const STATE_FIELDS = ["email", "subscriptions.email.marketing.can_receive_email_marketing", "subscriptions.email.marketing.suppression"] as const;
+
+function toProfileState(item: Resource<ProfileAttributes>): ProfileState | null {
+  if (!item?.id) return null;
+  const a = item.attributes ?? {};
+  const marketing = a.subscriptions?.email?.marketing;
+  let suppressions: ProfileState["suppressions"] = null;
+  if (marketing && (Array.isArray(marketing.suppression) || marketing.suppression === null)) {
+    suppressions = (marketing.suppression ?? []).map((s) => ({ reason: typeof s?.reason === "string" ? s.reason : "UNKNOWN", at: parseDate(s?.timestamp) }));
+    // "Cannot receive marketing" without a listed reason is still a suppression we must respect.
+    if (marketing.can_receive_email_marketing === false && suppressions.length === 0) suppressions.push({ reason: "UNKNOWN", at: null });
+  }
+  return { id: item.id, email: typeof a.email === "string" && a.email.trim() !== "" ? a.email : null, suppressions };
+}
+
+async function readProfileStates(client: KlaviyoClient, endpoint: "profiles" | "groupMembers", path: string, filter: string, wanted: ReadonlySet<string>): Promise<Map<string, ProfileState>> {
+  const body = await client.request<Collection<ProfileAttributes>>({
+    endpoint,
+    path,
+    query: { filter, "fields[profile]": [...STATE_FIELDS], "additional-fields[profile]": "subscriptions", "page[size]": LIMITS.profilesPageSize },
+  });
+  const out = new Map<string, ProfileState>();
+  for (const item of body?.data ?? []) {
+    const state = toProfileState(item);
+    if (state && wanted.has(state.id)) out.set(state.id, state);
+  }
+  return out;
+}
+
+/**
+ * GET /api/profiles?filter=any(id,[..]) with email and email suppressions, for
+ * up to 50 ids in one request (spec 2026-10-15: `id`: `any`, `equals`).
+ * Ids that no longer exist are absent from the map. Used by undo batches.
+ */
+export async function getProfileStates(client: KlaviyoClient, profileIds: readonly string[]): Promise<Map<string, ProfileState>> {
+  if (profileIds.length === 0) return new Map();
+  if (profileIds.length > LIMITS.profileIdsPerLookup) throw new KlaviyoApiError("klaviyo_too_many_profile_ids");
+  return readProfileStates(client, "profiles", "/api/profiles", `any(id,[${profileIds.map(filterString).join(",")}])`, new Set(profileIds));
+}
+
+/**
+ * GET /api/segments/{id}/profiles?filter=any(profile_id,[..]) — which of up to
+ * 50 profiles are members of the segment RIGHT NOW, each with its email and
+ * email suppressions (spec 2026-10-15, get_profiles_for_segment: `profile_id`:
+ * `any`, `equals`; scopes profiles:read + segments:read; 75/s, 700/m).
+ * A profile absent from the map is not a member any more, or no longer exists.
+ * Used by suppress batches: one request answers "still a candidate?" and
+ * "which address?" together. Only meaningful for a segment that is active, not
+ * processing and whose definition matches (see `getCandidateSegment`).
+ */
+export async function getCandidateSegmentMemberStates(client: KlaviyoClient, segmentId: string, profileIds: readonly string[]): Promise<Map<string, ProfileState>> {
+  if (profileIds.length === 0) return new Map();
+  if (profileIds.length > LIMITS.profileIdsPerLookup) throw new KlaviyoApiError("klaviyo_too_many_profile_ids");
+  return readProfileStates(client, "groupMembers", `/api/segments/${pathId(segmentId)}/profiles`, `any(profile_id,[${profileIds.map(filterString).join(",")}])`, new Set(profileIds));
+}
+
 // ---------------------------------------------------------------------------
 // Metrics and engagement events
 // ---------------------------------------------------------------------------

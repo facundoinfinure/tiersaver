@@ -3,6 +3,7 @@ import {
   estimateSavings,
   evaluateProfile,
   isKnownTierBoundary,
+  purchaseDataIsFresh,
   quoteCharge,
   validateRuleSettings,
   type CandidateReason,
@@ -33,6 +34,7 @@ import type { KlaviyoClient } from "../klaviyo/client";
 import { SEEDED_METRIC_SPECS, SEED_CREATED_AT_PROPERTY } from "../klaviyo/config";
 import { KlaviyoError } from "../klaviyo/errors";
 import { candidateSegmentCoverage, toProfileSignals } from "../klaviyo/signals";
+import { purchaseCoverage } from "../orders/sync";
 
 /**
  * Scan engine: the audit and the simulation, computed in one pass as a chain
@@ -50,6 +52,8 @@ import { candidateSegmentCoverage, toProfileSignals } from "../klaviyo/signals";
  *   segment status  poll until Klaviyo finished computing it
  *   members N       one page (100) of segment members -> scan_profiles
  *   group G page N  protected group members -> flag in scan_profiles
+ *   purchases sync  bring Shopify order data up to date (bounded; failure is not fatal)
+ *   purchases coverage  how far that data reaches; stale or unknown protects everyone
  *   evaluate N      rules engine over 500 stored members
  *   segment verify  the definition did not change while we were reading
  *   usage / count   active profile count
@@ -90,6 +94,13 @@ export interface ScanDeps {
    * merchant; both conditions must hold.
    */
   seededAccountId?: string | null;
+  /**
+   * Brings the shop's Shopify order data up to date, a bounded number of pages
+   * per call ("more" = call again). Always set in production (workers/scan.ts).
+   * Without it, or when it fails, the scan uses the data as stored: if that is
+   * not current, the purchase rule protects everyone.
+   */
+  syncPurchases?: (shop: string) => Promise<{ status: "fresh" | "more" | "busy" }>;
   limits?: Partial<ScanLimits>;
 }
 
@@ -103,6 +114,8 @@ export interface ScanLimits {
   /** Pages of 100 profiles for the fallback active-profile count, and how many per step. */
   maxCountPages: number;
   countPagesPerStep: number;
+  /** Calls to `syncPurchases` before the scan goes on with the order data it has. */
+  maxPurchaseSyncSteps: number;
 }
 
 /** Sized for Workers Free (1,024 steps per Workflow instance). Raise with Workers Paid. */
@@ -112,6 +125,7 @@ export const DEFAULT_SCAN_LIMITS: ScanLimits = {
   maxSegmentPolls: 40,
   maxCountPages: 1500,
   countPagesPerStep: 10,
+  maxPurchaseSyncSteps: 25,
 };
 
 const MEMBERS_PER_EVALUATE_STEP_PAGES = 5;
@@ -121,6 +135,7 @@ const RESURFACE_GRACE_MS = 72 * 60 * 60 * 1000;
 const ID_CHUNK = 90;
 
 const KLAVIYO_STEP: StepConfig = { retries: { limit: 5, delay: "10 seconds", backoff: "exponential" }, timeout: "2 minutes" };
+const SHOPIFY_STEP: StepConfig = { retries: { limit: 3, delay: "10 seconds", backoff: "exponential" }, timeout: "2 minutes" };
 const DB_STEP: StepConfig = { retries: { limit: 5, delay: "2 seconds", backoff: "exponential" }, timeout: "1 minute" };
 
 export type ScanOutcome =
@@ -137,6 +152,12 @@ export interface ScanSummary extends SimulationSummary {
   protectedGroupsUnknown?: boolean;
   /** True when the scan read the seeded test account (see ScanDeps.seededAccountId). */
   seededTestAccount?: boolean;
+  /**
+   * True when Shopify order data could not be brought up to date for this scan
+   * (never read, or last read too long ago). Everyone evaluated was then
+   * protected with insufficient_purchase_history.
+   */
+  purchaseDataStale?: boolean;
   /**
    * Cycle detector (docs/12-CUMPLIMIENTO-KLAVIYO.md 3.1, guardrail 6): profiles
    * a TierSaver cleanup suppressed that are active again without TierSaver
@@ -247,7 +268,6 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
         rules: ruleSettingsOf(settings),
         protectedGroups: settings.protectedGroupIds,
         klaviyoPlan: settings.klaviyoPlan,
-        purchasesCoveredSince: shop.purchasesCoveredSince?.toISOString() ?? null,
         klaviyoAccountId: connection.klaviyoAccountId,
         hasUsageScope: connection.scopes.split(/\s+/).includes("usage:read"),
         profilesUsageTypeId: connection.profilesUsageTypeId,
@@ -283,6 +303,7 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
     let memberCount = 0;
     let protectedGroupsUnknown = false;
     const totals: PageCounts = { candidates: {}, protectedBy: {}, skippedBy: {}, candidateCount: 0, protectedCount: 0, skippedCount: 0, resurfaced: 0 };
+    let purchases: PurchaseCoverageRead = { since: null, until: null, stale: false };
 
     if (segment.ok) {
       const definition = segment.definition as SegmentDefinition;
@@ -353,10 +374,16 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
         }
       }
 
+      // ---- purchases: refresh Shopify order data, then read how far it reaches ----
+      // Done as late as possible, right before the rules run. A buyer must never become a candidate because
+      // order data stopped being read: the rules only accept data that is current (purchaseDataIsFresh).
+      if (memberCount > 0) purchases = await readPurchaseCoverage(deps, limits, plan.shop, account.seeded, at);
+
       // ---- evaluate: the rules engine, over stored facts ------------------
-      const coverage = candidateSegmentCoverage({
-        shopifyOrdersSince: account.seeded ? new Date(0) : plan.purchasesCoveredSince ? new Date(plan.purchasesCoveredSince) : null,
-      });
+      const coverage = {
+        ...candidateSegmentCoverage({ shopifyOrdersSince: purchases.since ? new Date(purchases.since) : null }),
+        purchasesUntil: purchases.until ? new Date(purchases.until) : null,
+      };
       for (let first = 0; first < memberPages; first += MEMBERS_PER_EVALUATE_STEP_PAGES) {
         const counts = await step.do(`evaluate ${first / MEMBERS_PER_EVALUATE_STEP_PAGES}`, DB_STEP, () =>
           evaluatePages(db, scanId, plan.shop, first, Math.min(first + MEMBERS_PER_EVALUATE_STEP_PAGES, memberPages), {
@@ -468,11 +495,13 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
         ...(segment.ok ? {} : { note: segment.note }),
         ...(protectedGroupsUnknown ? { protectedGroupsUnknown: true } : {}),
         ...(account.seeded ? { seededTestAccount: true } : {}),
+        ...(purchases.stale ? { purchaseDataStale: true } : {}),
         ...(totals.resurfaced > 0 ? { resurfaced: totals.resurfaced } : {}),
       };
       const coverageStored = {
         engagementSince: segment.ok ? new Date(0).toISOString() : null,
-        purchasesSince: account.seeded ? new Date(0).toISOString() : plan.purchasesCoveredSince,
+        purchasesSince: purchases.since,
+        purchasesUntil: purchases.until,
         siteActivitySince: segment.ok ? new Date(0).toISOString() : null,
       };
 
@@ -589,6 +618,46 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
     });
     return { status: "failed", scanId, error: code };
   }
+}
+
+interface PurchaseCoverageRead {
+  /** ISO dates; null = unknown. */
+  since: string | null;
+  until: string | null;
+  /** The data is not current as of the scan: the purchase rule protects everyone evaluated. */
+  stale: boolean;
+}
+
+/**
+ * Brings Shopify order data up to date (when the scan was given the means) and
+ * reads how far it reaches. Refreshing is best effort: whatever goes wrong, the
+ * scan goes on with what is stored, and data that is not current protects
+ * everyone. The seeded test account has no Shopify orders behind it.
+ */
+async function readPurchaseCoverage(deps: ScanDeps, limits: ScanLimits, shop: string, seeded: boolean, at: Date): Promise<PurchaseCoverageRead> {
+  const { db, step } = deps;
+  if (seeded) return { since: new Date(0).toISOString(), until: at.toISOString(), stale: false };
+  if (deps.syncPurchases) {
+    const sync = deps.syncPurchases;
+    try {
+      for (let i = 0; i < limits.maxPurchaseSyncSteps; i++) {
+        const { status } = await step.do(`purchases sync ${i}`, SHOPIFY_STEP, async () => ({ status: (await sync(shop)).status }));
+        if (status === "fresh") break;
+        // Another runner (the hourly sync) is reading the same orders right now: give it a moment.
+        if (status === "busy") await step.sleep(`purchases wait ${i}`, 15_000);
+      }
+    } catch {
+      // Not fatal, and never optimistic: the coverage read below decides.
+    }
+  }
+  return step.do("purchases coverage", DB_STEP, async () => {
+    const found = await purchaseCoverage(db, shop);
+    return {
+      since: found.since?.toISOString() ?? null,
+      until: found.until?.toISOString() ?? null,
+      stale: !found.since || !purchaseDataIsFresh(found.until, at),
+    };
+  });
 }
 
 /** A short code for `scans.last_error`. Our own errors carry codes as messages; anything else is not copied. */

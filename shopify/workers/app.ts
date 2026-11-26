@@ -39,6 +39,25 @@ export default {
         } catch (error) {
           console.error(`housekeeping failed: ${error instanceof Error ? error.name : "error"}`);
         }
+        // ---- purchase freshness: start (or resume) the orders read of every shop that is due --------------
+        // The reading itself happens in the orders Workflow, page by page; here it is one `create` per shop.
+        try {
+          const { claimShopsForOrdersSync, ordersSyncInstanceId } = await import("../app/orders/sync");
+          const now = new Date();
+          let started = 0;
+          for (const shop of await claimShopsForOrdersSync(db, { now, limit: 40 })) {
+            try {
+              await env.ORDERS_BACKFILL.create({ id: ordersSyncInstanceId(shop, now), params: { shop } });
+              started++;
+            } catch {
+              // Already started this hour (the id repeats) or Workflows is unavailable: the next tick tries again.
+            }
+          }
+          if (started > 0) console.log(`orders sync: ${started} started`);
+        } catch (error) {
+          console.error(`orders sync dispatch failed: ${error instanceof Error ? error.name : "error"}`);
+        }
+        // ---- end purchase freshness -------------------------------------------------------------------
         try {
           const tick = await runScheduleTick({ db, startScan });
           if (tick.due > 0) console.log(`schedule: ${tick.started.length} of ${tick.due} scans started`);

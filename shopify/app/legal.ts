@@ -5,8 +5,53 @@
  */
 export const TERMS_VERSION = "2026-11-26";
 
-/** Public site that hosts the terms and the privacy policy. `SITE_URL` overrides it until the domain is live. */
-export function legalUrls(env: { SITE_URL?: string }): { terms: string; privacy: string } {
+/** Where merchants write for help with the app, and to agree a price above the public tiers. */
+export const SUPPORT_EMAIL = "support@tiersaver.com";
+export const SALES_EMAIL = "hello@tiersaver.com";
+
+/**
+ * Help-centre articles the app links to. Each one is a page under `site/src/pages/help/`;
+ * link only to a file that exists there.
+ */
+const HELP_ARTICLES = {
+  whatSuppressMeans: "what-suppress-means",
+  simulationAndApproval: "simulation-and-approval",
+  undo: "undo",
+  pricing: "pricing",
+  schedule: "monthly-schedule-and-your-klaviyo-plan",
+  criteria: "cleanup-criteria",
+  audit: "how-the-audit-works",
+  dataAndPrivacy: "data-and-privacy",
+  uninstalling: "uninstalling",
+} as const;
+
+export type HelpArticle = keyof typeof HELP_ARTICLES;
+
+export interface LegalUrls {
+  terms: string;
+  privacy: string;
+  /** Help-centre home. */
+  help: string;
+  articles: Record<HelpArticle, string>;
+  /** `mailto:` links. The app itself sends no email. */
+  support: string;
+  sales: string;
+  supportEmail: string;
+  salesEmail: string;
+}
+
+/** Public site that hosts the terms, the privacy policy and the help centre. `SITE_URL` overrides it until the domain is live. */
+export function legalUrls(env: { SITE_URL?: string }): LegalUrls {
   const base = (env.SITE_URL || "https://tiersaver.com").replace(/\/+$/, "");
-  return { terms: `${base}/terms`, privacy: `${base}/privacy` };
+  const articles = Object.fromEntries(Object.entries(HELP_ARTICLES).map(([key, slug]) => [key, `${base}/help/${slug}`])) as Record<HelpArticle, string>;
+  return {
+    terms: `${base}/terms`,
+    privacy: `${base}/privacy`,
+    help: `${base}/help/`,
+    articles,
+    support: `mailto:${SUPPORT_EMAIL}`,
+    sales: `mailto:${SALES_EMAIL}`,
+    supportEmail: SUPPORT_EMAIL,
+    salesEmail: SALES_EMAIL,
+  };
 }

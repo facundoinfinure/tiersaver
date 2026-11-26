@@ -1,0 +1,52 @@
+<!--
+title: What changes after a cleanup: campaigns, flows and SMS
+seoTitle: What changes after a cleanup
+nav: After a cleanup
+description: What suppression changes for the profiles a cleanup suppressed: campaigns, flows, transactional email, SMS, resubscribing and your active profile count.
+summary: What suppressed profiles still receive, what they do not, and what happens to your profile count.
+lead: A cleanup suppresses profiles for email. This is what that changes, according to Klaviyo's help center, and what it leaves as it was.
+layout: doc
+group: help
+order: 4.5
+updated: 2026-11-26
+-->
+<h2>Campaigns and flows</h2>
+<ul>
+  <li>Suppressed profiles stop receiving your marketing email: campaigns and most flow emails. Klaviyo skips them at send time.</li>
+  <li>Flow emails that Klaviyo has approved as transactional still send to them.</li>
+  <li>This stays true if the person later buys or starts a checkout.</li>
+</ul>
+
+<h2>SMS and push</h2>
+<p>Suppression is for email only. A profile's ability to receive SMS messages and push notifications does not change. TierSaver also keeps any profile with SMS consent out of cleanups in the first place.</p>
+
+<h2>If the person subscribes again</h2>
+<p>A person who subscribes to your email again is unsuppressed by Klaviyo and can receive marketing email again. TierSaver does not unsuppress anyone by itself; the only way it removes a suppression is when you <a href="/help/undo">restore a cleanup</a>.</p>
+
+<h2>Your active profile count</h2>
+<ul>
+  <li>Suppressed profiles do not count toward your Klaviyo email plan's active profile count. Klaviyo's count can take up to 72 hours to update after a cleanup.</li>
+  <li>On Klaviyo's Advanced KDP plan, suppressed profiles can still count toward billing.</li>
+  <li>Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo. TierSaver makes no promise about your Klaviyo plan or invoice. See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule and your Klaviyo plan</a>.</li>
+</ul>
+
+<h2>What stays the same</h2>
+<ul>
+  <li>The profiles and their full history stay in your Klaviyo account. Nothing is deleted.</li>
+  <li>Consent does not change. A suppression is not an unsubscribe.</li>
+</ul>
+
+<h2>The message "Profiles from an earlier cleanup are active again"</h2>
+<p>The app shows this on the home page when an audit finds profiles that a TierSaver cleanup suppressed and that have since been unsuppressed in Klaviyo outside TierSaver. When that happens:</p>
+<ul>
+  <li>those profiles are kept active, and TierSaver does not suppress them again for {{criteria.undoLockDays}} days;</li>
+  <li>your monthly schedule is paused. Turn it back on in <a href="/help/settings">Settings</a> once you have checked what happened.</li>
+</ul>
+
+<h2>Sources</h2>
+<ul class="sources">
+  {{src.suppressedProfiles}}
+  {{src.activeProfileManagement}}
+  {{src.bulkSuppress}}
+  {{src.billing}}
+</ul>

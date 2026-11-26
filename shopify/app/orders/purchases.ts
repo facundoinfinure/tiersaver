@@ -1,5 +1,5 @@
 import { hashEmail } from "@tiersaver/core";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { hashCustomerId } from "../data/privacy";
 import * as schema from "../db/schema";
@@ -16,7 +16,7 @@ type Db = DrizzleD1Database<typeof schema>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Without the read_all_orders scope Shopify only returns the last 60 days of orders. */
+/** Without the read_all_orders scope Shopify only returns orders created in the last 60 days. */
 export const DEFAULT_ORDER_HISTORY_DAYS = 60;
 /**
  * With read_all_orders: the shop's whole order history (decided 2026-11-25).
@@ -31,6 +31,11 @@ export const ORDERS_PAGE_SIZE = 250;
 
 export interface OrderRef {
   email: string | null | undefined;
+  /**
+   * Email of the order's customer, when it is known and differs from the order's
+   * (point-of-sale orders often carry no order email). Both protect.
+   */
+  customerEmail?: string | null;
   customerId?: string | number | null;
   processedAt: string | Date | null | undefined;
   /** Test orders are not purchases. */
@@ -53,18 +58,24 @@ export async function ensureShop(db: Db, shop: string, now = new Date()): Promis
 
 /**
  * Upserts hashed buyers. For each buyer the most recent order date wins, so
- * replays and out-of-order deliveries are harmless. Returns how many orders counted.
+ * replays and out-of-order deliveries are harmless. Returns how many buyers were stored.
  */
 export async function recordPurchases(db: Db, shop: string, orders: readonly OrderRef[], now = new Date()): Promise<number> {
   const latest = new Map<string, { at: Date; customerIdHash: string | null }>();
   for (const order of orders) {
-    if (order.test || !order.email || !order.email.includes("@") || !order.processedAt) continue;
+    if (order.test || !order.processedAt) continue;
+    const emails = [order.email, order.customerEmail].filter((e): e is string => typeof e === "string" && e.includes("@"));
+    if (emails.length === 0) continue;
     const at = new Date(order.processedAt);
     if (Number.isNaN(at.getTime())) continue;
-    const emailHash = await hashEmail(order.email);
     const customerIdHash = order.customerId != null ? await hashCustomerId(shop, customerNumericId(order.customerId)) : null;
-    const seen = latest.get(emailHash);
-    if (!seen || at > seen.at) latest.set(emailHash, { at, customerIdHash: customerIdHash ?? seen?.customerIdHash ?? null });
+    for (const email of emails) {
+      // The one place order emails are hashed: every lookup must use the same helper.
+      const emailHash = await hashEmail(email);
+      const seen = latest.get(emailHash);
+      if (!seen || at > seen.at) latest.set(emailHash, { at, customerIdHash: customerIdHash ?? seen?.customerIdHash ?? null });
+      else if (!seen.customerIdHash && customerIdHash) seen.customerIdHash = customerIdHash;
+    }
   }
   if (latest.size === 0) return 0;
 
@@ -93,76 +104,4 @@ export async function recordPurchases(db: Db, shop: string, orders: readonly Ord
 function customerNumericId(id: string | number): string {
   const s = String(id);
   return s.slice(s.lastIndexOf("/") + 1);
-}
-
-export const ORDERS_PAGE_QUERY = `#graphql
-  query TierSaverOrdersPage($first: Int!, $after: String, $query: String!) {
-    orders(first: $first, after: $after, query: $query, sortKey: PROCESSED_AT) {
-      nodes {
-        email
-        processedAt
-        test
-        customer {
-          id
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
-interface OrdersPageData {
-  orders: {
-    nodes: { email: string | null; processedAt: string; test: boolean; customer: { id: string } | null }[];
-    pageInfo: { hasNextPage: boolean; endCursor: string | null };
-  };
-}
-
-/** Runs one Admin GraphQL query and returns its `data`. Must throw on transport or GraphQL errors. */
-export type AdminGraphql = <T>(query: string, variables: Record<string, unknown>) => Promise<T>;
-
-/** How far back the backfill reads, given what Shopify lets the app see. */
-export function backfillSince(readAllOrders: boolean, now = new Date()): Date {
-  if (readAllOrders) return FULL_ORDER_HISTORY_SINCE;
-  return new Date(now.getTime() - DEFAULT_ORDER_HISTORY_DAYS * DAY_MS);
-}
-
-/** Reads one page of orders processed since `since` and stores the hashed buyers. */
-export async function backfillOrdersPage(
-  db: Db,
-  graphql: AdminGraphql,
-  args: { shop: string; since: Date; cursor: string | null },
-): Promise<{ cursor: string | null; done: boolean; orders: number; buyers: number }> {
-  const data = await graphql<OrdersPageData>(ORDERS_PAGE_QUERY, {
-    first: ORDERS_PAGE_SIZE,
-    after: args.cursor,
-    query: `processed_at:>='${args.since.toISOString()}'`,
-  });
-  const { nodes, pageInfo } = data.orders;
-  const buyers = await recordPurchases(
-    db,
-    args.shop,
-    nodes.map((n) => ({ email: n.email, processedAt: n.processedAt, test: n.test, customerId: n.customer?.id })),
-  );
-  const done = !pageInfo.hasNextPage || !pageInfo.endCursor;
-  return { cursor: done ? null : pageInfo.endCursor, done, orders: nodes.length, buyers };
-}
-
-/**
- * Marks purchase data as complete from `since` on. Until this is set, the
- * purchase rule protects everyone (insufficient_purchase_history). The date
- * only moves earlier, never later.
- */
-export async function markPurchasesCovered(db: Db, shop: string, since: Date, readAllOrders: boolean): Promise<void> {
-  await db
-    .update(schema.shops)
-    .set({
-      purchasesCoveredSince: sql`MIN(COALESCE(${schema.shops.purchasesCoveredSince}, ${since.getTime()}), ${since.getTime()})`,
-      readAllOrdersGranted: readAllOrders,
-      updatedAt: new Date(),
-    })
-    .where(eq(schema.shops.shop, shop));
 }

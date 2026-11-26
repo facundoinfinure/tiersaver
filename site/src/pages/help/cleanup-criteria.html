@@ -1,13 +1,15 @@
 <!--
 title: Cleanup criteria: who is a candidate and who is always kept
+seoTitle: Cleanup criteria: who is kept and who is not
 nav: Cleanup criteria
-description: By default TierSaver only suppresses Klaviyo profiles that are at least 365 days old, received your emails and never opened, clicked, visited or bought. The criteria follow the ones Klaviyo publishes.
+description: By default TierSaver only suppresses Klaviyo profiles at least {{criteria.ageDays}} days old that received your emails and never opened, clicked, visited or bought.
 summary: The default criteria, who is always kept, and the limits of the optional wider mode.
-lead: A profile is a cleanup candidate only when it has never engaged in any way. When in doubt, the profile stays active.
+lead: By default a profile is a cleanup candidate only when it has no recorded engagement of any kind. When in doubt, the profile stays active.
+footer: yes
 layout: doc
 group: help
 order: 2
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>The default criteria</h2>
 <p>A profile is a candidate only if <strong>all</strong> of these are true:</p>
@@ -19,13 +21,13 @@ updated: 2026-11-25
   <li>It has never visited your site or started a checkout.</li>
   <li>It has never purchased, checked against both your Shopify orders and Klaviyo.</li>
 </ul>
-<p>These follow the criteria Klaviyo publishes for its own suppression recommendations: created at least 365 days ago, 5 or more emails received over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases.</p>
+<p>These are the criteria Klaviyo publishes for suppressing unengaged profiles: created at least 365 days ago, 5 or more emails received over roughly the last 72 weeks, never opened or clicked, and no recorded site visits, product views, started checkouts or purchases. TierSaver adds its own checks on top: your Shopify orders, SMS consent and the lists you protect.</p>
 
 <h2>Who is always kept</h2>
 <ul>
-  <li><strong>Buyers.</strong> Anyone with a purchase in your Shopify orders or in Klaviyo.</li>
+  <li><strong>Matched buyers.</strong> Any profile with a purchase in your Shopify orders or in Klaviyo. Orders are matched by email address, so a purchase made under a different address cannot be matched to the profile.</li>
   <li><strong>SMS subscribers.</strong> Any profile with SMS consent.</li>
-  <li><strong>Protected lists and segments.</strong> Any list or segment you mark as protected, for example VIPs or wholesale accounts.</li>
+  <li><strong>Protected lists and segments.</strong> Any list or segment you mark as protected, for example VIPs or wholesale accounts. You can protect up to {{app.maxProtectedGroups}}. If a protected list or segment cannot be read during an audit, every profile is kept active.</li>
   <li><strong>Profiles with incomplete data.</strong> If TierSaver cannot see a profile's creation date, or cannot see far enough back in your order or engagement history to be sure, the profile stays.</li>
   <li><strong>Profiles restored by an undo.</strong> They are left out of cleanups for {{criteria.undoLockDays}} days. See <a href="/help/undo">undo</a>.</li>
 </ul>
@@ -35,10 +37,10 @@ updated: 2026-11-25
 <p>Klaviyo only knows about the purchases it has recorded. Your Shopify order history is an independent check. To match orders to Klaviyo profiles, TierSaver compares one-way hashes of email addresses, so it does not need to store your customers' email addresses. See <a href="/help/data-and-privacy">data and privacy</a>.</p>
 
 <h2>About opens</h2>
-<p>Klaviyo flags opens that may have been triggered by Apple's Mail Privacy Protection instead of a person. TierSaver counts those opens as engagement, which is the cautious choice: a flagged open keeps the profile.</p>
+<p>Klaviyo flags opens that may have been triggered by Apple's Mail Privacy Protection instead of a person. By default TierSaver counts those opens as engagement, which is the cautious choice: a flagged open keeps the profile. The wider mode has an option to ignore them.</p>
 
 <h2>The wider mode</h2>
-<p>You can opt in to a wider mode that uses time windows instead of "never". It comes with a warning in the app, because it can select people who engaged with you in the past. The windows cannot be set shorter than these floors:</p>
+<p>You can opt in to a wider mode that uses time windows instead of "never". It is TierSaver's own, stricter setting: it goes beyond the criteria Klaviyo publishes, because it can also select people who engaged with you in the past, and the app says so when you turn it on. The windows cannot be set shorter than these floors:</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Floors of the wider mode">
   <table class="data-table">
     <thead>
@@ -51,9 +53,9 @@ updated: 2026-11-25
     </tbody>
   </table>
 </div>
-<p>SMS subscribers, protected lists and profiles with incomplete data are kept in the wider mode too. Changing the criteria discards any simulation that has not run yet: you get a new one to review.</p>
+<p>SMS subscribers, protected lists and profiles with incomplete data are kept in the wider mode too. Automatic monthly cleanups are only available with the default criteria, never with the wider mode. Changing the criteria discards any simulation that has not run yet: run the audit again to get a new one to review. The fields are described in <a href="/help/settings">Settings</a>.</p>
 
-<h2>Why the criteria are strict</h2>
+<h2>Why the default criteria are narrow</h2>
 <p>Klaviyo's help center points out that a suppressed profile stays suppressed even if that person later starts a checkout or buys, and that suppressing too early can cost revenue. Suppression is meant for profiles that are truly inactive, so that is all the default mode selects.</p>
 
 <h2>Sources</h2>

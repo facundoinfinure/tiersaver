@@ -17,6 +17,11 @@ import * as schema from "../db/schema";
  *   profile and never submits a finished batch twice.
  * - When anything is uncertain (gate fails, a batch keeps failing, the run is
  *   cancelled) the run stops and the remaining profiles stay untouched.
+ * - A profile whose request went out but whose answer was lost is never
+ *   recorded as "not processed": it is kept as "outcome unknown" (status
+ *   `failed` with `attempted_at` set), counted apart and included in undo.
+ * - One cleanup at a time per shop: a second one cannot be created while
+ *   another is queued or running.
  */
 
 export type Db = DrizzleD1Database<typeof schema> & { $client: D1Database };
@@ -47,6 +52,16 @@ export interface BatchRequest {
   batchIndex: number;
   /** Klaviyo profile ids, at most RUN_BATCH_SIZE. */
   profileIds: string[];
+  /**
+   * Profiles of this batch that an earlier attempt already sent to Klaviyo without learning the outcome.
+   * Their current state in Klaviyo may be the effect of that attempt.
+   */
+  maybeSentProfileIds?: string[];
+  /**
+   * The gateway awaits this right before the request that changes Klaviyo, with the profiles that request
+   * carries. It is what lets a lost answer be told apart from a batch that never left.
+   */
+  beforeSend?: (profileIds: string[]) => Promise<void>;
 }
 
 export interface BatchResult {
@@ -54,6 +69,29 @@ export interface BatchResult {
   jobId: string;
   /** Profiles the gateway deliberately left untouched (for example they no longer exist). */
   skippedProfileIds?: string[];
+  /** Why each skipped profile was left untouched: machine-readable code, no personal data. Stored in `run_profiles.error_code`. */
+  skipReasons?: Record<string, string>;
+}
+
+/** `run_profiles.error_code` of a profile that was sent to Klaviyo without a confirmed outcome. */
+export const OUTCOME_UNKNOWN = "outcome_unknown";
+
+/**
+ * SQL condition (on `run_profiles`) for "this run may have changed this profile in Klaviyo": Klaviyo accepted
+ * it, or its request went out and the outcome is unknown. This is the set an undo restores.
+ */
+export const MAYBE_CHANGED_SQL = "(status = 'submitted' OR (attempted_at IS NOT NULL AND status <> 'skipped'))";
+
+const NOT_SENT = Symbol.for("tiersaver.batch_not_sent");
+
+/** Gateways mark an error with this when the request was certainly not applied by Klaviyo (never sent, or rejected). */
+export function markNotSent<E extends Error>(error: E): E {
+  (error as unknown as Record<symbol, boolean>)[NOT_SENT] = true;
+  return error;
+}
+
+function isNotSent(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && (error as Record<symbol, boolean>)[NOT_SENT]);
 }
 
 /**
@@ -81,7 +119,7 @@ const DB_STEP_CONFIG: StepConfig = {
 
 export type CreateRunResult =
   | { ok: true; runId: string; totalCount: number; batchCount: number }
-  | { ok: false; reason: NotExecutableReason | "not_found" | "no_candidates" };
+  | { ok: false; reason: NotExecutableReason | "not_found" | "no_candidates" | "cleanup_in_progress" };
 
 /**
  * Creates the run for an approved simulation and freezes its profile set.
@@ -110,6 +148,14 @@ export async function createSuppressionRun(
   );
   if (notExecutable) return { ok: false, reason: notExecutable };
   if (sim.candidateCount <= 0) return { ok: false, reason: "no_candidates" };
+  // One cleanup at a time: a scan made while another cleanup is still sending batches sees profiles as active
+  // that are about to be suppressed, and the same profile would end up in two runs.
+  const openRun = () =>
+    db.query.runs.findFirst({
+      where: and(eq(schema.runs.shop, args.shop), eq(schema.runs.kind, "suppress"), inArray(schema.runs.status, ["queued", "running"])),
+      columns: { id: true },
+    });
+  if (await openRun()) return { ok: false, reason: "cleanup_in_progress" };
 
   // The real gate. All statements run in one transaction; every statement after
   // the first only takes effect if the first one claimed the simulation.
@@ -125,7 +171,8 @@ export async function createSuppressionRun(
            AND approved_at >= created_at
            AND created_at > ?4
            AND settings_version = (SELECT version FROM settings WHERE shop = ?3)
-           AND NOT EXISTS (SELECT 1 FROM runs WHERE simulation_id = ?2)`,
+           AND NOT EXISTS (SELECT 1 FROM runs WHERE simulation_id = ?2)
+           AND NOT EXISTS (SELECT 1 FROM runs WHERE shop = ?3 AND kind = 'suppress' AND status IN ('queued', 'running'))`,
       )
       .bind(nowMs, sim.id, args.shop, nowMs - SIMULATION_TTL_MS),
     d1
@@ -167,6 +214,7 @@ export async function createSuppressionRun(
     // Lost a race with another request, or the simulation changed in between.
     const fresh = await db.query.simulations.findFirst({ where: eq(schema.simulations.id, sim.id) });
     if (fresh?.executedAt) return { ok: false, reason: "already_executed" };
+    if (await openRun()) return { ok: false, reason: "cleanup_in_progress" };
     return { ok: false, reason: "superseded" };
   }
   return { ok: true, runId, totalCount: run.totalCount, batchCount: run.batchCount };
@@ -177,7 +225,10 @@ export interface RunOutcome {
   status: RunStatus | "not_found";
   submitted: number;
   skipped: number;
+  /** Not processed, and certainly not sent to Klaviyo. */
   failed: number;
+  /** Sent to Klaviyo without a confirmed outcome: possibly changed there. An undo includes them. */
+  unknown: number;
   /** Profiles the run never reached. They were not touched. */
   untouched: number;
   error: string | null;
@@ -185,7 +236,7 @@ export interface RunOutcome {
 
 type StartResult =
   | { proceed: true; shop: string; kind: RunKind; batchCount: number }
-  | { proceed: false; error: string | null };
+  | { proceed: false; error: string | null; cancelled?: boolean };
 
 type BatchStepResult = { state: "done"; submitted: number; skipped: number } | { state: "cancelled" };
 
@@ -220,6 +271,8 @@ export async function executeRun(
     const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId) });
     if (!run) return { proceed: false, error: "run_not_found" };
     if (TERMINAL.includes(run.status)) return { proceed: false, error: null };
+    // "Stop cleanup" was pressed before the first batch: nothing is sent.
+    if (run.stopRequestedAt) return { proceed: false, error: null, cancelled: true };
 
     if (run.kind === "suppress") {
       const gateError = await suppressGateError(db, run, now());
@@ -234,13 +287,13 @@ export async function executeRun(
 
     await db
       .update(schema.runs)
-      .set({ status: "running", startedAt: run.startedAt ?? now() })
+      .set({ status: "running", startedAt: run.startedAt ?? now(), lastProgressAt: now() })
       .where(eq(schema.runs.id, runId));
     return { proceed: true, shop: run.shop, kind: run.kind, batchCount: run.batchCount };
   });
 
   let runError: string | null = start.proceed ? null : start.error;
-  let cancelled = false;
+  let cancelled = !start.proceed && start.cancelled === true;
 
   if (start.proceed) {
     for (let batchIndex = 0; batchIndex < start.batchCount; batchIndex++) {
@@ -257,16 +310,20 @@ export async function executeRun(
         // rest of the run stays untouched rather than pushing through a failure.
         runError = errorCode(err);
         await step.do("record failed batch", DB_STEP_CONFIG, async () => {
+          const open = and(
+            eq(schema.runProfiles.runId, runId),
+            eq(schema.runProfiles.batchIndex, batchIndex),
+            inArray(schema.runProfiles.status, ["pending", "submitting"]),
+          );
+          // Never sent: untouched for certain. Sent without an answer: Klaviyo may have applied it (M3).
           await db
             .update(schema.runProfiles)
             .set({ status: "failed", errorCode: runError, updatedAt: now() })
-            .where(
-              and(
-                eq(schema.runProfiles.runId, runId),
-                eq(schema.runProfiles.batchIndex, batchIndex),
-                inArray(schema.runProfiles.status, ["pending", "submitting"]),
-              ),
-            );
+            .where(and(open, sql`${schema.runProfiles.attemptedAt} IS NULL`));
+          await db
+            .update(schema.runProfiles)
+            .set({ status: "failed", errorCode: OUTCOME_UNKNOWN, updatedAt: now() })
+            .where(and(open, sql`${schema.runProfiles.attemptedAt} IS NOT NULL`));
           return true;
         });
         break;
@@ -300,13 +357,15 @@ async function runBatch(
   const { runId, batchIndex } = args;
   const inBatch = and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.batchIndex, batchIndex));
 
-  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId), columns: { status: true } });
-  if (!run || run.status !== "running") return { state: "cancelled" };
+  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId), columns: { status: true, stopRequestedAt: true } });
+  // Closed by someone else (recovery), or the merchant pressed "Stop cleanup": nothing more is sent.
+  if (!run || run.status !== "running" || run.stopRequestedAt) return { state: "cancelled" };
+  await db.update(schema.runs).set({ lastProgressAt: args.now }).where(eq(schema.runs.id, runId));
 
   // Rows left in "submitting" come from an attempt that died mid-flight; they are sent again.
   const open = and(inBatch, inArray(schema.runProfiles.status, ["pending", "submitting"]));
   const rows = await db
-    .select({ profileId: schema.runProfiles.profileId })
+    .select({ profileId: schema.runProfiles.profileId, attemptedAt: schema.runProfiles.attemptedAt })
     .from(schema.runProfiles)
     .where(open)
     .orderBy(asc(schema.runProfiles.profileId));
@@ -316,22 +375,84 @@ async function runBatch(
   await db.update(schema.runProfiles).set({ status: "submitting", updatedAt: args.now }).where(open);
 
   const profileIds = rows.map((r) => r.profileId);
-  const result = await gateway.submitBatch({ shop: args.shop, runId, kind: args.kind, batchIndex, profileIds });
-
   const known = new Set(profileIds);
+  // Sent by an earlier attempt whose answer never arrived.
+  const maybeSent = new Set(rows.filter((r) => r.attemptedAt).map((r) => r.profileId));
+  const stampedNow: string[] = [];
+  const nowMs = args.now.getTime();
+  const setAttempted = (ids: string[], value: number | null) =>
+    eachChunk(ids, (part) =>
+      db
+        .update(schema.runProfiles)
+        .set({ attemptedAt: value === null ? null : sql`COALESCE(${schema.runProfiles.attemptedAt}, ${value})` })
+        .where(and(inBatch, inArray(schema.runProfiles.profileId, part))),
+    );
+
+  let result: BatchResult;
+  try {
+    result = await gateway.submitBatch({
+      shop: args.shop,
+      runId,
+      kind: args.kind,
+      batchIndex,
+      profileIds,
+      maybeSentProfileIds: [...maybeSent],
+      beforeSend: async (ids) => {
+        const fresh = ids.filter((id) => known.has(id) && !maybeSent.has(id));
+        await setAttempted(fresh, nowMs);
+        stampedNow.push(...fresh);
+      },
+    });
+  } catch (err) {
+    // Rejected or never sent: Klaviyo certainly did not apply it, so this attempt leaves no "maybe sent" mark.
+    if (isNotSent(err) && stampedNow.length > 0) await setAttempted(stampedNow, null);
+    throw err;
+  }
+
   const skipped = [...new Set(result.skippedProfileIds ?? [])].filter((id) => known.has(id));
-  for (let i = 0; i < skipped.length; i += ID_CHUNK) {
-    await db
-      .update(schema.runProfiles)
-      .set({ status: "skipped", klaviyoJobId: result.jobId, updatedAt: args.now })
-      .where(and(inBatch, inArray(schema.runProfiles.profileId, skipped.slice(i, i + ID_CHUNK))));
+  const byReason = new Map<string, string[]>();
+  for (const id of skipped) {
+    // Left out now, but an earlier attempt sent it: what Klaviyo did with it is unknown, so it is not "untouched".
+    const reason = maybeSent.has(id) ? OUTCOME_UNKNOWN : (result.skipReasons?.[id] ?? "skipped");
+    byReason.set(reason, [...(byReason.get(reason) ?? []), id]);
+  }
+  for (const [reason, ids] of byReason) {
+    await eachChunk(ids, (part) =>
+      db
+        .update(schema.runProfiles)
+        .set({ status: reason === OUTCOME_UNKNOWN ? "failed" : "skipped", errorCode: reason, klaviyoJobId: result.jobId, updatedAt: args.now })
+        .where(and(inBatch, inArray(schema.runProfiles.profileId, part))),
+    );
   }
   await db
     .update(schema.runProfiles)
-    .set({ status: "submitted", klaviyoJobId: result.jobId, updatedAt: args.now })
+    .set({ status: "submitted", klaviyoJobId: result.jobId, errorCode: null, attemptedAt: sql`COALESCE(${schema.runProfiles.attemptedAt}, ${nowMs})`, updatedAt: args.now })
     .where(and(inBatch, eq(schema.runProfiles.status, "submitting")));
 
   return { state: "done", submitted: profileIds.length - skipped.length, skipped: skipped.length };
+}
+
+async function eachChunk(ids: readonly string[], run: (part: string[]) => Promise<unknown>): Promise<void> {
+  for (let i = 0; i < ids.length; i += ID_CHUNK) await run(ids.slice(i, i + ID_CHUNK));
+}
+
+/**
+ * Closes a run whose Workflow is gone (see runs/recovery.ts) with what was really sent. Rows an attempt had
+ * claimed are settled first: already sent -> outcome unknown; never sent -> untouched again. Idempotent, and
+ * harmless if the Workflow turns out to be alive: its next batch sees the closed run and stops.
+ */
+export async function closeStalledRun(db: Db, runId: string, args: { error: string; now?: Date }): Promise<RunOutcome> {
+  const now = args.now ?? new Date();
+  const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId), columns: { status: true, stopRequestedAt: true } });
+  if (run && !TERMINAL.includes(run.status)) {
+    const claimed = and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.status, "submitting"));
+    await db
+      .update(schema.runProfiles)
+      .set({ status: "failed", errorCode: OUTCOME_UNKNOWN, updatedAt: now })
+      .where(and(claimed, sql`${schema.runProfiles.attemptedAt} IS NOT NULL`));
+    await db.update(schema.runProfiles).set({ status: "pending", updatedAt: now }).where(claimed);
+  }
+  return finalizeRun(db, runId, { runError: run?.stopRequestedAt ? null : args.error, cancelled: Boolean(run?.stopRequestedAt), now });
 }
 
 async function finalizeRun(
@@ -341,25 +462,29 @@ async function finalizeRun(
 ): Promise<RunOutcome> {
   const run = await db.query.runs.findFirst({ where: eq(schema.runs.id, runId) });
   if (!run) {
-    return { runId, status: "not_found", submitted: 0, skipped: 0, failed: 0, untouched: 0, error: "run_not_found" };
+    return { runId, status: "not_found", submitted: 0, skipped: 0, failed: 0, unknown: 0, untouched: 0, error: "run_not_found" };
   }
 
   const counts = await db
-    .select({ status: schema.runProfiles.status, n: sql<number>`COUNT(*)` })
+    .select({ status: schema.runProfiles.status, attempted: sql<number>`${schema.runProfiles.attemptedAt} IS NOT NULL`, n: sql<number>`COUNT(*)` })
     .from(schema.runProfiles)
     .where(eq(schema.runProfiles.runId, runId))
-    .groupBy(schema.runProfiles.status);
-  const count = (s: (typeof schema.RUN_PROFILE_STATUSES)[number]) => counts.find((c) => c.status === s)?.n ?? 0;
-  const submitted = count("submitted");
-  const skipped = count("skipped");
-  const failed = count("failed");
-  const untouched = count("pending") + count("submitting");
+    .groupBy(schema.runProfiles.status, sql`${schema.runProfiles.attemptedAt} IS NOT NULL`);
+  type ProfileStatus = (typeof schema.RUN_PROFILE_STATUSES)[number];
+  const count = (statuses: ProfileStatus[], attempted?: boolean) =>
+    counts.filter((c) => statuses.includes(c.status) && (attempted === undefined || Boolean(c.attempted) === attempted)).reduce((n, c) => n + c.n, 0);
+  const submitted = count(["submitted"]);
+  const skipped = count(["skipped"]);
+  const failed = count(["failed"], false);
+  // Sent without a confirmed outcome (same set as MAYBE_CHANGED_SQL minus the confirmed ones).
+  const unknown = count(["failed", "pending", "submitting"], true);
+  const untouched = count(["pending", "submitting"], false);
 
   let status: RunStatus;
   if (TERMINAL.includes(run.status)) status = run.status;
   else if (args.cancelled) status = "cancelled";
-  else if (args.runError && submitted === 0) status = "failed";
-  else if (args.runError || failed > 0 || untouched > 0) status = "completed_with_errors";
+  else if (args.runError && submitted === 0 && unknown === 0) status = "failed";
+  else if (args.runError || failed > 0 || unknown > 0 || untouched > 0) status = "completed_with_errors";
   else status = "completed";
 
   const error = args.runError ?? run.lastError ?? null;
@@ -383,6 +508,7 @@ async function finalizeRun(
         processedCount: submitted,
         skippedCount: skipped,
         failedCount: failed,
+        unknownCount: unknown,
         lastError: error,
         finishedAt: run.finishedAt ?? args.now,
       })
@@ -397,12 +523,61 @@ async function finalizeRun(
         action: `run.${status}`,
         runId,
         simulationId: run.simulationId,
-        detail: { submitted, skipped, failed, untouched, error },
+        detail: { submitted, skipped, failed, unknown, untouched, error, stopRequestedBy: run.stopRequestedBy ?? undefined },
       })
       .onConflictDoNothing(),
   ]);
 
-  return { runId, status, submitted, skipped, failed, untouched, error };
+  return { runId, status, submitted, skipped, failed, unknown, untouched, error };
+}
+
+// ---------------------------------------------------------------------------
+// Stop
+// ---------------------------------------------------------------------------
+
+export type StopResult = { ok: true; state: "stopped" | "stopping" } | { ok: false; reason: "not_found" | "not_a_cleanup" | "already_finished" };
+
+/**
+ * "Stop cleanup". A queued run is closed on the spot (nothing was sent). A running one is flagged: the batch
+ * in flight finishes, no further batch is sent and the run ends as `cancelled`, after which undo is available
+ * for what was already sent. Profiles not reached stay untouched.
+ */
+export async function requestStopRun(db: Db, args: { shop: string; runId: string; requestedBy: string; now?: Date }): Promise<StopResult> {
+  const now = args.now ?? new Date();
+  const nowMs = now.getTime();
+  const run = await db.query.runs.findFirst({ where: and(eq(schema.runs.id, args.runId), eq(schema.runs.shop, args.shop)) });
+  if (!run) return { ok: false, reason: "not_found" };
+  if (run.kind !== "suppress") return { ok: false, reason: "not_a_cleanup" };
+  if (TERMINAL.includes(run.status)) return { ok: false, reason: "already_finished" };
+
+  const d1 = db.$client;
+  const [flagged] = await d1.batch([
+    d1
+      .prepare(
+        `UPDATE runs SET stop_requested_at = COALESCE(stop_requested_at, ?1), stop_requested_by = COALESCE(stop_requested_by, ?2)
+         WHERE id = ?3 AND shop = ?4 AND kind = 'suppress' AND status IN ('queued', 'running')`,
+      )
+      .bind(nowMs, args.requestedBy, run.id, args.shop),
+    d1
+      .prepare(
+        `INSERT OR IGNORE INTO events_log (id, shop, at, actor, action, run_id, simulation_id, detail)
+         SELECT ?1, shop, ?2, ?3, 'run.stop_requested', id, simulation_id, json_object('status', status)
+         FROM runs WHERE id = ?4 AND shop = ?5 AND stop_requested_at = ?2`,
+      )
+      .bind(`run:${run.id}:stop_requested`, nowMs, args.requestedBy, run.id, args.shop),
+  ]);
+  if (!flagged || flagged.meta.changes === 0) return { ok: false, reason: "already_finished" };
+
+  // Not started yet: close it here. If its Workflow starts later, it finds a finished run and does nothing.
+  const closed = await d1
+    .prepare("UPDATE runs SET status = 'cancelled', finished_at = ?1 WHERE id = ?2 AND status = 'queued'")
+    .bind(nowMs, run.id)
+    .run();
+  if (closed.meta.changes === 1) {
+    await finalizeRun(db, run.id, { runError: null, cancelled: true, now });
+    return { ok: true, state: "stopped" };
+  }
+  return { ok: true, state: "stopping" };
 }
 
 // ---------------------------------------------------------------------------
@@ -450,6 +625,8 @@ export type CreateUndoResult =
 /**
  * Creates the run that unsuppresses what a cleanup suppressed. Always
  * available (product rule 3) and independent of SUPPRESSION_ENABLED.
+ * It covers every profile the cleanup may have changed: those Klaviyo accepted
+ * and those that were sent without a confirmed outcome (MAYBE_CHANGED_SQL).
  *
  * Guardrail 5 (docs/12-CUMPLIMIENTO-KLAVIYO.md 3.1): when the cleanup has
  * already been counted in a plan renewal, or that cannot be ruled out, the
@@ -476,7 +653,7 @@ export async function createUndoRun(
   const [restorable] = await db
     .select({ n: sql<number>`COUNT(*)` })
     .from(schema.runProfiles)
-    .where(and(eq(schema.runProfiles.runId, original.id), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
+    .where(and(eq(schema.runProfiles.runId, original.id), sql.raw(MAYBE_CHANGED_SQL), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
   if (!restorable || restorable.n === 0) return { ok: false, reason: "nothing_to_restore" };
 
   const [settingsRow, audits] = await Promise.all([
@@ -507,7 +684,7 @@ export async function createUndoRun(
         `INSERT INTO run_profiles (run_id, profile_id, shop, batch_index, reason, email_hash, status, updated_at)
          SELECT ?1, profile_id, shop, (ROW_NUMBER() OVER (ORDER BY profile_id) - 1) / CAST(?2 AS INTEGER), reason, email_hash, 'pending', ?3
          FROM run_profiles
-         WHERE run_id = ?4 AND status = 'submitted' AND reactivated_at IS NULL
+         WHERE run_id = ?4 AND ${MAYBE_CHANGED_SQL} AND reactivated_at IS NULL
            AND EXISTS (SELECT 1 FROM runs WHERE id = ?1)`,
       )
       .bind(undoRunId, RUN_BATCH_SIZE, nowMs, original.id),

@@ -37,6 +37,8 @@ export class ScanWorkflow extends WorkflowEntrypoint<Env, ScanParams> {
         klaviyo: (shop) => createKlaviyoClient({ db, env: this.env }, shop, { subrequestBudget: SUBREQUESTS_PER_STEP }),
         nonRetryable: (code) => new NonRetryableError(code),
         seededAccountId: this.env.KLAVIYO_SEEDED_ACCOUNT_ID || null,
+        // Purchase data is refreshed inside the scan, a few pages per step (each page is one Admin API request).
+        syncPurchases: async (shop) => (await import("../app/orders/sync.server")).syncShopOrders(db, shop, 4),
       },
       event.payload.scanId,
     );

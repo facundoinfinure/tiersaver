@@ -1,25 +1,25 @@
 <!--
 title: How the audit works
 nav: How the audit works
-description: The TierSaver audit is free and read-only. It counts your active Klaviyo profiles and shows how many meet the cleanup criteria, without changing anything.
-summary: What the free, read-only audit counts and how each figure is calculated.
-lead: The audit is free and read-only. It tells you where your list stands before you decide anything.
+description: The TierSaver audit is free and changes no profile. It counts your active Klaviyo profiles and shows how many meet the cleanup criteria.
+summary: What the free audit counts, where the numbers come from and the one segment it adds to Klaviyo.
+lead: The audit is free and changes no profile. It tells you where your list stands before you decide anything.
 layout: doc
 group: help
 order: 1
-updated: 2026-11-25
+updated: 2026-11-26
 -->
 <h2>What the audit shows</h2>
 <ul>
-  <li><strong>Active profiles.</strong> Profiles with an email address that are not suppressed from email.</li>
-  <li><strong>Profiles that meet the cleanup criteria.</strong> Active profiles that have never engaged, under the <a href="/help/cleanup-criteria">default criteria</a>.</li>
-  <li><strong>Profiles that would stay active.</strong> Everyone else, with the reason each group is kept: bought, opened, clicked, visited, too new, SMS subscriber, in a protected list, or incomplete data.</li>
+  <li><strong>Active profiles.</strong> Profiles with an email address that are not suppressed from email. The app says whether the figure is Klaviyo's own count or was counted by TierSaver.</li>
+  <li><strong>Profiles that meet the criteria Klaviyo publishes</strong> for suppressing unengaged profiles: never opened, clicked, visited or bought. See the <a href="/help/cleanup-criteria">cleanup criteria</a>.</li>
+  <li><strong>Profiles a cleanup would suppress,</strong> and how many would stay active afterwards.</li>
+  <li><strong>Profiles kept active even though they meet the criteria,</strong> with the reason: for example a purchase in your Shopify store, SMS consent, a list or segment you protect, or incomplete data. A profile can be kept for more than one reason, so those rows can overlap.</li>
 </ul>
-<p>Next to each figure the app explains how it was calculated.</p>
-<p>As a secondary reference, the audit also shows which Klaviyo plan size your active profile count corresponds to, now and after a cleanup, using Klaviyo's published plan sizes. See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule and your Klaviyo plan</a>.</p>
+<p>The app also shows TierSaver's monthly price for a list of your size. It does not show your Klaviyo plan or what you pay Klaviyo.</p>
 
-<h2>The audit changes nothing</h2>
-<p>The audit only reads. It does not suppress, tag or edit any profile, and it does not change anything in your Klaviyo account. Suppression only happens later, after you <a href="/help/simulation-and-approval">approve a simulation</a>.</p>
+<h2>The audit changes no profile</h2>
+<p>The audit does not suppress, tag or edit any profile. It makes one change in your Klaviyo account: it creates a segment named "{{app.segmentName}}", which Klaviyo uses to evaluate the cleanup criteria. Do not edit or delete that segment while you use the app; if it is edited, the next audit restores it. Suppression only happens later, after you <a href="/help/simulation-and-approval">approve a simulation</a>.</p>
 
 <h2>Where the numbers come from</h2>
 <ul>
@@ -27,7 +27,11 @@ updated: 2026-11-25
   <li><strong>Purchases</strong> come from two places: your Shopify orders and Klaviyo's own purchase data. A purchase in either one keeps the profile.</li>
   <li><strong>SMS consent and list membership</strong> come from Klaviyo.</li>
 </ul>
-<p>If TierSaver cannot see enough history to be sure about a profile, the profile is counted as staying active. On a newly connected store this can mean the audit finds few or no candidates at first. That is intended.</p>
+<p>If TierSaver cannot see enough history to be sure about a profile, the profile is counted as staying active. On a newly connected store this can mean the audit finds few or no candidates at first. That is intended. <a href="/help/troubleshooting">Troubleshooting</a> lists the messages the app shows in that case.</p>
+
+<h2>Running it</h2>
+<p>On the app's home page, select "Run the free audit". Klaviyo works through your list in the background and the page shows how many profiles have been read so far; you can leave the page and come back. You can run the audit again as often as you like.</p>
+<p>Every audit that finishes produces a simulation, which is what you review and approve before a cleanup.</p>
 
 <h2>What you need</h2>
-<p>A Shopify store with the app installed, and a Klaviyo account you can authorize. You connect Klaviyo by signing in to Klaviyo and approving access; TierSaver never asks you to paste a password.</p>
+<p>A Shopify store with the app installed, and a Klaviyo account you can authorize. You connect Klaviyo by signing in to Klaviyo and approving access; TierSaver never asks you to paste a password or an API key. See <a href="/help/getting-started">getting started</a> and <a href="/help/permissions">the permissions TierSaver asks for</a>.</p>

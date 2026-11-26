@@ -26,12 +26,18 @@ api_version = "2026-10"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
-  # Keeps buyer protection current. Disabled until protected customer data access
-  # (email) is granted in the Dev Dashboard (docs/13-INSTRUCTIVO-CUENTAS.md, A4):
-  # Shopify rejects the whole app version while the app is not approved for it.
+  # Optional accelerator: makes a new buyer visible within seconds instead of at the
+  # next orders sync. Buyer protection does NOT depend on it: purchase data is kept
+  # current by the hourly orders sync and by every scan (app/orders/sync.ts), and
+  # a scan protects everyone when that data is not current.
+  # Disabled until protected customer data access (email) is granted in the Dev
+  # Dashboard (docs/13-INSTRUCTIVO-CUENTAS.md, A4): Shopify rejects the whole app
+  # version while the app is not approved for it. include_fields keeps the payload
+  # to what the handler reads; nothing else of the order reaches the app.
   # [[webhooks.subscriptions]]
   # topics = ["orders/create"]
   # uri = "/webhooks/orders/create"
+  # include_fields = ["email", "processed_at", "created_at", "test", "customer.id"]
 
   # Mandatory compliance topics for App Store apps.
   [[webhooks.subscriptions]]

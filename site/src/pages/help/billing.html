@@ -1,0 +1,48 @@
+<!--
+title: Billing and charges
+nav: Billing and charges
+description: How TierSaver charges through Shopify: accepting the pricing, when a charge is created, what each charge status means and how to stop being charged.
+summary: Accepting the pricing in Shopify, when a charge is created, charge statuses and how to stop.
+lead: TierSaver charges through Shopify, and only when a cleanup suppresses profiles. This page follows a charge from start to end.
+layout: doc
+group: help
+order: 7.5
+updated: 2026-11-26
+-->
+<h2>Before the first cleanup</h2>
+<p>After you approve your first simulation, the app shows "Review pricing in Shopify". Shopify then displays TierSaver's pricing for you to accept, under the name "TierSaver list hygiene". Accepting does not charge anything by itself: it allows TierSaver to create a charge when a cleanup suppresses profiles, up to {{fee.maxPerWindow}} in a {{fee.windowDays}}-day period. If you decline, no cleanup can start, and you can still use the audit and simulations.</p>
+<p>The prices are in <a href="/help/pricing">how pricing works</a>.</p>
+
+<h2>What you see before you approve a cleanup</h2>
+<p>The "Review cleanup" page states the price of that cleanup: the flat monthly price for your list size, or that the cleanup would not be charged because another cleanup was already charged in the last {{fee.minDays}} days. For a list above {{plans.maxProfiles}} active profiles it says that nothing is charged automatically.</p>
+
+<h2>From cleanup to charge</h2>
+<ol>
+  <li><strong>Estimated charge.</strong> When the cleanup finishes, its page shows an estimated charge. Nothing has been sent to Shopify yet.</li>
+  <li><strong>Confirmation by Klaviyo.</strong> TierSaver waits until Klaviyo reports that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.</li>
+  <li><strong>{{fee.holdHours}} hours.</strong> The charge is sent to Shopify {{fee.holdHours}} hours after the cleanup finished. If you restore the whole cleanup before then, nothing is charged.</li>
+  <li><strong>Charged.</strong> The cleanup's page shows the amount and the date. On your Shopify invoice the charge is described as "List cleanup", with the number of profiles suppressed.</li>
+</ol>
+
+<h2>When a cleanup is not charged</h2>
+<p>The cleanup's page gives one of these reasons:</p>
+<ul>
+  <li>No profile was suppressed.</li>
+  <li>A cleanup was already charged in the last {{fee.minDays}} days.</li>
+  <li>The cleanup was undone in full before its charge was created.</li>
+  <li>The monthly maximum of {{fee.maxPerWindow}} was already reached.</li>
+  <li>The list is above {{plans.maxProfiles}} active profiles, which is priced by agreement and not charged automatically.</li>
+</ul>
+
+<h2>Restoring and refunds</h2>
+<p>A cleanup you restore in full within {{fee.holdHours}} hours of its end is not charged. Restoring it later, or restoring only part of it, does not refund the charge. See <a href="/help/undo">undo</a>.</p>
+
+<h2>How to stop being charged</h2>
+<ul>
+  <li>A charge is only created by a cleanup. If you do not approve a cleanup, nothing is charged.</li>
+  <li>If you turned on the monthly schedule or automatic mode, turn them off in <a href="/help/settings">Settings</a>. It takes effect at once.</li>
+  <li>Uninstalling the app also stops all charges. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</li>
+</ul>
+
+<h2>If a charge looks wrong</h2>
+<p>Write to <a href="mailto:{{support.email}}">{{support.email}}</a> with your store's myshopify.com address and the date of the cleanup. See <a href="/help/contact">contact support</a>.</p>

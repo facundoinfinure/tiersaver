@@ -1,24 +1,26 @@
 <!--
 title: The monthly schedule and your Klaviyo plan
 nav: Monthly schedule and your Klaviyo plan
-description: TierSaver runs once a month and finishes before your Klaviyo plan renews, so Klaviyo's profile count is up to date. What Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.
-summary: When monthly cleanups run, and what Klaviyo says about suppressed profiles and plan sizes.
-lead: TierSaver runs once a month and finishes before your Klaviyo plan renews, so Klaviyo's count of your active profiles is up to date.
+description: The monthly schedule is off by default. When it runs, what Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.
+summary: When the monthly audit runs, and what Klaviyo says about suppressed profiles and plan sizes.
+lead: The monthly schedule is off by default. If you turn it on, TierSaver runs an audit once a month, a few days before your Klaviyo plan renews.
 layout: doc
 group: help
 order: 6
-updated: 2026-11-25
+updated: 2026-11-26
 -->
-<h2>When cleanups run</h2>
+<h2>When the monthly audit runs</h2>
 <p>List hygiene works best as a routine. New profiles go quiet every month, and Klaviyo's bulk suppression applies only to the current members of a list or segment, so it does not repeat by itself.</p>
-<p>After your first manual cleanup, TierSaver runs once a month. By default it runs {{schedule.leadDays}} days before your plan's renewal date, because Klaviyo says the profile count shown in billing may take up to 72 hours to refresh after a large cleanup. Dates follow your store's time zone.</p>
-<p>You tell TierSaver your renewal day during setup. In Klaviyo it is shown under Billing, on the Overview tab.</p>
-<p>Before each monthly cleanup you get a new simulation in the app, waiting for your approval for 24 hours. See <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>The schedule is off until you turn it on in <a href="/help/settings">Settings</a>. With it on, TierSaver runs an audit once a month. By default the audit runs {{schedule.leadDays}} days before your plan's renewal date, because Klaviyo says the profile count shown in billing may take up to 72 hours to refresh after a large cleanup. You can set between {{schedule.minLeadDays}} and {{app.maxLeadDays}} days. Dates follow your store's time zone.</p>
+<p>You can enter your renewal day in Settings. In Klaviyo it is shown under Billing, on the Overview tab. If you leave it empty, TierSaver uses the day Klaviyo reported in your last audit, when one is available.</p>
+<p>Each scheduled audit produces a simulation in the app, which waits for your approval for {{sim.ttlHours}} hours. The app does not send email, so open the app around that day. Nothing is suppressed unless you approve, or you have turned on automatic mode. See <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>The schedule only runs while the app is installed and connected to Klaviyo.</p>
 
 <h2>What Klaviyo says about suppressed profiles and plans</h2>
 <p>These are Klaviyo's own statements, from its help center:</p>
 <ul>
   <li>Suppressed profiles do not count toward your email plan's active profile count.</li>
+  <li>On Klaviyo's Advanced KDP plan, billing is based on total profiles, and suppressed profiles can still count.</li>
   <li>Your plan has to cover the number of active profiles you have at the end of your billing cycle.</li>
   <li>A plan does not automatically move down just because you have fewer profiles. You can choose a smaller plan yourself after your count updates, or enable auto-downgrade based on profiles.</li>
   <li>With auto-downgrade enabled, Klaviyo checks your active profile count shortly before your billing cycle renews, and an eligible change takes effect for the next cycle.</li>
@@ -26,7 +28,8 @@ updated: 2026-11-25
 
 <h2>What TierSaver does and does not do</h2>
 <ul>
-  <li>It <strong>does</strong> show you, as a reference, which Klaviyo plan size your active profile count corresponds to.</li>
+  <li>It <strong>does</strong> show your active profile count, before and after a cleanup.</li>
+  <li>It <strong>does not</strong> show your Klaviyo plan or what you pay Klaviyo.</li>
   <li>It <strong>does not</strong> change your Klaviyo plan, your billing settings or your auto-downgrade preference. Those are yours to decide, in Klaviyo.</li>
   <li>It <strong>does not</strong> promise any effect on your Klaviyo plan or invoice.</li>
 </ul>
