@@ -543,3 +543,4 @@ Pedido de Facundo: que el abogado no tenga que contestar 43 preguntas.
 - Siguen pendientes en el Dev Dashboard: pedir `read_all_orders` (texto en `docs/18` §6.2) y mirar "Pricing method".
 - Decisión de Facundo: **no se ofrece TierSaver a tiendas de la UE/EEE, el Reino Unido y Suiza** por ahora, para no quedar alcanzado por el art. 27 del GDPR (representante), que no va a contratar. En implementación (control en la app y textos).
 - DPA de Cloudflare: rige automáticamente para cuentas self-serve (verificado el 2026-11-27); compromiso C2 cumplido.
+- 2026-11-27: Shopify concedió `read_all_orders` al instante. Declarado en `shopify.app.toml`, `wrangler.jsonc` y la ayuda de permisos. Facundo corrió `shopify app deploy` desde su PC: versión de configuración `tiersaver-for-klaviyo-3` publicada (scopes nuevos y webhook `app_subscriptions/update`). Worker desplegado desde el commit `70fe4c1` (versión `f70f5c53`), sin la exclusión de mercados, que sigue en curso.
