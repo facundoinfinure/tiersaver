@@ -85,7 +85,7 @@ Hechos nuevos, leídos en el código esa tarde, y dónde quedaron en los textos:
 - **Purga a los 10 días.** `UNINSTALLED_SHOP_RETENTION_DAYS = 10`: si el `shop/redact` no llegó, la tarea horaria borra todo lo de la tienda (pocas tiendas por pasada).
 - **Modo automático.** Activarlo registra quién, cuándo, el precio mostrado y la versión de los términos (`automatic_mode.enabled` en el registro de acciones).
 - **Logs por pedido de Cloudflare:** siguen apagados (`invocation_logs: false`).
-- **Avisos dentro de la app:** la política promete avisos en la app (subencargados, cambios significativos) y la app no tiene todavía cómo mostrarlos. Está en el memo, sección 5, como "notice banner", y en la pregunta 43.
+- **Avisos dentro de la app:** la política promete avisos en la app (subencargados, cambios significativos) y la app los muestra desde el 2026-11-26 (código hecho, sin desplegar: `17-POLITICAS-INTERNAS.md`, sección 9). Está en el memo, sección 5, como "notice banner", y en la pregunta 43.
 
 Requisitos de Shopify (datos protegidos, nivel 2) y de Klaviyo que hoy no se cumplen y no se arreglan con texto: política de respuesta a incidentes, política de acceso y prevención de pérdida de datos, registro de accesos del operador, separación de datos de prueba y de producción, logs de 365 días a prueba de manipulación, procedimiento de rotación de secretos. Están en el memo, sección 4, punto 5.
 

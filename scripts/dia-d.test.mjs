@@ -29,13 +29,14 @@ function copyOfRepo() {
   return dir;
 }
 
-/** Paths of repo files named in the "Día D" table of the runbook's section 5 (up to the items with their own date). */
+/** Files in the first column of the "Día D" table of the runbook's section 5 (the items with their own date are a separate table). */
 function runbookFiles() {
   const runbook = read(ROOT, "docs/18-RUNBOOK-LANZAMIENTO.md");
   const start = runbook.indexOf("\n## 5. ");
   const end = runbook.indexOf("Con fecha propia", start);
   assert.ok(start > 0 && end > start, "section 5 of the runbook was not found");
-  const paths = [...runbook.slice(start, end).matchAll(/`((?:shopify|site)\/[A-Za-z0-9_./-]+?\.[a-z]+|site\/_headers)(?::[0-9-]+)?`/g)].map((m) => m[1]);
+  // The "Archivo:línea" column of each numbered row: | 3 | `shopify/wrangler.jsonc:56` | ...
+  const paths = [...runbook.slice(start, end).matchAll(/^\| \d+ \| `([^`:\s]+)(?::[0-9-]+)?`/gm)].map((m) => m[1]);
   return [...new Set(paths)];
 }
 

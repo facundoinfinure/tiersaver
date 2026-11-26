@@ -168,6 +168,7 @@ Nadie debe estar usando la app mientras se despliega (`STATUS.md`, página "200"
 | --- | --- | --- |
 | 0:00 | Cuenta de origen: apagar DNSSEC si está activo; Manage Domain → Configuration → Start, con el Account ID de la cuenta TierSaver | F |
 | 0:10 | Cuenta TierSaver: Domain Registration → Manage Domains → View Actions → aceptar. Esperar a que la zona figure activa | F |
+| 0:20 | Con el árbol de git limpio: `node scripts/dia-d.mjs --domain tiersaver.com --app-host app.tiersaver.com` (muestra el diff), revisar, y lo mismo con `--write`. Correr `npm test`, commitear en una rama (sección 5) | C |
 | 0:30 | Desplegar el sitio con `tiersaver.com` como dominio propio; regla de redirección de `www` al dominio raíz | C |
 | 0:45 | Desplegar la app de producción con `app.tiersaver.com` | C |
 | 1:00 | Klaviyo → manage-apps → TierSaver → agregar `https://app.tiersaver.com/klaviyo/oauth/callback` a la lista de redirect, **sin borrar la anterior** | F |
@@ -184,35 +185,64 @@ Nadie debe estar usando la app mientras se despliega (`STATUS.md`, página "200"
 
 Hosts propuestos: `tiersaver.com` (sitio) y `app.tiersaver.com` (app).
 
-| # | Archivo:línea | Hoy | Valor nuevo |
+**Se corre un script; no se edita a mano.** Desde la raíz del repo, con el árbol de git limpio:
+
+```
+node scripts/dia-d.mjs --domain tiersaver.com --app-host app.tiersaver.com           # simulación: imprime el diff y los pasos manuales
+node scripts/dia-d.mjs --domain tiersaver.com --app-host app.tiersaver.com --write   # escribe los archivos
+```
+
+- Sin `--write` no escribe nada. Con el árbol de git sucio se niega a correr (también en simulación), salvo `--force`.
+- Es idempotente: una segunda corrida dice "No hay nada para cambiar". Si un archivo no está como espera, se detiene sin escribir ninguno.
+- No despliega, no llama a ninguna API y no lee secretos. Solo edita los archivos de la tabla.
+- Test: `node --test scripts/dia-d.test.mjs` (también corre con `npm test` en la raíz). Escribe solo sobre una copia en una carpeta temporal.
+
+Lo que el script cambia o comprueba (los números de línea son los de hoy; el script busca por nombre, no por línea):
+
+| # | Archivo:línea | Hoy | Lo que hace el script |
 | --- | --- | --- | --- |
 | 1 | `shopify/shopify.app.toml:7` | `application_url = "https://tiersaver-app.tiersaver.workers.dev"` | `application_url = "https://app.tiersaver.com"` |
 | 2 | `shopify/shopify.app.toml:11` | `redirect_urls = ["https://tiersaver-app.tiersaver.workers.dev/auth/callback"]` | `redirect_urls = ["https://app.tiersaver.com/auth/callback"]` |
 | 3 | `shopify/wrangler.jsonc:56` | `"SHOPIFY_APP_URL": "https://tiersaver-app.tiersaver.workers.dev"` | `"SHOPIFY_APP_URL": "https://app.tiersaver.com"` |
-| 4 | `shopify/wrangler.jsonc:54-55` | `"SITE_URL": "https://tiersaver-site.tiersaver.workers.dev"` y su comentario | Borrar las dos líneas: `legalUrls` usa `https://tiersaver.com` por defecto (`shopify/app/legal.ts:52`) |
-| 5 | `shopify/wrangler.jsonc` (nuevo, nivel superior) | No hay `routes` | `"routes": [{ "pattern": "app.tiersaver.com", "custom_domain": true }]` |
-| 6 | `site/wrangler.jsonc:18-20` | Comentario "No routes yet" | `"routes": [{ "pattern": "tiersaver.com", "custom_domain": true }]` y borrar el comentario |
-| 7 | Klaviyo, lista de redirect de la app (dashboard, no repo) | `https://tiersaver-app.tiersaver.workers.dev/klaviyo/oauth/callback` | Agregar `https://app.tiersaver.com/klaviyo/oauth/callback` (ruta en `shopify/app/klaviyo/config.ts:33`; se arma con `SHOPIFY_APP_URL` en `flow.server.ts:53`) |
-| 8 | `site/_headers:16-18` | Regla `https://:project.:account.workers.dev/*` → `X-Robots-Tag: noindex` | **Sin cambio**: ya aplica solo a `workers.dev`. Solo verificar desde afuera |
-| 9 | `site/build/build.mjs:51` y `site/build/check-links.mjs:15` | `ORIGIN = "https://tiersaver.com"` | **Sin cambio**: canónicas, `sitemap.xml` y `robots.txt` ya usan el dominio final |
+| 4 | `shopify/wrangler.jsonc:54-55` | `"SITE_URL": "https://tiersaver-site.tiersaver.workers.dev"` y su comentario | Borra las dos líneas: `legalUrls` usa `https://tiersaver.com` por defecto (`shopify/app/legal.ts:52`). Con otro `--domain`, en vez de borrarla la apunta a ese dominio |
+| 5 | `shopify/wrangler.jsonc` (nuevo, nivel superior) | No hay `routes` | `"routes": [{ "pattern": "app.tiersaver.com", "custom_domain": true }]` y `"workers_dev": true` (ver nota) |
+| 6 | `site/wrangler.jsonc:18-20` | Comentario "No routes yet" | `"routes": [{ "pattern": "tiersaver.com", "custom_domain": true }]` y `"workers_dev": true` (ver nota); reemplaza el comentario |
+| 7 | `site/build/build.mjs:56` | `ORIGIN = "https://tiersaver.com"` | **Sin cambio** con `tiersaver.com`: canónicas, `sitemap.xml`, `robots.txt` y el verificador de links ya usan el dominio final. Desde el 2026-11-26 `ORIGIN` está escrito solo ahí (`check-links.mjs` lo importa y `robots.txt` se genera) |
+| 8 | `site/_headers:16-18` | Regla `https://:project.:account.workers.dev/*` → `X-Robots-Tag: noindex` | **Sin cambio**: ya aplica solo a `workers.dev`. El script comprueba que la regla esté; después se verifica desde afuera |
+
+**Nota sobre `workers_dev` (diferencia con la versión anterior de esta tabla).** Con `routes` en la configuración, Wrangler deja de publicar la dirección `*.workers.dev` salvo que se ponga `"workers_dev": true` ("Defaults to `true` when the configuration has no `route` or `routes`, and `false` otherwise") [C8]. Este runbook cuenta con que las direcciones viejas sigan respondiendo (la primera URL de redirect de Klaviyo, que no se borra; el sitio de staging con noindex del paso 2:30), así que el script agrega `"workers_dev": true` en los dos Workers. Si Facundo prefiere apagarlas el mismo día: `--drop-workers-dev`, y en el paso 2:30 se verifica que ya no respondan.
+
+Pasos manuales que el script no hace (los imprime en este orden, con las URLs ya armadas; el detalle y los horarios están en la sección 4):
+
+1. Cloudflare: traslado del dominio y zona activa (F).
+2. Revisar el diff, `npm test`, commit en una rama (C).
+3. Desplegar el sitio (`npm run build -w @tiersaver/site` y `npx wrangler deploy` en `site/`), regla de redirección de `www`, y comprobar que `https://tiersaver.com/terms` abre **antes** de desplegar la app: la app deja de usar `SITE_URL` (C).
+4. Desplegar la app (`npm run deploy:worker` en `shopify/`) (C).
+5. Klaviyo → manage-apps → TierSaver → agregar `https://app.tiersaver.com/klaviyo/oauth/callback` a la lista de redirect, sin borrar la anterior (ruta en `shopify/app/klaviyo/config.ts:33`; se arma con `SHOPIFY_APP_URL` en `flow.server.ts:53`) (F).
+6. `shopify app deploy` (`npm run deploy` en `shopify/`), con OK de F; comprobar en el dashboard que la versión activa muestra las dos URLs nuevas.
+7. Casilla: registros DNS y mail de prueba (F carga, C dicta).
+8. Prueba de humo (C y F) y verificación desde afuera (F).
+9. Cargar sitio, privacidad y soporte en Klaviyo y en el listing de Shopify (F).
 
 Con fecha propia (no son del Día D):
 
 | # | Archivo:línea | Cuándo | Valor nuevo |
 | --- | --- | --- | --- |
-| 10 | `site/build/build.mjs:77` `LEGAL_DRAFT = true` | Con la firma del abogado (y el aviso en la app resuelto) | `false`, y reconstruir el sitio |
+| 10 | `site/build/build.mjs:82` `LEGAL_DRAFT = true` | Con la firma del abogado. El aviso dentro de la app ya existe (`shopify/app/notices.ts`; cómo publicar uno: `17-POLITICAS-INTERNAS.md`, sección 9) | `false`, y reconstruir el sitio |
 | 11 | `shopify/app/legal.ts:8` `TERMS_VERSION` y `site/src/site-config.ts:17` `TERMS_EFFECTIVE_DATE` (un test exige que coincidan) | El mismo día que el 10 | La fecha de ese día, en los dos |
 | 12 | `shopify/shopify.app.toml:16` y `shopify/wrangler.jsonc:49` (`SCOPES`); `site/src/site-config.ts:42` (`SHOPIFY_SCOPES`) | Cuando Shopify apruebe `read_all_orders` | `"read_orders,read_all_orders"` en los dos primeros; agregar `"read_all_orders"` al tercero |
 | 13 | `shopify/shopify.app.toml:43-46` (webhook `orders/create` comentado) | Con el pedido de datos protegidos guardado | Descomentar las cuatro líneas |
-| 14 | `site/build/build.mjs:67` `AUDIT_CTA_URL` y `:69` `AUDIT_CTA_NOTE` | Cuando la app esté Published | `"https://apps.shopify.com/<handle>"` y `""` |
+| 14 | `site/build/build.mjs:72` `AUDIT_CTA_URL` y `:74` `AUDIT_CTA_NOTE` | Cuando la app esté Published | `"https://apps.shopify.com/<handle>"` y `""` |
 | 15 | `shopify/wrangler.jsonc:53` `KLAVIYO_SEEDED_ACCOUNT_ID` | Al separar ambientes | Solo en el entorno de prueba |
 | 16 | `SUPPRESSION_ENABLED` y `SUPPRESSION_ALLOWED_ACCOUNT_ID` (variables o secretos del Worker; no están en el repo: `shopify/wrangler.jsonc:41-43`, `shopify/app/runs/gateway.server.ts:147-149`) | Para la revisión: `true` + el id de la cuenta de Klaviyo del revisor. Al publicar: `true` y sin cuenta permitida | Decisión de Facundo las dos veces |
 
-Sugerencias para dejar todo en una sola variable (no aplicadas; no cambian el comportamiento):
+El script imprime esta misma lista al final, con el archivo y la línea de cada constante al día de la corrida.
 
-- Los puntos 1, 2, 3 y 7 repiten el mismo host. Shopify CLI admite un archivo de configuración por ambiente (`shopify.app.<nombre>.toml`); junto con `env.<nombre>` de Wrangler [C7], la separación de ambientes de la sección 7 deja cada host escrito una sola vez por ambiente.
-- `site/build/check-links.mjs:15` repite `ORIGIN`: puede importarlo de `build.mjs`, que ya exporta otras constantes.
-- `SITE_URL` (punto 4) se puede borrar hoy solo cuando `tiersaver.com` sirva el sitio; no antes.
+Estado de las sugerencias para dejar todo en una sola variable:
+
+- **Hecho (2026-11-26):** `site/build/check-links.mjs` importa `ORIGIN` de `build.mjs` y `robots.txt` se genera desde `ORIGIN` (mismo contenido que antes; el build no cambió ningún archivo generado).
+- **Pendiente:** los puntos 1, 2, 3 y el redirect de Klaviyo repiten el mismo host. Shopify CLI admite un archivo de configuración por ambiente (`shopify.app.<nombre>.toml`); junto con `env.<nombre>` de Wrangler [C7], la separación de ambientes de la sección 7 deja cada host escrito una sola vez por ambiente. Mientras tanto, el script es el único lugar donde se escribe el host.
+- `SITE_URL` (punto 4) se borra solo cuando `tiersaver.com` sirva el sitio; por eso el sitio se despliega y se comprueba antes que la app.
 
 ## 6. Textos para los formularios de Shopify (inglés)
 
@@ -366,5 +396,6 @@ Cloudflare
 - [C5] https://developers.cloudflare.com/email-service/platform/pricing/
 - [C6] https://developers.cloudflare.com/workers/platform/pricing/
 - [C7] https://developers.cloudflare.com/workers/wrangler/environments/
+- [C8] https://developers.cloudflare.com/workers/wrangler/configuration/ (apartado `workers.dev`) y https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
 - [C8] https://developers.cloudflare.com/email-service/
 - [C9] https://developers.cloudflare.com/email-service/platform/limits/

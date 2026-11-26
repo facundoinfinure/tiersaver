@@ -68,7 +68,7 @@ No se pregunta nada de esta tabla. "Ex" es el número de la pregunta en la lista
 | 34 | La política de privacidad como parte del contrato | Solo donde la cláusula 8 la cita | Términos 17 | Práctica estándar | Bajo |
 | 41 | Frenos del modo automático | Los números (10% de la lista; tres veces la última limpieza) quedan en el centro de ayuda, no en los términos, que remiten a él | Términos 6 | Permite ajustarlos sin cambiar el contrato | Bajo |
 | 42 | Sin cargo por limpieza | No existe más el cargo por limpieza: toda limpieza que arranca con el plan activo está incluida, completa o parcial. Sin plan activo que cubra el tamaño de lista, no arranca ninguna | Términos 6 ("What the plan covers") | Hecho del producto (`planGate` en `shopify/app/billing/billing.ts`) | Bajo |
-| 43 | Avisos dentro de la app | La promesa se mantiene. El aviso ("notice banner") todavía no existe en la app: es requisito de lanzamiento (sección 5) | Términos 8, 14, 16, 17; privacidad 6, 13; DPA 5 | Decisión propia | Medio hasta que exista |
+| 43 | Avisos dentro de la app | La promesa se mantiene. El aviso ("notice banner") existe en el código desde el 2026-11-26, todavía sin desplegar: banner en Home hasta que la tienda lo descarta (90 días), lista en Settings por 12 meses, igual para todas las tiendas (`17-POLITICAS-INTERNAS.md`, sección 9) | Términos 8, 14, 16, 17; privacidad 6, 13; DPA 5 | Decisión propia | Medio hasta que exista |
 | nueva | Una sola tienda por cuenta de Klaviyo | La app rechaza una segunda conexión; está prohibido en uso aceptable | Términos 7 | Decisión del dueño del 2026-11-26; `shopify/app/runs/gateway.server.ts` | Bajo |
 | nueva | Plan congelado por Shopify | Si Shopify congela el plan por un problema de pago de la tienda, no arranca ninguna limpieza hasta que Shopify lo reactiva. La app no cobra por otra vía | Términos 6 | `shopify/app/billing/billing.ts` | Bajo |
 
@@ -105,7 +105,7 @@ No se pregunta nada de esta tabla. "Ex" es el número de la pregunta en la lista
 
 | Qué | Por qué importa | Estado |
 | --- | --- | --- |
-| Aviso dentro de la app ("notice banner") | Términos 8, 14, 16 y 17, privacidad 6 y 13 y DPA 5 prometen "a notice in the app" | **Pendiente de código.** No publicar como vigente sin él |
+| Aviso dentro de la app ("notice banner") | Términos 8, 14, 16 y 17, privacidad 6 y 13 y DPA 5 prometen "a notice in the app" | **Hecho en el código el 2026-11-26** (`shopify/app/notices.ts`), sin desplegar. No publicar como vigente hasta que esté desplegado |
 | Una tienda por cuenta de Klaviyo | Términos 7, privacidad 4 | Implementado (`shopify/app/runs/gateway.server.ts`). El registro de limpieza sin cobrar del modelo anterior ya no existe en los textos ni lo escribe el código; la tabla quedó vacía y sin uso |
 | Buzones hello@ y support@ | Los textos los nombran para reclamos, privacidad y avisos legales | **No existen todavía** |
 | Políticas internas | Las piden Shopify (datos protegidos) y Klaviyo; respaldan las 48 horas | Redactadas en `docs/17-POLITICAS-INTERNAS.md`; **falta adoptarlas** (2FA, DPA de Cloudflare, ambiente de prueba) |

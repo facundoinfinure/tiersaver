@@ -12,7 +12,8 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:dia-d",
+    "test:dia-d": "node --test scripts/dia-d.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },

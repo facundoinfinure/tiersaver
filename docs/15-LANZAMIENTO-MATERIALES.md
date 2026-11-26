@@ -105,6 +105,6 @@ Está publicado como **staging, sin indexar**, en https://tiersaver-site.tiersav
 1. Dominio: se puede mover a la cuenta TierSaver desde el 2026-12-05.
 2. Términos, privacidad y DPA: ya tienen texto completo (limitación de responsabilidad, ley de Florida, subencargados, retención), pero siguen como borrador hasta el visto bueno del abogado. Las preguntas abiertas están en `16-LEGALES-PARA-ABOGADO.md`, sección 3.
 3. Fecha de vigencia de las tres páginas y `TERMS_VERSION` de la app: hoy dicen 2026-11-27 (el cambio a plan mensual); se vuelven a fijar el día en que se saque el cartel de borrador.
-4. Aviso dentro de la app ("notice banner") para cambios de términos, de política y de subencargados: los textos lo prometen y el código todavía no lo tiene (`16-LEGALES-PARA-ABOGADO.md`, sección 5).
+4. Aviso dentro de la app ("notice banner") para cambios de términos, de política y de subencargados: los textos lo prometen. **Hecho el 2026-11-26** (`shopify/app/notices.ts`; cómo publicar uno: `17-POLITICAS-INTERNAS.md`, sección 9).
 5. URL de la ficha del App Store para el botón "Run my free list audit". Hasta que exista la ficha, el botón abre un mail a hello@tiersaver.com, y el sitio lo dice.
 6. Casillas hello@ y support@.

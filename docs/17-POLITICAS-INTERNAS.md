@@ -32,7 +32,7 @@ Resumen de compromisos pendientes de adoptar:
    - acceso indebido a la cuenta de Cloudflare: cerrar sesiones, cambiar contraseña, revisar el registro de auditoría de la cuenta;
    - error de la app: frenar las limpiezas (quitar el trigger del cron y desactivar el modo automático por despliegue) y dejar el deshacer disponible.
 3. **Confirmar** si hubo datos personales afectados, de qué tiendas y cuáles. La base no tiene mails en claro, nombres ni datos de pago: lo expuesto serían ids de perfil de Klaviyo, hashes con clave, fechas, estados y tokens cifrados.
-4. **Avisar a los merchants afectados sin demora indebida y a más tardar 48 horas después de confirmar** (términos 8, privacidad 8, DPA 4). Contenido: qué pasó, cuándo, qué datos, qué se hizo, qué puede hacer el merchant y contacto. Canal: aviso dentro de la app cuando exista el banner; mientras tanto, mail al contacto que el merchant haya usado con nosotros y publicación en el sitio. El mail es un borrador que el operador revisa y envía en persona.
+4. **Avisar a los merchants afectados sin demora indebida y a más tardar 48 horas después de confirmar** (términos 8, privacidad 8, DPA 4). Contenido: qué pasó, cuándo, qué datos, qué se hizo, qué puede hacer el merchant y contacto. Canal: mail al contacto que el merchant haya usado con nosotros y, si afecta a todas las tiendas, aviso dentro de la app de tipo `service` (sección 9). El aviso de la app es el mismo para todas las tiendas: no sirve para un incidente que toca solo a algunas, porque se lo mostraría también a las demás. El mail es un borrador que el operador revisa y envía en persona.
 5. **Avisar a Klaviyo y a Shopify** al mismo tiempo que a los merchants, si el incidente toca datos obtenidos por sus APIs. Klaviyo exige además coordinar con ellos cualquier **comunicado público** antes de publicarlo: no se publica nada sin eso. **[COMPROMISO]** confirmar antes del lanzamiento por qué canal recibe cada uno estos avisos (soporte de partners de Shopify; contacto que indiquen los API Terms o el soporte de desarrolladores de Klaviyo) y anotarlo acá.
 6. **Evaluar otros avisos**: si TierSaver es responsable de los datos afectados (cuenta del merchant, prospectos), el aviso a una autoridad lo decide el operador con el abogado. Para los datos de clientes, el aviso a la autoridad es del merchant.
 7. **Cerrar**: causa, corrección, fecha, y qué cambia en este documento. Guardar el registro 3 años.
@@ -86,7 +86,7 @@ Borrado anticipado a pedido de un merchant (privacidad 9): el operador desinstal
 
 No son subencargados: Shopify (plataforma y cobro, contrato propio con el merchant) y Klaviyo (contrato propio con el merchant). El proveedor de los buzones, cuando exista, es proveedor de TierSaver para su propia correspondencia; se nombra en privacidad 10.
 
-Alta o cambio de un subencargado: actualizar privacidad 6 y el Anexo III del DPA, y mostrar el aviso en la app, **30 días antes**. Sin el aviso dentro de la app (todavía no existe) no se cambia de subencargado.
+Alta o cambio de un subencargado: actualizar privacidad 6 y el Anexo III del DPA, y mostrar el aviso en la app, **30 días antes**. El aviso se publica como indica la sección 9, con tipo `subprocessor`; el cambio no rige antes de los 30 días desde su `publishedAt`.
 
 ## 5. Registro de actividades de tratamiento como encargado (art. 30.2 GDPR)
 
@@ -136,3 +136,30 @@ No es una evaluación de impacto formal (art. 35 GDPR). Es la nota que respalda 
 ## 8. Regla de prospección
 
 Hasta que un abogado revise otra cosa: mails en frío solo a empresas de EE.UU.; cada mensaje lleva el nombre legal, el domicilio postal y cómo dejar de recibirlos; lista propia de no contactar; nada a Canadá, la UE ni el Reino Unido. Todo mail a terceros sale como borrador que el operador revisa y envía. Los datos de prospectos nunca salen de las cuentas de Shopify o de Klaviyo de un merchant.
+
+## 9. Avisos dentro de la app (cómo publicar uno)
+
+Los términos (8, 14, 16 y 17), la privacidad (6 y 13) y el DPA (5) prometen "a notice in the app" antes de un cambio de términos, de precios o de subencargados. Ese aviso es una lista escrita en el código: `shopify/app/notices.ts`. Hoy está vacía.
+
+**Publicar un aviso es un cambio de código y un despliegue de la app.** No hay panel ni base de datos.
+
+1. Redactar el texto en inglés, texto plano: `title` (una línea, con la fecha en que rige el cambio) y `body` (qué cambia y qué puede hacer el merchant). Sin datos personales y sin cifras que no estén ya en los términos o precios publicados. Lo aprueba Facundo; si es legal, también el abogado.
+2. Agregar la entrada **arriba** de `NOTICES` (la más nueva primero), con un `id` nuevo que no se reutiliza ni se renombra (por ejemplo `2027-02-terms`), `publishedAt` con la fecha del despliegue (día calendario UTC), `kind` (`terms`, `privacy`, `subprocessor`, `pricing` o `service`) y, si corresponde, `linkLabel` y `linkUrl` a la página publicada. Hay un ejemplo comentado en el archivo.
+3. Publicar primero la página nueva en el sitio (términos, privacidad o DPA, con su fecha de vigencia futura) y después desplegar la app. Tests: `npm test` en `shopify/`.
+4. Anotar en `STATUS.md` la fecha de publicación y la fecha en que rige el cambio.
+
+Qué ve el merchant y por cuánto tiempo:
+
+| Dónde | Qué | Hasta cuándo |
+| --- | --- | --- |
+| Home | Banner informativo arriba, con el botón "Got it" | 90 días desde `publishedAt`, o hasta que esa tienda apriete "Got it" |
+| Pantalla de revisión de la simulación | El mismo banner, solo para avisos `terms` y `pricing` (ahí se aceptan los términos y el precio) | Igual que en Home |
+| Settings → "Notices" | Lista de todos los avisos con su fecha, descartados o no | 12 meses desde `publishedAt` |
+
+Reglas:
+
+- **Mínimo 30 días visible y sin tocar.** El cambio anunciado no puede regir antes de `publishedAt` + 30 días (salvo que la ley, Klaviyo o Shopify exijan antes, términos 16). Una entrada no se edita ni se borra mientras esté dentro de los 12 meses: si hay que corregir, se publica otra.
+- Una entrada con `publishedAt` futuro no se muestra hasta ese día. Cambiar el `id` de una entrada la vuelve a mostrar a todas las tiendas.
+- El aviso nunca bloquea la app: informa. No reemplaza pedir de nuevo la aceptación de los términos, que sigue ocurriendo al aprobar una limpieza (`TERMS_VERSION`).
+- **Registro:** cada "Got it" queda en `events_log` (acción `notice.dismissed`, tienda, usuario de Shopify, fecha, id del aviso), una fila por tienda y aviso. Se borra con el resto de los datos de la tienda al desinstalar. La app **no** registra cuándo vio el aviso cada tienda; la prueba de que se mostró es la fecha del despliegue y `publishedAt` en el historial de git.
+- **Límites conocidos:** el aviso es igual para todas las tiendas (no se puede dirigir a una sola) y solo lo ve quien abre la app. Una tienda que no abre la app en esos 90 días no lo ve en Home; le queda la lista de Settings. Los términos (17, Notices) dicen que el aviso se da "when it is first shown there": punto para confirmar con el abogado.
