@@ -15,6 +15,7 @@ import {
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
+import { isExcludedCountry, isShopExcluded, MARKET_EXCLUDED } from "../markets";
 import {
   buildCandidateSegmentDefinition,
   ensureCandidateSegment,
@@ -201,7 +202,9 @@ function ruleSettingsOf(row: typeof schema.settings.$inferSelect): RuleSettings 
 export async function createScan(
   db: Db,
   args: { shop: string; createdBy: string; origin?: "manual" | "scheduled"; now?: Date },
-): Promise<{ ok: true; scanId: string } | { ok: false; reason: "scan_in_progress"; scanId: string }> {
+): Promise<{ ok: true; scanId: string } | { ok: false; reason: "scan_in_progress"; scanId: string } | { ok: false; reason: typeof MARKET_EXCLUDED; scanId: null }> {
+  // Stores in a market TierSaver is not offered in are never audited (app/markets.ts).
+  if (await isShopExcluded(db, args.shop)) return { ok: false, reason: MARKET_EXCLUDED, scanId: null };
   const now = args.now ?? new Date();
   // A scan that has been "running" for more than a day is dead (its Workflow is gone); it does not block a new one.
   const stale = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -254,6 +257,8 @@ export async function executeScan(deps: ScanDeps, scanId: string): Promise<ScanO
         db.query.klaviyoConnections.findFirst({ where: eq(schema.klaviyoConnections.shop, scan.shop) }),
       ]);
       if (!shop || shop.status !== "installed" || !settings) throw fail("shop_not_installed");
+      // Defence in depth: createScan already refuses these stores; nothing is read from their Klaviyo account.
+      if (isExcludedCountry(shop.countryCode)) throw fail(MARKET_EXCLUDED);
       if (!connection) throw fail("klaviyo_not_connected");
       if (connection.status !== "connected") throw fail(`klaviyo_${connection.status}`);
 

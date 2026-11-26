@@ -2,6 +2,7 @@ import { FLAT_PRICE_TIERS, DEFAULT_FEE_POLICY, flatTierFor, flatTierForPrice, fo
 import { and, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
+import { isShopExcluded, MARKET_EXCLUDED } from "../markets";
 
 /**
  * TierSaver's plan: ONE flat monthly subscription by list size, through Shopify's Billing API.
@@ -395,7 +396,7 @@ export type PlanRequest =
   | { ok: true; next: "ready" }
   /** Send the merchant to Shopify's approval page. */
   | { ok: true; next: "approve_in_shopify"; confirmationUrl: string; plan: Plan }
-  | { ok: false; reason: "above_price_tiers" | "billing_unavailable" };
+  | { ok: false; reason: "above_price_tiers" | "billing_unavailable" | typeof MARKET_EXCLUDED };
 
 /**
  * Starts, or changes to, the plan for a list of `activeProfiles`. With `keepLargerPlan` a plan that already
@@ -408,6 +409,8 @@ export async function requestPlanFor(
   deps: { db: Db; graphql: AdminGraphql; now?: Date },
   args: { shop: string; activeProfiles: number; returnUrl: string; actor: string; termsVersion?: string; simulationId?: string | null; keepLargerPlan?: boolean },
 ): Promise<PlanRequest> {
+  // No plan is ever started for a store in a market TierSaver is not offered in (app/markets.ts).
+  if (await isShopExcluded(deps.db, args.shop)) return { ok: false, reason: MARKET_EXCLUDED };
   const wanted = planForListSize(args.activeProfiles);
   if (!wanted) return { ok: false, reason: "above_price_tiers" };
   try {

@@ -144,6 +144,7 @@ const ERRORS: Record<string, string> = {
   billing_unavailable: "Shopify could not be asked about your plan. Nothing was changed. Please try again.",
   cleanup_in_progress: "Another cleanup is still in progress. Wait for it to finish.",
   klaviyo_not_connected: "Connect Klaviyo before starting a cleanup.",
+  market_excluded: "TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet. Nothing was changed in Klaviyo and nothing is charged.",
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

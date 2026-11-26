@@ -3,7 +3,7 @@ import { and, eq, like } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { legalUrls, SUPPORT_EMAIL, TERMS_VERSION } from "../app/legal";
 import { saveSettings, type SettingsInput } from "../app/settings/settings";
-import { dayStamp, formatCalendarDay, formatDateTime, rememberShopTimeZone, safeTimeZone, shopTimeZone, stamp } from "../app/settings/timezone";
+import { dayStamp, formatCalendarDay, formatDateTime, rememberShopProfile, safeTimeZone, shopTimeZone, stamp } from "../app/settings/timezone";
 import { db, schema, seedSimulation } from "./helpers";
 
 const baseInput = (over: Partial<SettingsInput> = {}): SettingsInput => ({
@@ -42,16 +42,16 @@ describe("dates shown to the merchant", () => {
       calls++;
       return Response.json({ data: { shop: { ianaTimezone: "America/Bogota" } } });
     };
-    await rememberShopTimeZone(db, shop, graphql);
-    await rememberShopTimeZone(db, shop, graphql);
+    await rememberShopProfile(db, shop, graphql);
+    await rememberShopProfile(db, shop, graphql);
     expect(calls).toBe(1);
     expect(await shopTimeZone(db, shop)).toBe("America/Bogota");
   });
 
   it("ignore a zone that is not one, and a failing Shopify call", async () => {
     const { shop } = await seedSimulation({ candidates: 1, approved: false });
-    await rememberShopTimeZone(db, shop, async () => Response.json({ data: { shop: { ianaTimezone: "Nowhere/Nothing" } } }));
-    await rememberShopTimeZone(db, shop, async () => {
+    await rememberShopProfile(db, shop, async () => Response.json({ data: { shop: { ianaTimezone: "Nowhere/Nothing" } } }));
+    await rememberShopProfile(db, shop, async () => {
       throw new Error("shopify is down");
     });
     expect(await shopTimeZone(db, shop)).toBe("UTC");

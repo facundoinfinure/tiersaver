@@ -13,8 +13,9 @@ export async function startScan(args: {
   shop: string;
   createdBy: string;
   origin?: "manual" | "scheduled";
-}): Promise<{ scanId: string; started: boolean }> {
+}): Promise<{ scanId: string | null; started: boolean }> {
   const created = await createScan(db, args);
+  // A store in a market TierSaver is not offered in gets no scan at all (scanId null).
   if (!created.ok) return { scanId: created.scanId, started: false };
 
   const instance = await env.SCAN.create({ id: created.scanId, params: { scanId: created.scanId } });

@@ -1,5 +1,6 @@
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import type * as schema from "../db/schema";
+import { isShopExcluded, MARKET_EXCLUDED } from "../markets";
 import { KLAVIYO_OAUTH_CALLBACK_PATH } from "./config";
 import { completeAuthorization, getConnection, type ConnectionInfo, type KlaviyoSecrets } from "./connection.server";
 import { KlaviyoError } from "./errors";
@@ -100,8 +101,26 @@ function linkNoLongerValid(): Response {
   });
 }
 
-/** Step 1. Never throws for a bad ticket: the answer is a page telling the merchant to start again. */
-export async function startKlaviyoAuthorization(request: Request, env: FlowEnv, now = new Date()): Promise<Response> {
+/** The answer to a start link of a store TierSaver is not offered to (app/markets.ts): no redirect to Klaviyo. */
+function notAvailable(): Response {
+  const body =
+    "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>TierSaver</title>" +
+    "<p>TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet. " +
+    "Nothing was read from your Klaviyo account. Open TierSaver in your Shopify admin for details.</p>";
+  return new Response(body, { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+}
+
+/**
+ * Step 1. Never throws for a bad ticket: the answer is a page telling the merchant to start again.
+ * `isExcluded` (the route passes app/markets.ts `isShopExcluded`) stops a store TierSaver is not offered to
+ * before it reaches Klaviyo.
+ */
+export async function startKlaviyoAuthorization(
+  request: Request,
+  env: FlowEnv,
+  now = new Date(),
+  isExcluded: (shop: string) => Promise<boolean> = async () => false,
+): Promise<Response> {
   let shop: string;
   try {
     ({ shop } = await verifyStartTicket({
@@ -112,6 +131,7 @@ export async function startKlaviyoAuthorization(request: Request, env: FlowEnv, 
   } catch {
     return linkNoLongerValid();
   }
+  if (await isExcluded(shop)) return notAvailable();
   const authorization = await createAuthorizationRequest({
     clientId: env.KLAVIYO_CLIENT_ID,
     redirectUri: redirectUri(env),
@@ -201,6 +221,8 @@ export async function finishKlaviyoAuthorization(
     return { ok: false, code: error instanceof KlaviyoError ? error.code : "klaviyo_oauth_failed" };
   }
   if (!args.code) return { ok: false, code: "klaviyo_oauth_code_missing" };
+  // A store in a market TierSaver is not offered in never gets a connection: the code is not exchanged.
+  if (await isShopExcluded(deps.db, args.shop)) return { ok: false, code: MARKET_EXCLUDED };
   const code = args.code;
 
   const d1 = (deps.db as DrizzleD1Database<typeof schema> & { $client: D1Database }).$client;

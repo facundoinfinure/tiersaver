@@ -24,6 +24,7 @@ const base: HomeView = {
   notice: null,
   notices: [],
   configured: true,
+  marketExcluded: false,
   startUrl: "#",
   connection: null,
   scan: null,
@@ -33,7 +34,7 @@ const base: HomeView = {
   schedule: { enabled: false, automatic: false, nextAuditOn: null },
   plan: { status: "none", price: null, lowest: "US$9/month", largestList: "150,000", intervalDays: 30 },
   orderHistory: "complete",
-  links: (({ help, support, supportEmail, sales, salesEmail, articles }) => ({ help, support, supportEmail, sales, salesEmail, schedule: articles.schedule, pricing: articles.pricing }))(legalUrls({})),
+  links: (({ help, support, supportEmail, sales, salesEmail, articles }) => ({ help, support, supportEmail, sales, salesEmail, schedule: articles.schedule, pricing: articles.pricing, uninstalling: articles.uninstalling }))(legalUrls({})),
 };
 const connection = { status: "connected" as const, klaviyoAccountId: "SGKvLG", connectedOn: dayStamp("2026-11-25T18:55:38Z") };
 const result = {
@@ -54,6 +55,7 @@ const result = {
 
 const states: Record<string, HomeView> = {
   "home-1-new": base,
+  "home-unavailable": { ...base, marketExcluded: true, startUrl: null },
   "home-2-connected": { ...base, notice: "connected", connection },
   "home-3-audited": { ...base, connection, scan: { status: "completed", error: null, membersRead: 984 }, result, simulation: { state: "open", candidates: 696, expiresAt: stamp("2026-11-26T18:58:07Z") } },
   "home-4-cleaned": {

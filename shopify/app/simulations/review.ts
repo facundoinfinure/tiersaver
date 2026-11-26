@@ -2,6 +2,7 @@ import { SIMULATION_TTL_MS, type CandidateReason } from "@tiersaver/core";
 import { and, asc, desc, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
+import { isShopExcluded, MARKET_EXCLUDED } from "../markets";
 import { getProfileEmails } from "../klaviyo/api";
 import type { KlaviyoClient } from "../klaviyo/client";
 import { LIMITS } from "../klaviyo/config";
@@ -47,7 +48,7 @@ export async function latestSimulation(db: Db, shop: string, now = new Date()): 
 
 export type ApproveResult =
   | { ok: true }
-  | { ok: false; reason: "not_found" | "not_acknowledged" | "approver_unknown" | "no_candidates" | "already_approved" | "expired" | "superseded" | "executed" };
+  | { ok: false; reason: "not_found" | "not_acknowledged" | "approver_unknown" | "no_candidates" | "already_approved" | "expired" | "superseded" | "executed" | typeof MARKET_EXCLUDED };
 
 /**
  * Records the merchant's approval. One atomic UPDATE repeats every condition,
@@ -62,6 +63,8 @@ export async function approveSimulation(
   if (!args.acknowledged) return { ok: false, reason: "not_acknowledged" };
   // A manual approval is a person's decision; "automatic" is written only by the schedule (app/schedule/automatic.ts).
   if (!/^user:[0-9]{1,20}$/.test(args.approvedBy)) return { ok: false, reason: "approver_unknown" };
+  // Stores in a market TierSaver is not offered in cannot approve a cleanup (app/markets.ts).
+  if (await isShopExcluded(db, args.shop)) return { ok: false, reason: MARKET_EXCLUDED };
 
   const sim = await db.query.simulations.findFirst({
     where: and(eq(schema.simulations.id, args.simulationId), eq(schema.simulations.shop, args.shop)),

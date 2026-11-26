@@ -1,7 +1,7 @@
 // Worker entry of the local preview (see README.md). Adds /__preview/* helpers in front of the real app.
 import { createRequestHandler } from "react-router";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
-import { billing, buyerHashes, installPreviewWorld, klaviyo, knobs, PREVIEW_SHOP, resetBilling, seedKlaviyo } from "./world";
+import { billing, buyerHashes, installPreviewWorld, klaviyo, knobs, PREVIEW_SHOP, resetBilling, seedKlaviyo, shopProfile } from "./world";
 
 installPreviewWorld();
 
@@ -84,6 +84,7 @@ async function preview(request: Request, env: Env, ctx: ExecutionContext): Promi
       await env.DB.prepare("DELETE FROM shops WHERE shop = ?").bind(PREVIEW_SHOP).run();
       seedKlaviyo();
       resetBilling();
+      shopProfile.country = "US";
       return new Response("reset");
     }
     // Complete order history with a few buyers among the inactive profiles (what read_all_orders would give).
@@ -133,6 +134,14 @@ async function preview(request: Request, env: Env, ctx: ExecutionContext): Promi
       const n = changed.meta.changes ?? 0;
       await env.DB.prepare("UPDATE runs SET processed_count = processed_count - ?1, unknown_count = unknown_count + ?1, status = 'completed_with_errors' WHERE id = ?2 AND shop = ?3").bind(n, runId, PREVIEW_SHOP).run();
       return new Response(`unknown: ${n}`);
+    }
+    // The store's country as Shopify reports it (app/markets.ts): ?code=DE for an excluded store, ?code= for none.
+    // Stored at once, as if the app had just read it.
+    case "/__preview/country": {
+      const code = (url.searchParams.get("code") ?? "").toUpperCase() || null;
+      shopProfile.country = code;
+      await env.DB.prepare("UPDATE shops SET country_code = ?1, country_checked_at = ?2 WHERE shop = ?3").bind(code, Date.now(), PREVIEW_SHOP).run();
+      return Response.json(shopProfile);
     }
     case "/__preview/state":
       return Response.json({ billing, jobs: klaviyo.jobs.length, suppressed: klaviyo.suppressed.size, segments: klaviyo.segments.map((s) => ({ id: s.id, members: s.members.length, processing: s.isProcessing })) });

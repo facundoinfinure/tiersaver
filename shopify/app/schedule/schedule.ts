@@ -92,7 +92,7 @@ export async function scheduleDecisions(db: Db, now = new Date()): Promise<Sched
 /** One cron tick. `startScan` is injected so the same code runs in tests. Returns the shops a scan was started for. */
 export async function runScheduleTick(deps: {
   db: Db;
-  startScan: (args: { shop: string; createdBy: string; origin: "scheduled" }) => Promise<{ scanId: string; started: boolean }>;
+  startScan: (args: { shop: string; createdBy: string; origin: "scheduled" }) => Promise<{ scanId: string | null; started: boolean }>;
   now?: Date;
   /** Scans started per tick, to stay inside one invocation's limits; the rest are picked up an hour later. */
   maxStarts?: number;

@@ -10,6 +10,7 @@ import { db, schema } from "./db.server";
 import { ensureShop } from "./orders/purchases";
 import { markInstalled } from "./data/privacy";
 import { EncryptedSessionStorage } from "./session-storage.server";
+import { rememberShopProfile } from "./settings/timezone";
 
 const sessionStorage = new EncryptedSessionStorage(
   new DrizzleSessionStorageSQLite(db, schema.sessionTable),
@@ -26,10 +27,12 @@ const shopify = shopifyApp({
   sessionStorage,
   distribution: AppDistribution.AppStore,
   hooks: {
-    afterAuth: async ({ session }) => {
+    afterAuth: async ({ session, admin }) => {
       await ensureShop(db, session.shop);
       // A fresh installation: late uninstall or shop/redact webhooks of an earlier one are ignored from here on.
       await markInstalled(db, session.shop);
+      // Time zone and country (app/markets.ts), in one read; never throws. The layout loader retries if this fails.
+      await rememberShopProfile(db, session.shop, (query) => admin.graphql(query));
       try {
         // One backfill per shop per day; a repeated id is rejected by Workflows.
         const day = new Date().toISOString().slice(0, 10);

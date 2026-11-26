@@ -12,7 +12,8 @@ import { logEvent, sessionActor } from "../data/events-log";
 import { disconnect, getConnection } from "../klaviyo/connection.server";
 import { legalUrls } from "../legal";
 import { visibleNotices } from "../notices";
-import { dayStamp, formatCalendarDay, safeTimeZone, stamp } from "../settings/timezone";
+import { dayStamp, formatCalendarDay, rememberShopProfile, safeTimeZone, stamp } from "../settings/timezone";
+import { isShopExcluded } from "../markets";
 import { klaviyoStartUrl } from "../klaviyo/flow.server";
 import { ensureShop } from "../orders/purchases";
 import { startScan } from "../scans/start.server";
@@ -22,8 +23,11 @@ import { latestSimulation } from "../simulations/review";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView> => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   await ensureShop(db, session.shop);
+  // The layout loader runs at the same time; this page needs the country before it decides what to show.
+  await rememberShopProfile(db, session.shop, (query) => admin.graphql(query));
+  const marketExcluded = await isShopExcluded(db, session.shop);
 
   const connection = await getConnection(db, session.shop);
   const configured = Boolean(env.KLAVIYO_CLIENT_ID && env.KLAVIYO_CLIENT_SECRET);
@@ -61,8 +65,9 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView>
     notice,
     notices,
     configured,
-    // A fresh ticket on every load; it is valid for ten minutes.
-    startUrl: configured && !connected ? await klaviyoStartUrl(env, session.shop) : null,
+    marketExcluded,
+    // A fresh ticket on every load; it is valid for ten minutes. None for a store TierSaver is not offered to.
+    startUrl: configured && !connected && !marketExcluded ? await klaviyoStartUrl(env, session.shop) : null,
     connection: connection ? { status: connection.status, klaviyoAccountId: connection.klaviyoAccountId, connectedOn: dayStamp(connection.connectedAt, zone) } : null,
     scan: audit?.scan ? { status: audit.scan.status, error: audit.scan.error, membersRead: audit.scan.membersRead } : null,
     result: audit?.result ? { ...audit.result, finishedAt: stamp(audit.result.finishedAt, zone) } : null,
@@ -90,7 +95,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<HomeView>
       largestList: LARGEST_PLAN_PROFILES.toLocaleString("en-US"),
       intervalDays: PLAN_INTERVAL_DAYS,
     },
-    links: { help: legal.help, support: legal.support, supportEmail: legal.supportEmail, sales: legal.sales, salesEmail: legal.salesEmail, schedule: legal.articles.schedule, pricing: legal.articles.pricing },
+    links: { help: legal.help, support: legal.support, supportEmail: legal.supportEmail, sales: legal.sales, salesEmail: legal.salesEmail, schedule: legal.articles.schedule, pricing: legal.articles.pricing, uninstalling: legal.articles.uninstalling },
   };
 };
 

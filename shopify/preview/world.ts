@@ -42,6 +42,9 @@ export function resetBilling(): void {
 export const klaviyo = new FakeKlaviyo();
 /** Preview-only controls (see /__preview/klaviyo in worker.ts): slow Klaviyo down so a running cleanup can be looked at. */
 export const knobs = { delayMs: 0 };
+
+/** What the fake Shopify answers as the store's country (`/__preview/country?code=`; empty: no country). */
+export const shopProfile: { country: string | null } = { country: "US" };
 /** Members Klaviyo "computes" for the managed segment once it stops processing. */
 let segmentMembers: string[] = [];
 /** Buyers to record in the shop's order history (email addresses of some segment members). */

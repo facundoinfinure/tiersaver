@@ -54,6 +54,13 @@ export const shops = sqliteTable("shops", {
   status: text("status", { enum: SHOP_STATUSES }).notNull().default("installed"),
   /** IANA time zone of the shop; scheduling uses the shop's calendar. */
   ianaTimezone: text("iana_timezone"),
+  /**
+   * ISO country code of the store's address in Shopify (app/markets.ts decides from it whether the store is in
+   * a market TierSaver is offered in). null = not known yet, or Shopify gave none: the store is allowed.
+   */
+  countryCode: text("country_code"),
+  /** Last time Shopify was asked for the store's country (re-asked after a week, settings/timezone.ts). */
+  countryCheckedAt: timestamp("country_checked_at"),
   /** True once Shopify approved read_all_orders (orders older than 60 days). */
   readAllOrdersGranted: integer("read_all_orders_granted", { mode: "boolean" }).notNull().default(false),
   /**

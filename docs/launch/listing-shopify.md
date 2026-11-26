@@ -163,7 +163,16 @@ Términos, privacidad y DPA adoptados por el dueño sin revisión externa el 202
 
 ## 6. Requisitos de instalación
 
-Sin requisito de canal de venta ni geográfico. Aclarar en el campo de requisitos, si lo hay: `Requires a Klaviyo account.`
+**Cambio del 2026-11-27 (decisión de Facundo):** TierSaver no se ofrece a tiendas ubicadas en la UE/EEE, el Reino Unido (con Gibraltar, Guernsey, Jersey e Isla de Man) ni Suiza (`docs/16-LEGALES.md` §2.4). La app ya lo hace cumplir del lado del servidor (`shopify/app/markets.ts`): esas tiendas ven una página que lo explica y no pueden conectar Klaviyo, auditar, aprobar, iniciar un plan ni limpiar.
+
+**Requisito geográfico en la ficha (verificado el 2026-11-27):**
+
+- Requisito 4.3.8 de la App Store: "Specify geographic requirements or specific API permissions in your app's listing if they are needed for your app to function. Only merchants in the correct geographic location ... will then be able to install your app." (https://shopify.dev/docs/apps/launch/shopify-app-store/app-store-requirements.md, leído 2026-11-27).
+- Centro de ayuda de Shopify: si la tienda no cumple los requisitos de instalación, la app figura como "Not compatible" y no se puede instalar; el requisito geográfico es "The app works with stores with a primary business address in a country that the app supports" (https://help.shopify.com/en/manual/apps/choosing-apps, leído 2026-11-27).
+- Es una **lista de países admitidos**, no de excluidos: al cargar la ficha hay que marcar todos los países salvo los de `EXCLUDED_COUNTRY_CODES` en `shopify/app/markets.ts`. El nombre exacto del campo en el formulario no se pudo ver (el changelog de 2019 que lo anunció devuelve 404); **a confirmar por Facundo al cargar**. Hay reportes de la comunidad de tiendas fuera de la lista que igual instalaron (sin verificar), por eso el control del servidor queda como defensa principal.
+- Aclarar en el campo de requisitos, si lo hay: `Requires a Klaviyo account. Not available for stores in the European Union, the EEA, the United Kingdom or Switzerland.`
+
+**Texto de la ficha:** "App details" está en 469/500 caracteres y no entra la aclaración; va en el requisito geográfico (que Shopify muestra como "Not compatible") y en las instrucciones de revisión. Si el formulario tiene un campo de requisitos visible para el merchant, usar la frase de arriba.
 
 ## 7. Revisión: instrucciones de prueba
 
@@ -173,6 +182,13 @@ Texto para el campo de instrucciones (3821 caracteres; límite sin verificar). C
 TierSaver for Klaviyo keeps a merchant's Klaviyo list clean by suppressing profiles that never engaged,
 after the merchant reviews and approves a simulation. Nothing is deleted, and a cleanup can be restored
 from the app. The app sends no email.
+
+Availability
+- TierSaver is offered only to stores located outside the EU, the rest of the EEA, the UK (with Gibraltar,
+  Guernsey, Jersey and the Isle of Man) and Switzerland, by the store's address in Shopify. Please review
+  with a development store whose address is in the US (or Canada or Australia). In a store located in
+  one of those regions the home page says "TierSaver is not available for stores in the European Union,
+  the United Kingdom or Switzerland yet", and nothing can be connected, audited or charged.
 
 What you need
 - A Klaviyo account. Test account with sample profiles (no 2FA): [KLAVIYO LOGIN + PASSWORD, added by the owner].

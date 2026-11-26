@@ -429,6 +429,36 @@ describe("numbers on the pages come from core", () => {
   });
 });
 
+describe("where TierSaver is offered (owner's decision of 2026-11-27, docs/16-LEGALES.md)", () => {
+  const statement = "located outside the European Union, the rest of the European Economic Area, the United Kingdom and Switzerland";
+
+  it("the availability statement is on the terms, privacy policy, DPA, pricing help, getting started and the landing page's pricing and FAQ", () => {
+    for (const path of ["terms.html", "privacy.html", "dpa.html", "help/pricing.html", "help/getting-started.html", "index.html"]) {
+      expect(textOf(generated.get(path)!), path).toContain(statement);
+    }
+    const landing = generated.get("index.html")!;
+    const faq = /<div class="faq">[\s\S]*?<\/div>\s*<\/div>\s*<\/section>/.exec(landing)?.[0] ?? "";
+    expect(textOf(faq)).toContain("Where is TierSaver available?");
+    expect(textOf(/class="text-muted small pricing-note"[\s\S]*?<\/p>/.exec(landing)?.[0] ?? "")).toContain(statement);
+  });
+
+  it("no page promises a representative in the EU or the UK, or claims to serve merchants there", () => {
+    for (const [path, html] of pages) {
+      const text = textOf(html);
+      expect(text, path).not.toMatch(/we will name that representative|where the law requires us to have a representative/i);
+      expect(text, path).not.toMatch(/where the (UK )?GDPR applies to (a merchant|you)\b/i);
+    }
+  });
+
+  it("the app enforces it: the excluded countries live in one module, and every blocked path checks it", async () => {
+    const markets = await appSource("app/markets.ts");
+    for (const code of ["DE", "FR", "IE", "IS", "LI", "NO", "GB", "CH", "GI", "GG", "JE", "IM"]) expect(markets).toContain(`"${code}"`);
+    for (const file of ["app/scans/engine.ts", "app/simulations/review.ts", "app/billing/billing.ts", "app/runs/gated.ts", "app/runs/gateway.server.ts", "app/klaviyo/flow.server.ts"]) {
+      expect(await appSource(file), file).toContain("isShopExcluded");
+    }
+  });
+});
+
 describe("copy rules (brand/messaging.md)", () => {
   const forbidden: [string, RegExp][] = [
     // brand/messaging.md

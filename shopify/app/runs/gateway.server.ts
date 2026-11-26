@@ -20,6 +20,7 @@ import type { KlaviyoClient } from "../klaviyo/client";
 import { LIMITS, SEEDED_METRIC_SPECS } from "../klaviyo/config";
 import { createKlaviyoClient, getConnection, type KlaviyoSecrets } from "../klaviyo/connection.server";
 import { KlaviyoError } from "../klaviyo/errors";
+import { isShopExcluded, MARKET_EXCLUDED } from "../markets";
 import { rulesOf } from "../settings/settings";
 import { RUN_BATCH_SIZE, markNotSent, type BatchRequest, type BatchResult, type SuppressionGateway } from "./engine";
 
@@ -35,6 +36,8 @@ import { RUN_BATCH_SIZE, markNotSent, type BatchRequest, type BatchResult, type 
  *    depend on the switch (product rule 3).
  * 2. The shop must have a Klaviyo connection in status `connected`. Refusals:
  *    `klaviyo_not_connected`, `klaviyo_needs_reauth`, `klaviyo_disconnected`.
+ * 3. Suppress batches only: the store must not be in a market TierSaver is not
+ *    offered in (app/markets.ts). Refusal: `market_excluded`.
  * Both are non-retryable: the run stops and every remaining profile stays untouched.
  *
  * Emails. Runs store profile ids only. The current email of each id is read
@@ -435,6 +438,9 @@ export function createSuppressionGateway(env: GatewayEnv, shop: string, deps: Ga
         if (!connection) refuse("klaviyo_not_connected");
         if (connection.status !== "connected") refuse(`klaviyo_${connection.status}`);
         if (request.kind !== "undo" && !suppressionAllowed(env, connection.klaviyoAccountId)) refuse("suppression_not_allowed_for_account");
+        // Defence in depth (app/markets.ts): no suppress request for a store in a market TierSaver is not offered in.
+        // Undo is exempt, like above: restoring an earlier cleanup must always work.
+        if (request.kind !== "undo" && (await isShopExcluded(db, shop))) refuse(MARKET_EXCLUDED);
         // One store per Klaviyo account: a second store on the same account could clean it under another store's billing.
         if (request.kind !== "undo" && (await sharedWithAnotherStore(db, shop, connection.klaviyoAccountId))) refuse("klaviyo_account_used_by_another_store");
 

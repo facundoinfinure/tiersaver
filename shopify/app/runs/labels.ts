@@ -52,5 +52,6 @@ export const RUN_ERROR_LABELS: Record<string, string> = {
   candidate_segment_processing: "Klaviyo was still updating TierSaver's segment, so the profiles could not be checked again.",
   candidate_segment_unavailable: "The profiles could not be checked again in Klaviyo.",
   klaviyo_account_changed: "The connected Klaviyo account changed.",
+  market_excluded: "TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet. Nothing was changed in Klaviyo and nothing is charged.",
 };
 export const OTHER_RUN_ERROR_LABEL = "Something went wrong while talking to Klaviyo.";

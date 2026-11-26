@@ -4,6 +4,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { db } from "../db.server";
 import { logEvent, sessionActor } from "../data/events-log";
 import { finishKlaviyoAuthorization } from "../klaviyo/flow.server";
+import { MARKET_EXCLUDED } from "../markets";
 import { ensureShop } from "../orders/purchases";
 import { authenticate } from "../shopify.server";
 
@@ -36,6 +37,8 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   if (result.ok) return redirect("/app?klaviyo=connected");
   // Still being finished by another load: the home page shows the outcome.
   if (result.code === "klaviyo_oauth_in_progress") return redirect("/app");
+  // A store TierSaver is not offered to (app/markets.ts): the home page explains it.
+  if (result.code === MARKET_EXCLUDED) return redirect("/app");
   return redirect(`/app?klaviyo=failed&reason=${encodeURIComponent(result.code)}`);
 };
 

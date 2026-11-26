@@ -188,6 +188,7 @@ const PLAN_ERRORS: Record<string, string> = {
   plan_not_cancelled: "Shopify did not cancel the plan. Nothing was changed. Please try again.",
   above_price_tiers: "TierSaver is not sold automatically for a list of this size. Write to hello@tiersaver.com.",
   no_audit: "Run the audit first, so TierSaver knows your list size.",
+  market_excluded: "TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet, so no plan can be started. Nothing is charged.",
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

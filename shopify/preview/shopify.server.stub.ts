@@ -1,6 +1,6 @@
 // Stands in for app/shopify.server.ts in the local preview (see README.md). Never part of a production build.
 import { redirect as routerRedirect, redirectDocument } from "react-router";
-import { billing, installPreviewWorld, PREVIEW_SHOP, PREVIEW_USER } from "./world";
+import { billing, installPreviewWorld, PREVIEW_SHOP, PREVIEW_USER, shopProfile } from "./world";
 
 installPreviewWorld();
 
@@ -29,6 +29,9 @@ async function graphql(query: string, options?: { variables?: Record<string, unk
   }
   // The shop's time zone, as Shop.ianaTimezone: dates in the app are shown in it (app/settings/timezone.ts).
   if (query.includes("TierSaverShopTimeZone")) return json({ shop: { ianaTimezone: "America/Los_Angeles" } });
+  // Time zone and country (app/markets.ts). The country is set with /__preview/country?code=DE (see worker.ts).
+  if (query.includes("TierSaverShopProfile"))
+    return json({ shop: { ianaTimezone: "America/Los_Angeles", shopAddress: { countryCodeV2: shopProfile.country }, billingAddress: { countryCodeV2: shopProfile.country } } });
   // The plan waits on "Shopify's approval page" (/__preview/billing/confirm, see worker.ts) until it is approved there.
   if (query.includes("appSubscriptionCreate")) {
     const v = options?.variables as { name: string; returnUrl: string; test: boolean; lineItems: { plan: { appRecurringPricingDetails: { price: { amount: number } } } }[] };

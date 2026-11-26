@@ -19,6 +19,11 @@ export interface HomeView {
   notices: NoticeView[];
   /** False while the deployment has no Klaviyo OAuth credentials. */
   configured: boolean;
+  /**
+   * True for a store in a market TierSaver is not offered in (app/markets.ts): the home page only explains that,
+   * and keeps the way to restore earlier cleanups.
+   */
+  marketExcluded: boolean;
   startUrl: string | null;
   connection: { status: "connected" | "needs_reauth" | "disconnected"; klaviyoAccountId: string; connectedOn: Stamp } | null;
   scan: { status: "queued" | "running" | "completed" | "failed"; error: string | null; membersRead: number } | null;
@@ -56,7 +61,57 @@ export interface HomeView {
    * `lowest`, `largestList` and `intervalDays` come from the price table, for the pricing box.
    */
   plan: { status: "none" | "active" | "cancelled" | "declined" | "frozen"; price: string | null; lowest: string; largestList: string; intervalDays: number };
-  links: { help: string; support: string; supportEmail: string; sales: string; salesEmail: string; schedule: string; pricing: string };
+  links: { help: string; support: string; supportEmail: string; sales: string; salesEmail: string; schedule: string; pricing: string; uninstalling: string };
+}
+
+/**
+ * What a store in a market TierSaver is not offered in sees instead of the home page (app/markets.ts). The
+ * server refuses every other action for it anyway; this page only says so, politely, and keeps Restore.
+ */
+function NotAvailableScreen({ view }: { view: HomeView }) {
+  const { links, connection, lastCleanup } = view;
+  const notify = `mailto:${links.salesEmail}?subject=${encodeURIComponent("Tell me when TierSaver is available in my country")}`;
+  // Not expected in production (these stores cannot connect), but an earlier cleanup must stay reversible.
+  const hasHistory = Boolean(connection) || Boolean(lastCleanup && lastCleanup.submitted > 0);
+  return (
+    <s-page heading="TierSaver">
+      <s-section heading="TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet">
+        <s-stack gap="base">
+          <s-paragraph>
+            We are sorry. Your store's address in Shopify is in one of these regions, and TierSaver does not yet meet the data-protection
+            requirements that apply to businesses there.
+          </s-paragraph>
+          <s-unordered-list>
+            <s-list-item>{hasHistory ? "No audit or cleanup can be started." : "Nothing was read from your Klaviyo account."}</s-list-item>
+            <s-list-item>Nothing is charged. TierSaver does not start a plan for your store.</s-list-item>
+            <s-list-item>
+              To remove the app, open Settings in your Shopify admin, then Apps, find TierSaver and choose Uninstall.{" "}
+              <s-link href={links.uninstalling} target="_blank">
+                What uninstalling does
+              </s-link>
+            </s-list-item>
+          </s-unordered-list>
+          <s-paragraph>
+            Want to know when it becomes available?{" "}
+            <s-link href={notify} target="_blank">
+              Write to {links.salesEmail}
+            </s-link>{" "}
+            and we will tell you.
+          </s-paragraph>
+        </s-stack>
+      </s-section>
+      {hasHistory ? (
+        <s-section heading="Earlier cleanups">
+          <s-stack gap="base">
+            <s-paragraph>You can still restore the profiles of an earlier cleanup from History, while Klaviyo stays connected.</s-paragraph>
+            <div>
+              <s-button href="/app/runs">View history</s-button>
+            </div>
+          </s-stack>
+        </s-section>
+      ) : null}
+    </s-page>
+  );
 }
 
 const NOTICES: Record<Exclude<Notice, null>, { tone: "success" | "warning" | "info"; text: string }> = {
@@ -84,6 +139,7 @@ const CLEANUP_ERRORS: Record<string, string> = {
   klaviyo_disconnected: "Klaviyo was disconnected before the cleanup could run.",
   simulation_expired: "The simulation was more than 24 hours old when the cleanup started.",
   simulation_superseded: "Your rules changed after the simulation was approved.",
+  market_excluded: "TierSaver is not available for stores in the European Union, the United Kingdom or Switzerland yet.",
 };
 
 /**
@@ -142,6 +198,7 @@ export function HomeScreen({
   /** Wraps a notice's "Got it" button in the form that records its dismissal. */
   renderDismiss: (noticeId: string, button: ReactNode) => ReactNode;
 }) {
+  if (view.marketExcluded) return <NotAvailableScreen view={view} />;
   const { connection, result, scan, simulation, lastCleanup, schedule, links, plan } = view;
   const connected = connection?.status === "connected";
   const scanning = scan?.status === "queued" || scan?.status === "running";

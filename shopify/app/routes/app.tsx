@@ -6,13 +6,14 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { env } from "cloudflare:workers";
 import { db } from "../db.server";
 import { legalUrls } from "../legal";
-import { rememberShopTimeZone } from "../settings/timezone";
+import { rememberShopProfile } from "../settings/timezone";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
-  // Dates are shown in the shop's time zone; it is read from Shopify once and kept.
-  await rememberShopTimeZone(db, session.shop, (query) => admin.graphql(query));
+  // Dates are shown in the shop's time zone, and the store's country decides whether TierSaver is offered to it
+  // (app/markets.ts): both are read from Shopify in one query and kept (the country is re-read weekly).
+  await rememberShopProfile(db, session.shop, (query) => admin.graphql(query));
 
   const legal = legalUrls(env);
   return { apiKey: env.SHOPIFY_API_KEY || "", support: legal.support, supportEmail: legal.supportEmail };

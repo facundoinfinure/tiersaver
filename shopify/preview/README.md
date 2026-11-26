@@ -18,6 +18,7 @@ App Bridge's script with an empty one and blocks any request to klaviyo.com or s
 Helpers of the preview server (all under `/__preview/`, see `worker.ts`): `reset`, `orders`, `state`,
 `klaviyo?delay=400` (slow Klaviyo, so a cleanup stays in progress), `klaviyo?rejectJobsAfter=5` (a cleanup that
 stops early; `0`: one that does not run), `klaviyo?reset=1`, `age?run=<id>&hours=800&renewed=1` (a cleanup past a Klaviyo plan renewal), `unknown?run=<id>` (a batch whose result is unknown)
+`country?code=DE` (the store's country as Shopify reports it, stored at once; `?code=` for none: see `app/markets.ts`)
 and `billing?end=cancelled|frozen|active` (the plan changes at Shopify and the signed `app_subscriptions/update` webhook is
 delivered to the real route), `billing?plan=1900` (an active plan of that many cents a month) and `billing?legacy=1` (the usage
 subscription of the old per-cleanup pricing, which must not count as a plan).
