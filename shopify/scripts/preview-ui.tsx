@@ -57,6 +57,8 @@ const states: Record<string, HomeView> = {
     schedule: { enabled: true, automatic: false, nextAuditOn: "2026-12-26" },
   },
 };
+// After "Disconnect Klaviyo" on a shop that already ran a cleanup: the way back must be on screen.
+states["home-5-disconnected"] = { ...states["home-4-cleaned"]!, notice: "disconnected", connection: null, scan: null, result: null, simulation: { state: "open", candidates: 696, expiresAt: "2026-11-26T18:58:07Z" } };
 for (const [name, view] of Object.entries(states)) {
   writeFileSync(join(out, `${name}.html`), page(<HomeScreen view={view} busy={false} renderForm={form} />));
 }

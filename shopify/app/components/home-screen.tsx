@@ -145,7 +145,7 @@ export function HomeScreen({
           Settings once you have checked what happened.
         </s-banner>
       ) : null}
-      {pending ? (
+      {pending && connected ? (
         <s-banner tone="info" heading={pending.state === "approved" ? "Your approved cleanup is ready to start" : `${number(pending.candidates)} profiles are waiting for your review`}>
           <s-stack gap="base">
             <s-text>
@@ -159,7 +159,7 @@ export function HomeScreen({
         </s-banner>
       ) : null}
 
-      {!cleaned ? (
+      {!cleaned || !connected ? (
         <s-section heading="Get started">
           <s-stack gap="small">
             <Step index={1} state={stepStates[0]!} title="Connect Klaviyo" action={!connected ? connectButton : null}>
