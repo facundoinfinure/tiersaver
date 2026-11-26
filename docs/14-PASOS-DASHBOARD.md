@@ -32,14 +32,23 @@ Archivo: `brand/logo/final/app-icon.png` (1200 × 1200, del repo).
 1. Misma app → **Settings** (o **App setup** / **Branding**, según la versión del dashboard) → **App icon** → subir el PNG.
 2. Es el ícono que se ve en el menú del admin (hoy aparece el genérico) y, después, en la ficha.
 
-## 4. App OAuth de Klaviyo: logo y textos del consentimiento (a confirmar)
+## 4. App OAuth de Klaviyo: logo y textos
+
+Según developers.klaviyo.com/en/docs/submit_your_app_for_review (leída el 2026-11-26). Todo esto se **guarda** con el botón **Save** de cada sección; nada se envía a revisión mientras no aprietes **Review submission**. Las revisiones de Klaviyo están en pausa y además piden 5 instalaciones reales, así que hoy esto solo sirve para que el consentimiento y la ficha en borrador muestren la marca.
 
 1. https://www.klaviyo.com/manage-apps → app **TierSaver**.
-2. En los datos de la app (la pantalla donde están scopes y redirect), cargar:
-   - Logo: `brand/logo/final/app-icon.png`.
-   - Descripción corta, si la pide: `Keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. You review and approve every cleanup.`
-   - URL del sitio: `https://tiersaver.com` (todavía sin publicar; se puede dejar para después).
-3. **No apretar "Review submission"**: eso manda la app a revisión de Klaviyo.
+2. Sección **Logo**: subir `brand/logo/final/klaviyo-app-logo.svg` (SVG de 48 × 48, sin scripts, que es lo que pide Klaviyo) → **Save**.
+3. Sección **App listing → Information**:
+   - Short description (máx. 75; tiene 61): `Automatic list hygiene: suppress profiles that never engaged.`
+   - Full description (máx. 300; tiene 269): `TierSaver keeps your Klaviyo list clean. It finds profiles that never engaged, using Klaviyo's own recommended criteria, shows you exactly who would be suppressed, and runs only after you approve. Profiles are suppressed, never deleted, and every cleanup can be undone.`
+4. Pestaña **Company information**: nombre `TierSaver`, sitio `https://tiersaver.com`, descripción: `TierSaver builds list hygiene tools for Shopify brands that use Klaviyo. Operated by Digital Solvers LLC.`
+5. Sección **Features** (2 a 6; título máx. 65, descripción máx. 225):
+   - `Free, read-only list audit` · `Counts the profiles that meet Klaviyo's criteria for long-term inactive profiles. Nothing changes in your account.`
+   - `Simulation you approve` · `See and download the exact profiles a cleanup would suppress. Nothing runs until you approve it.`
+   - `Buyers stay active` · `Every profile is checked against your Shopify orders. Customers who purchased are never suppressed.`
+   - `Undo and full history` · `Profiles are suppressed, never deleted. Every cleanup is logged and can be undone.`
+6. URLs (se pueden dejar para cuando el sitio esté publicado): privacy policy `https://tiersaver.com/privacy.html`, soporte `support@tiersaver.com`. La "OAuth installation URL" y la "Settings URL" todavía no existen como páginas públicas: dejarlas vacías.
+7. **No apretar "Review submission".**
 
 ## 5. Probar el cobro (después del paso 1)
 

@@ -231,7 +231,7 @@ export default function Simulation() {
         <s-stack gap="base">
           <s-paragraph>
             Computed {dateTime(sim.createdAt)}
-            {sim.origin === "scheduled" ? " by your monthly schedule" : ""}. Nothing has changed in Klaviyo.
+            {sim.origin === "scheduled" ? " by your monthly schedule" : ""}.{sim.state === "executed" ? "" : " Nothing has changed in Klaviyo."}
             {sim.state === "open" || sim.state === "approved" ? ` It can be approved and run until ${dateTime(sim.expiresAt)}.` : ""}
           </s-paragraph>
           <s-grid gridTemplateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap="base">
