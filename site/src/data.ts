@@ -18,12 +18,12 @@ import {
   RULE_LIMITS,
   SIMULATION_TTL_MS,
   flatTierFor,
+  formatUsd,
 } from "@tiersaver/core";
 import {
   check,
   describe,
   formatCount,
-  formatUsd,
   largestPublishedPlan,
   largestTierSaverPlan,
   planRange,
@@ -31,13 +31,12 @@ import {
 } from "./check/check.js";
 import {
   CANDIDATE_SEGMENT_NAME,
-  CHARGE_HOLD_HOURS,
-  CHARGE_WINDOW_DAYS,
   CSV_PART_SIZE,
   GROUPS_LISTED_PER_KIND,
   KLAVIYO_RESUPPRESS_WAIT_DAYS,
   MAX_LEAD_DAYS,
   MAX_PROTECTED_GROUPS,
+  TERMS_EFFECTIVE_DATE,
 } from "./site-config.js";
 import { KLAVIYO_PRICING_PAGE, KLAVIYO_SOURCES, SOURCES_READ_ON } from "./sources.js";
 
@@ -115,7 +114,7 @@ function planRows(): string {
   return rows.join("\n");
 }
 
-/** "$15" for a list size that has a public price; throws for one that does not. */
+/** "$9" for a list size that has a public price; throws for one that does not. */
 function priceFor(activeProfiles: number): string {
   const plan = flatTierFor(activeProfiles);
   if (!plan) throw new Error(`No public price for ${activeProfiles} profiles`);
@@ -135,7 +134,7 @@ function jsonLdOffers(): string {
       name: `${planRange(plan)} active profiles`,
       price: (plan.monthlyCents / 100).toFixed(2),
       priceCurrency: "USD",
-      description: "Flat monthly price by list size, charged only when a cleanup suppresses profiles.",
+      description: `Monthly plan by list size. Free to install; the plan starts when you approve your first cleanup and renews every ${DEFAULT_FEE_POLICY.billingIntervalDays} days until you cancel.`,
     })),
   );
 }
@@ -166,11 +165,10 @@ export function siteData(): Record<string, string> {
     "plans.lowestPrice": formatUsd(FLAT_PRICE_TIERS[0]!.monthlyCents),
     "jsonld.offers": jsonLdOffers(),
 
-    // Charging rules, from core's fee policy and the app
-    "fee.minDays": String(DEFAULT_FEE_POLICY.minDaysBetweenCharges),
-    "fee.maxPerWindow": formatUsd(DEFAULT_FEE_POLICY.windowCapCents),
-    "fee.holdHours": String(CHARGE_HOLD_HOURS),
-    "fee.windowDays": String(CHARGE_WINDOW_DAYS),
+    // The plan, from core's fee policy and the app
+    "plan.intervalDays": String(DEFAULT_FEE_POLICY.billingIntervalDays),
+    "terms.effectiveDate": TERMS_EFFECTIVE_DATE,
+    "terms.effectiveDateLong": longDate(TERMS_EFFECTIVE_DATE),
 
     // The app's own limits (src/site-config.ts)
     "app.csvPartSize": formatCount(CSV_PART_SIZE),

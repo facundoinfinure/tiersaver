@@ -460,8 +460,8 @@ export default function Settings() {
           <s-stack gap="base">
             <s-paragraph>
               With the schedule on, TierSaver runs the audit once a month and finishes before your plan renews, so Klaviyo's count
-              is up to date. Klaviyo's count can take up to 72 hours to update, which is why the audit runs at least{" "}
-              {LEAD_DAYS_LIMITS.min} days ahead.{" "}
+              is up to date. Klaviyo updates its count on its own schedule and checks it shortly before your plan renews, which is why the
+              audit runs at least {LEAD_DAYS_LIMITS.min} days ahead.{" "}
               <s-link href={data.legal.articles.schedule} target="_blank">
                 The monthly schedule and your Klaviyo plan
               </s-link>

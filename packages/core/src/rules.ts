@@ -38,9 +38,12 @@ export const EMAILS_RECEIVED_WINDOW_DAYS = 504;
 
 /**
  * Defaults = Klaviyo's own published criteria for suppression recommendations
- * (help.klaviyo.com/hc/en-us/articles/24312135764251, read 2026-11-25):
- * created at least 365 days ago, received 5 or more emails in ~72 weeks, and
- * never opened, clicked, visited, started a checkout or purchased.
+ * (help.klaviyo.com/hc/en-us/articles/24312135764251, read 2026-11-25 and again
+ * 2026-11-26): created at least 365 days ago, received 5 or more emails in
+ * ~72 weeks, and never opened, clicked, visited, started a checkout or
+ * purchased. A different Klaviyo article (…/24263920096027) describes a manual
+ * inactivity segment with a 180-day age; we follow the 365 of the
+ * recommendations, which is also the more conservative of the two.
  */
 export const DEFAULT_RULE_SETTINGS: RuleSettings = Object.freeze({
   purchaseDays: null,

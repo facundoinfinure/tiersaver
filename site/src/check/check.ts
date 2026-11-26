@@ -9,8 +9,8 @@
  * Klaviyo plan sizes come from @tiersaver/core's price table, the same data
  * the app uses. Only the sizes (profile counts) are shown, labelled as an
  * estimate: no Klaviyo price is ever displayed.
- * TierSaver's own flat prices come from core too (FLAT_PRICE_TIERS), the same
- * table the app charges from.
+ * TierSaver's own monthly plans come from core too (FLAT_PRICE_TIERS), the same
+ * table the app sells its plans from.
  *
  * By design this module computes no saving, no difference between prices and
  * no fee derived from Klaviyo's prices.
@@ -19,6 +19,7 @@ import {
   CURRENT_PRICE_TABLES,
   FLAT_PRICE_TIERS,
   flatTierFor,
+  formatUsd,
   tierFor,
   type FlatPriceTier,
   type PriceTable,
@@ -142,13 +143,8 @@ export function formatCount(n: number): string {
   return Math.round(n).toLocaleString("en-US");
 }
 
-/** "$29" or "$1,234.50" for an amount in US cents. */
-export function formatUsd(cents: number): string {
-  const abs = Math.abs(Math.round(cents));
-  const dollars = Math.floor(abs / 100).toLocaleString("en-US");
-  const rest = abs % 100;
-  return `${cents < 0 ? "-" : ""}$${dollars}${rest === 0 ? "" : `.${String(rest).padStart(2, "0")}`}`;
-}
+/** "$9" or "$1,234.50" for an amount in US cents: core's own formatter, so the site and the app write prices alike. */
+export { formatUsd };
 
 /** Parses a whole number such as "12,500", "12 500" or "12500". NaN for anything else. */
 export function parseCount(text: string): number {
@@ -238,14 +234,14 @@ export function describe(result: CheckResult): CheckView {
     figure: formatCount(result.profilesAfter),
     message:
       result.profilesSuppressed === 0
-        ? "No profiles meet the cleanup criteria, so there is nothing to suppress. A month with no cleanup is not charged."
+        ? "No profiles meet the cleanup criteria, so there is nothing to suppress. The audit is free, and the plan only starts when you approve a first cleanup."
         : `${formatCount(result.profilesSuppressed)} of ${formatCount(result.profilesBefore)} profiles ${one ? "meets" : "meet"} the cleanup criteria. ${one ? "It" : "They"} would be suppressed only after you approve a simulation. Nothing is deleted.`,
     keptPercent,
     staying: `${formatCount(result.profilesAfter)} ${result.profilesAfter === 1 ? "stays" : "stay"} active`,
     leaving: `${formatCount(result.profilesSuppressed)} ${one ? "meets" : "meet"} the cleanup criteria`,
     tierSaverPrice: plan ? `${formatUsd(plan.monthlyCents)}/month` : "Contact us",
     tierSaverPlan: plan
-      ? `Flat price for lists of ${planRange(plan).replace(/^Up/, "up")} active profiles`
+      ? `Monthly plan for lists of ${planRange(plan).replace(/^Up/, "up")} active profiles`
       : `Lists above ${formatCount(largestTierSaverPlan())} active profiles are quoted individually`,
     klaviyoBefore: klaviyoText(result.klaviyoBefore, result.beforeAbovePublished, result.klaviyoPlan),
     klaviyoAfter: klaviyoText(result.klaviyoAfter, result.afterAbovePublished, result.klaviyoPlan),

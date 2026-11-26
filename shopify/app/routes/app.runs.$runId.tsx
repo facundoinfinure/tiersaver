@@ -355,8 +355,8 @@ export default function Run() {
 
           {!isUndo && !running && run.submitted > 0 && !undo?.fullyRestored ? (
             <s-paragraph>
-              Suppressed profiles don't count toward your Klaviyo plan. Klaviyo's count can take up to 72 hours to update. To move to
-              a lower plan, an Owner or Admin can do it in Klaviyo under Billing, then Preferences. Your Klaviyo plan does not change
+              Suppressed profiles don't count toward your Klaviyo email plan's active profile count (on Advanced KDP they still count
+              toward its total). Klaviyo updates its count on its own schedule. To move to a lower plan, an Owner or Admin can do it in Klaviyo under Billing, then Preferences. Your Klaviyo plan does not change
               automatically unless you enabled auto-downgrade.
             </s-paragraph>
           ) : null}

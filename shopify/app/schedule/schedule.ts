@@ -5,7 +5,8 @@ import * as schema from "../db/schema";
 /**
  * Monthly schedule (Cron Trigger, hourly). For every shop that turned it on,
  * starts ONE scan a few days before the Klaviyo plan renews, so that Klaviyo's
- * profile count is up to date at renewal (its count can lag up to 72 hours).
+ * profile count is up to date at renewal (Klaviyo publishes no time for its count to update; it checks the count
+ * shortly before the billing cycle renews).
  *
  * The schedule only ever starts a scan, which is read-only. What happens with
  * the simulation it produces depends on `settings.mode`: "approval" waits for

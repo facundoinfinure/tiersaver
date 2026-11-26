@@ -13,10 +13,8 @@ export const KLAVIYO_RESUPPRESS_WAIT_DAYS = 90;
  * app's source files and fails when one of them no longer matches.
  */
 
-/** shopify/app/runs/labels.ts, CHARGE_HOLD_HOURS: hours between the end of a cleanup and its charge. */
-export const CHARGE_HOLD_HOURS = 72;
-/** shopify/app/billing/billing.ts, settleRunCharge: days of the window in which charges are added up against the maximum. */
-export const CHARGE_WINDOW_DAYS = 30;
+/** shopify/app/legal.ts, TERMS_VERSION: the effective date printed on the terms of service. */
+export const TERMS_EFFECTIVE_DATE = "2026-11-27";
 /** shopify/app/simulations/review.ts, CSV_PART_SIZE: rows per file of the candidate download. */
 export const CSV_PART_SIZE = 1500;
 /** shopify/app/settings/settings.ts, MAX_PROTECTED_GROUPS: lists and segments a merchant can protect. */

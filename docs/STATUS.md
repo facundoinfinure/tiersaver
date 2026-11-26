@@ -504,3 +504,5 @@ Pedido de Facundo: que el abogado no tenga que contestar 43 preguntas.
 - El mismo artículo confirma: los suprimidos no cuentan para el plan de email, en Advanced KDP sí cuentan, y "a lower active profile count does not necessarily lower your bill".
 - Shopify Community solo permite mencionar apps en el foro "Ask and Offer": el guion 7 de `docs/05` no se puede usar tal cual ahí.
 - Señales de competencia vistas: ListSaver, un post de "free Klaviyo bill audits" y el "Bill Reducer" de la agencia BS&Co.
+
+- **Corrección de la nota anterior sobre 180 y 365 días** (verificado después, el mismo 2026-11-26): los 365 días SÍ son de Klaviyo. Salen del artículo "How to manage email suppressions and delete profiles in bulk" (help.klaviyo.com/hc/en-us/articles/24312135764251, actualizado el 2026-10-27), cuyas recomendaciones de supresión coinciden con nuestros criterios por defecto. El artículo 24263920096027 describe otro segmento, manual, con 180 días. No hay nada que cambiar en las reglas; `docs/12` debe citar los dos artículos. Ninguno de los dos da un plazo para que se actualice el conteo: la cifra de 72 horas se sacó de la app.
