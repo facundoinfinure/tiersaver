@@ -5,7 +5,9 @@
   "account_id": "6b463774c79fa154bac8b0b07ad049b1",
   "main": "./workers/app.ts",
   "compatibility_date": "2026-11-12",
-  "observability": { "enabled": true },
+  // Invocation logs record the address of every request, and two of ours carry one-time codes in the query
+  // (the Klaviyo OAuth return and Shopify's id_token). Our own console logs stay on.
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
   "upload_source_maps": true,
   "d1_databases": [
     {
