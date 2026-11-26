@@ -16,6 +16,8 @@ const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * DAY).toISOStrin
 export const billing = { subscribed: false, usageRecords: [] as { amount: number; description: string }[] };
 
 export const klaviyo = new FakeKlaviyo();
+/** Preview-only controls (see /__preview/klaviyo in worker.ts): slow Klaviyo down so a running cleanup can be looked at. */
+export const knobs = { delayMs: 0 };
 /** Members Klaviyo "computes" for the managed segment once it stops processing. */
 let segmentMembers: string[] = [];
 /** Buyers to record in the shop's order history (email addresses of some segment members). */
@@ -26,6 +28,11 @@ export function seedKlaviyo(): void {
   klaviyo.segments = [];
   klaviyo.jobs = [];
   klaviyo.suppressed.clear();
+  klaviyo.suppressedAt.clear();
+  klaviyo.responders = [];
+  // Like the real service, a bulk job is accepted first and applied a little later (there: 15 to 25 seconds).
+  klaviyo.jobProcessingMs = 3000;
+  knobs.delayMs = 0;
   klaviyo.accountId = "PREVW1";
   klaviyo.testAccount = false;
   klaviyo.metrics = [
@@ -74,6 +81,7 @@ export const previewFetch: typeof fetch = async (input, init) => {
         segment.members = segmentMembers.filter((id) => !klaviyo.suppressed.has(klaviyo.profiles.get(id)?.email ?? ""));
       }
     }
+    if (knobs.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, knobs.delayMs));
     return klaviyo.fetch(input, init);
   }
   if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return realFetch(input, init);

@@ -80,22 +80,35 @@ await page.waitForURL(/\/app\/runs\//, { timeout: 30000 });
 await shot("run-started");
 await page.getByText("Completed").first().waitFor({ timeout: 90000 });
 await shot("run-completed");
-await click(button("Check jobs in Klaviyo"));
+// The fake Klaviyo applies a job 3 seconds after accepting it, like the real one does after 15 to 25.
+await page.waitForTimeout(3500);
+await click(button("Check progress in Klaviyo"));
+await page.locator("details summary").first().click();
 await shot("run-jobs");
 await page.goto(`${base}/app`, { waitUntil: "networkidle" });
 await shot("home-after-cleanup");
 await page.goto(`${base}/app/runs`, { waitUntil: "networkidle" });
 await shot("history");
-await click(link("Details"));
-await click(button(/Restore/));
-await shot("undo-result");
+await click(page.getByRole("link", { name: "View", exact: true }).first());
+await page.waitForURL(/\/app\/runs\/[^/]+$/, { timeout: 30000 });
+// The cleanup is the older of the two rows once a restore exists; here it is the only one.
+await button(/^Restore [\d,]+ profiles?$/).click();
+await page.waitForTimeout(700);
+await shot("undo-confirmation", "nothing is restored before this dialog is confirmed");
 if (await page.locator('s-checkbox[name="confirmAfterRenewal"]').count()) {
+  await click(page.getByRole("button", { name: "Restore profiles", exact: true }));
+  await shot("undo-not-ticked");
   await tick("confirmAfterRenewal");
-  await click(button(/Restore/));
-  await shot("undo-confirmed");
 }
+await click(page.getByRole("button", { name: "Restore profiles", exact: true }));
+await page.locator('s-page[heading="Restore"]').waitFor({ timeout: 30000 }).catch(() => problems.push("the restore did not start"));
+await shot("undo-started");
 await page.getByText("Completed").first().waitFor({ timeout: 90000 }).catch(() => problems.push("undo did not complete"));
 await shot("undo-completed");
+if (!(await page.getByText("Sent to Klaviyo to be restored").count()) || (await page.getByText("Left as they are").count())) problems.push("the restore left profiles suppressed");
+await click(link("this cleanup"));
+await shot("run-after-restore");
+if (!(await page.getByText("Nothing is left to restore").count())) problems.push("the cleanup still offers a restore after a full restore");
 // A restored profile is left out for 365 days: the next audit finds nothing and says why.
 await page.goto(`${base}/app`, { waitUntil: "networkidle" });
 await click(button("Run the audit again"));

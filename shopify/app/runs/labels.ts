@@ -9,9 +9,10 @@ export const STATUS_LABELS: Record<string, { label: string; tone: "info" | "succ
 };
 
 /** The badge of a run. A cleanup that failed after sending some profiles "stopped early"; it "did not run" only when it sent none. */
-export function statusLabel(run: { status: string; submitted: number; unknown?: number; stopping?: boolean; kind?: string }): { label: string; tone: "info" | "success" | "warning" | "critical" } {
+export function statusLabel(run: { status: string; submitted: number; unknown?: number; stopping?: boolean; kind?: string; error?: string | null }): { label: string; tone: "info" | "success" | "warning" | "critical" } {
   if (run.stopping) return { label: "Stopping", tone: "warning" };
-  if (run.status === "failed" && run.submitted + (run.unknown ?? 0) > 0) return { label: "Stopped early", tone: "warning" };
+  // An error closed it before the end, after it had sent something: the same words as the banner on its page.
+  if ((run.status === "failed" || (run.status === "completed_with_errors" && run.error)) && run.submitted + (run.unknown ?? 0) > 0) return { label: "Stopped early", tone: "warning" };
   if (run.status === "cancelled" && run.kind !== "undo") return { label: "Stopped", tone: "warning" };
   return STATUS_LABELS[run.status] ?? { label: run.status, tone: "info" };
 }

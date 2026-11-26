@@ -1,6 +1,7 @@
 // Worker entry of the local preview (see README.md). Adds /__preview/* helpers in front of the real app.
 import { createRequestHandler } from "react-router";
-import { billing, buyerHashes, installPreviewWorld, klaviyo, PREVIEW_SHOP, seedKlaviyo } from "./world";
+import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
+import { billing, buyerHashes, installPreviewWorld, klaviyo, knobs, PREVIEW_SHOP, seedKlaviyo } from "./world";
 
 installPreviewWorld();
 
@@ -42,6 +43,46 @@ async function preview(request: Request, env: Env): Promise<Response> {
       const hashes = await buyerHashes();
       for (let i = 0; i < hashes.length; i += 50) await env.DB.batch(hashes.slice(i, i + 50).map((h) => insert.bind(PREVIEW_SHOP, h, now - 400 * 86_400_000, now)));
       return new Response(`orders: ${hashes.length} buyers`);
+    }
+    // Makes the fake Klaviyo misbehave, to look at the states that follow:
+    //   ?delay=400            every Klaviyo request takes that many ms (a cleanup stays "in progress" for a while)
+    //   ?rejectJobsAfter=5    suppression jobs are rejected once 5 exist (a cleanup that stops early; 0: one that does not run)
+    //   ?reset=1              back to normal
+    case "/__preview/klaviyo": {
+      const q = url.searchParams;
+      if (q.has("reset")) {
+        knobs.delayMs = 0;
+        klaviyo.responders = [];
+      }
+      if (q.has("delay")) knobs.delayMs = Math.max(0, Number(q.get("delay")) || 0);
+      const jobPost = (req: { method: string; url: URL }) => req.method === "POST" && req.url.pathname.startsWith("/api/profile-suppression-bulk-create-jobs");
+      if (q.has("rejectJobsAfter")) {
+        const limit = Number(q.get("rejectJobsAfter")) || 0;
+        klaviyo.responders.push((req) => (jobPost(req) && klaviyo.jobs.length >= limit ? FakeKlaviyo.clientError(400, "invalid", "preview: rejected") : null));
+      }
+      return Response.json({ delayMs: knobs.delayMs, responders: klaviyo.responders.length });
+    }
+    // Moves a finished cleanup back in time, to look at what its page says after the restore window or a plan renewal.
+    case "/__preview/age": {
+      const hours = Number(url.searchParams.get("hours")) || 0;
+      const ms = Math.round(hours * 3_600_000);
+      const runId = url.searchParams.get("run") ?? "";
+      await env.DB.batch([
+        env.DB.prepare("UPDATE runs SET created_at = created_at - ?1, started_at = started_at - ?1, finished_at = finished_at - ?1 WHERE id = ?2 AND shop = ?3").bind(ms, runId, PREVIEW_SHOP),
+        env.DB.prepare("UPDATE run_profiles SET attempted_at = attempted_at - ?1 WHERE run_id = ?2 AND shop = ?3").bind(ms, runId, PREVIEW_SHOP),
+        env.DB.prepare("UPDATE usage_charges SET created_at = created_at - ?1 WHERE run_id = ?2 AND shop = ?3").bind(ms, runId, PREVIEW_SHOP),
+      ]);
+      // With ?renewed=1 Klaviyo's billing period is forgotten too, so only elapsed time says whether the plan renewed.
+      if (url.searchParams.has("renewed")) await env.DB.prepare("UPDATE audits SET period_end = NULL WHERE shop = ?1").bind(PREVIEW_SHOP).run();
+      return new Response(`aged ${hours} h`);
+    }
+    // Rewrites the first batch of a finished cleanup as "sent, answer lost", to look at how a result that is unknown is shown.
+    case "/__preview/unknown": {
+      const runId = url.searchParams.get("run") ?? "";
+      const changed = await env.DB.prepare("UPDATE run_profiles SET status = 'failed', error_code = 'outcome_unknown' WHERE run_id = ?1 AND shop = ?2 AND batch_index = 0 AND status = 'submitted'").bind(runId, PREVIEW_SHOP).run();
+      const n = changed.meta.changes ?? 0;
+      await env.DB.prepare("UPDATE runs SET processed_count = processed_count - ?1, unknown_count = unknown_count + ?1, status = 'completed_with_errors' WHERE id = ?2 AND shop = ?3").bind(n, runId, PREVIEW_SHOP).run();
+      return new Response(`unknown: ${n}`);
     }
     case "/__preview/state":
       return Response.json({ billing, jobs: klaviyo.jobs.length, suppressed: klaviyo.suppressed.size, segments: klaviyo.segments.map((s) => ({ id: s.id, members: s.members.length, processing: s.isProcessing })) });

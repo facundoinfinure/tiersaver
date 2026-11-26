@@ -285,6 +285,11 @@ export default function Run() {
               <s-stack gap="base">
                 <s-text>
                   {run.error ? `${RUN_ERROR_LABELS[run.error] ?? OTHER_RUN_ERROR_LABEL} ` : ""}
+                  {run.error && !RUN_ERROR_LABELS[run.error] ? (
+                    <>
+                      If it happens again, write to <s-link href={help.support}>{help.supportEmail}</s-link>.{" "}
+                    </>
+                  ) : null}
                   {notProcessed > 0
                     ? isUndo
                       ? `${number(notProcessed)} ${notProcessed === 1 ? "profile was" : "profiles were"} not reached and ${notProcessed === 1 ? "is" : "are"} still suppressed. Go back to the cleanup to restore ${notProcessed === 1 ? "it" : "them"}.`

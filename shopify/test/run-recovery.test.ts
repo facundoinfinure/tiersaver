@@ -8,7 +8,7 @@ import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
 import { recordPurchases } from "../app/orders/purchases";
 import { confirmJobsPage } from "../app/runs/confirm";
 import { closeStalledRun, createSuppressionRun, createUndoRun, executeRun, requestStopRun, type BatchRequest } from "../app/runs/engine";
-import { createSuppressionGateway, type GatewayEnv } from "../app/runs/gateway.server";
+import { SUPPRESSION_EVIDENCE_MARGIN_MS, createSuppressionGateway, undoEvidence, type GatewayEnv } from "../app/runs/gateway.server";
 import { ABANDON_AFTER_MINUTES, QUEUED_STALL_MINUTES, RUNNING_STALL_MINUTES, instanceStateOf, recoverStalledRuns, type InstanceState } from "../app/runs/recovery";
 import { loadRunDetail } from "../app/runs/view.server";
 import { AUTO_GROWTH_FLOOR, AUTO_MAX_CANDIDATE_SHARE, AUTO_MAX_GROWTH_FACTOR, automaticReview, decideAutomatic } from "../app/schedule/automatic";
@@ -33,8 +33,9 @@ async function newRun(candidates: number, shop?: string) {
 }
 
 /** A queued cleanup with a connected fake Klaviyo that looks like the scan left it: profiles, hashes, candidate segment. */
-async function world(candidates: number) {
+async function world(candidates: number, configure?: (fake: FakeKlaviyo) => void) {
   const fake = new FakeKlaviyo();
+  configure?.(fake);
   const s = await seedSimulation({ candidates });
   for (const id of s.profileIds) {
     fake.profiles.set(id, { id, email: emailOf(id) });
@@ -409,6 +410,137 @@ describe("M6 + S-07: undo leaves alone what is provably not the cleanup's doing"
     const undo = await w.undo();
     expect(undo.outcome).toMatchObject({ status: "completed", submitted: 3, skipped: 0 });
     expect(w.fake.suppressed.size).toBe(0);
+  });
+});
+
+describe("Restore after a cleanup, through the real gateway and the fake Klaviyo", () => {
+  const restoreAll = async (w: World, candidates: number) => {
+    const cleanup = await executeRun({ db, gateway: w.gateway, step: new FakeSteps() }, w.runId);
+    expect(cleanup).toMatchObject({ status: "completed", submitted: candidates });
+    return cleanup;
+  };
+
+  it("restores every profile of a completed cleanup (the preview bug of 2026-11-26: 0 restored, all 'suppressed again')", async () => {
+    const w = await world(230);
+    await restoreAll(w, 230);
+    expect(w.fake.suppressed.size).toBe(230);
+    // Every time Klaviyo reports comes from one clock: a job's suppressions are never newer than its completion.
+    for (const job of w.fake.jobs) {
+      expect(Date.parse(job.completedAt!)).toBeGreaterThanOrEqual(Date.parse(job.createdAt));
+      for (const email of job.emails) expect(Date.parse(w.fake.suppressedAt.get(email)!)).toBeLessThanOrEqual(Date.parse(job.completedAt!));
+    }
+    expect((await loadRunDetail(w.shop, w.runId))?.undo).toMatchObject({ restorable: 230, restored: 0, leftAlone: 0 });
+
+    const undo = await w.undo();
+    expect(undo.outcome).toMatchObject({ status: "completed", submitted: 230, skipped: 0 });
+    expect(w.fake.suppressed.size).toBe(0);
+    expect(w.fake.jobs.filter((j) => j.kind === "unsuppress").flatMap((j) => j.emails)).toHaveLength(230);
+    // No job had to be read to decide: nothing was dated after the cleanup.
+    expect(w.fake.requestsTo(/^\/api\/profile-suppression-bulk-create-jobs\/[^/]+$/, "GET")).toHaveLength(0);
+    expect((await loadRunDetail(w.shop, w.runId))?.undo).toMatchObject({ restorable: 0, restored: 230, leftAlone: 0, fullyRestored: true });
+  });
+
+  it("restores everything when Klaviyo applies its jobs later than it accepts them", async () => {
+    let klaviyoNow = Date.now();
+    const w = await world(120, (fake) => {
+      fake.now = () => klaviyoNow;
+      fake.jobProcessingMs = 25_000;
+    });
+    await restoreAll(w, 120);
+    // Accepted, not applied yet.
+    expect(w.fake.suppressed.size).toBe(0);
+    klaviyoNow += 60_000;
+    const undo = await w.undo();
+    expect(undo.outcome).toMatchObject({ status: "completed", submitted: 120, skipped: 0 });
+    klaviyoNow += 60_000;
+    await w.fake.fetch("https://a.klaviyo.com/api/accounts"); // any request lets the fake settle its jobs
+    expect(w.fake.suppressed.size).toBe(0);
+  });
+
+  it.each([
+    ["3 hours ahead of ours", 3 * HOUR],
+    ["3 hours behind ours", -3 * HOUR],
+    ["12 hours behind ours (a timestamp reported without its offset)", -12 * HOUR],
+  ])("restores everything when Klaviyo's clock is %s", async (_name, shift) => {
+    const w = await world(40, (fake) => {
+      fake.now = () => Date.now() + shift;
+    });
+    await restoreAll(w, 40);
+    const undo = await w.undo();
+    expect(undo.outcome).toMatchObject({ status: "completed", submitted: 40, skipped: 0 });
+    expect(w.fake.suppressed.size).toBe(0);
+  });
+
+  it("restores when the job Klaviyo reports cannot be compared with our clock, or fails to be read", async () => {
+    const w = await world(4);
+    await restoreAll(w, 4);
+    const [bogusJob, unreadable, ...rest] = w.profileIds as [string, string, ...string[]];
+    // Dated two days after the cleanup, which alone proves nothing:
+    for (const id of [bogusJob, unreadable]) w.fake.suppressedAt.set(emailOf(id), new Date(Date.now() + 48 * HOUR).toISOString());
+    // - Klaviyo says the job completed a day BEFORE we requested it (what the old fake did): not comparable.
+    w.fake.jobs[0]!.completedAt = new Date(Date.now() - 24 * HOUR).toISOString();
+    const undo = await w.undo();
+    expect(undo.outcome).toMatchObject({ status: "completed", submitted: 4, skipped: 0 });
+    expect(rest).toHaveLength(2);
+
+    // - Klaviyo answers 503 to every job read: the restore is not held back by a read that is only evidence.
+    const w2 = await world(3);
+    await restoreAll(w2, 3);
+    w2.fake.suppressedAt.set(emailOf(w2.profileIds[0]!), new Date(Date.now() + 48 * HOUR).toISOString());
+    w2.fake.failNext(/^\/api\/profile-suppression-bulk-create-jobs\/[^/]+$/, () => FakeKlaviyo.serverError(), 50);
+    const undo2 = await w2.undo();
+    expect(undo2.outcome).toMatchObject({ status: "completed", submitted: 3, skipped: 0 });
+    expect(w2.fake.suppressed.size).toBe(0);
+  });
+
+  it("leaves alone only what is provably not the cleanup's: suppressed long before, or suppressed again days later", async () => {
+    const w = await world(6);
+    await restoreAll(w, 6);
+    const [before, after, nearBefore, nearAfter, ...normal] = w.profileIds as [string, string, string, string, ...string[]];
+    const now = Date.now();
+    // The merchant had suppressed this one a month earlier (it slipped in through a batch whose answer was lost).
+    w.fake.suppressedAt.set(emailOf(before), new Date(now - 30 * 24 * HOUR).toISOString());
+    // Restored by hand in Klaviyo and suppressed again three days later: a decision made after the cleanup.
+    w.fake.suppressedAt.set(emailOf(after), new Date(now + 72 * HOUR).toISOString());
+    // Inside the margin on either side: could be ours (clock differences, a job applied late), so they are restored.
+    w.fake.suppressedAt.set(emailOf(nearBefore), new Date(now - 2 * HOUR).toISOString());
+    w.fake.suppressedAt.set(emailOf(nearAfter), new Date(now + 2 * HOUR).toISOString());
+
+    const undo = await w.undo();
+    expect(undo.outcome).toMatchObject({ status: "completed", submitted: 4, skipped: 2 });
+    expect(await w.reasons(undo.runId)).toMatchObject({
+      [before]: "skipped:suppressed_before_cleanup",
+      [after]: "skipped:suppressed_after_cleanup",
+      [nearBefore]: "submitted",
+      [nearAfter]: "submitted",
+    });
+    expect([...w.fake.suppressed].sort()).toEqual([emailOf(before), emailOf(after)].sort());
+    expect(normal).toHaveLength(2);
+    const detail = await loadRunDetail(w.shop, w.runId);
+    expect(detail?.undo).toMatchObject({ restored: 4, restorable: 0, leftAlone: 2, fullyRestored: false });
+    expect(detail?.undo?.leftAloneReasons.map((r) => r.reason).sort()).toEqual(["suppressed_after_cleanup", "suppressed_before_cleanup"]);
+    // Nothing is offered again, so a second restore is refused rather than promising something.
+    expect(detail?.undoRuns).toHaveLength(1);
+  });
+
+  it("undoEvidence: the rule on its own", () => {
+    const t0 = Date.parse("2026-11-26T10:00:00Z");
+    const D = SUPPRESSION_EVIDENCE_MARGIN_MS;
+    const base = { requestedAt: t0, jobCompletedAt: t0 + 30_000, cleanupFinishedAt: t0 + 60_000 };
+    expect(undoEvidence({ ...base, suppressedAt: t0 + 20_000 })).toBeNull();
+    expect(undoEvidence({ ...base, suppressedAt: null })).toBeNull();
+    expect(undoEvidence({ ...base, suppressedAt: t0 - D + 1 })).toBeNull();
+    expect(undoEvidence({ ...base, suppressedAt: t0 - D - 1 })).toBe("suppressed_before_cleanup");
+    expect(undoEvidence({ ...base, suppressedAt: t0 + 60_000 + D })).toBeNull();
+    expect(undoEvidence({ ...base, suppressedAt: t0 + 60_000 + D + 1 })).toBe("suppressed_after_cleanup");
+    // Without Klaviyo's completion, without our own end of the cleanup, or with a completion that precedes the request: no upper bound.
+    expect(undoEvidence({ ...base, jobCompletedAt: undefined, suppressedAt: t0 + 10 * D })).toBeNull();
+    expect(undoEvidence({ ...base, cleanupFinishedAt: null, suppressedAt: t0 + 10 * D })).toBeNull();
+    expect(undoEvidence({ ...base, jobCompletedAt: t0 - D, suppressedAt: t0 + 10 * D })).toBeNull();
+    // A job Klaviyo completed long after we closed the cleanup moves the bound with it.
+    expect(undoEvidence({ ...base, jobCompletedAt: t0 + 5 * D, suppressedAt: t0 + 5 * D + 1000 })).toBeNull();
+    // Without the time of our own request nothing can be said at all.
+    expect(undoEvidence({ ...base, requestedAt: undefined, suppressedAt: t0 - 10 * D })).toBeNull();
   });
 });
 
