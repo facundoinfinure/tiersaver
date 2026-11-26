@@ -59,16 +59,28 @@ import { RUN_BATCH_SIZE, markNotSent, type BatchRequest, type BatchResult, type 
  * the definition the rules produce; otherwise membership is unknown and the
  * batch is refused (`candidate_segment_*`): the run stops, nobody is touched.
  *
- * Undo batches read each profile's email suppressions. Klaviyo exposes the
- * reason and the time of each suppression, never its author, so only two
- * cases can be told apart from "ours" and are skipped:
- * - `suppressed_before_cleanup`: the USER_SUPPRESSED entry is older than our
- *   own request, so it was there before and is somebody else's;
- * - `suppressed_after_cleanup`: it is newer than the completion of the job
- *   that carried the profile, so it was added again later by somebody else.
- * A missing hash (`email_hash_missing`) is skipped too. In every other case,
- * including "cannot tell", the profile is restored as before: unsuppress only
- * removes USER_SUPPRESSED, so unsubscribes and bounces stay as they are.
+ * Undo batches. Restore exists to correct a mistake, so the rule is: RESTORE
+ * unless there is positive evidence that the profile's current suppression is
+ * not this cleanup's. Klaviyo exposes the reason and the time of each
+ * suppression ("The timestamp when the profile was suppressed", spec
+ * 2026-10-15), never its author. Its documentation does not say how that time
+ * relates to the bulk job (`created_at`, `completed_at`), nor whether
+ * suppressing an already suppressed profile moves it. So a profile is left
+ * alone only in these cases (see `undoEvidence`), each with a full day of
+ * margin (`SUPPRESSION_EVIDENCE_MARGIN_MS`):
+ * - `suppressed_before_cleanup`: the USER_SUPPRESSED entry is dated more than
+ *   a day before our own request left, so it was there already;
+ * - `suppressed_after_cleanup`: it is dated more than a day after BOTH the
+ *   completion Klaviyo reports for the job that carried the profile AND the
+ *   end of the cleanup on our clock. Needs the job to be readable, `complete`
+ *   and consistent with our clock; otherwise there is no upper bound and the
+ *   profile is restored.
+ * Also skipped: no approved hash (`email_hash_missing`, customers/redact), the
+ * profile no longer exists (`profile_gone`) or has no email (`no_email`).
+ * In every other case, including "cannot tell" (no timestamp, unreadable
+ * job, state not returned, profile not suppressed at all), the profile is
+ * sent: unsuppress only removes USER_SUPPRESSED, so unsubscribes and bounces
+ * stay as they are and a profile that is not suppressed is not changed.
  *
  * A profile that cannot be confirmed is skipped; "unknown" never suppresses.
  *
@@ -79,8 +91,9 @@ import { RUN_BATCH_SIZE, markNotSent, type BatchRequest, type BatchResult, type 
  *
  * Cost per suppress batch of 100: 2 segment-member reads + 1 job = 3 Klaviyo
  * requests, plus about 4 (account, metrics, segment lookup) every
- * `SEGMENT_CHECK_TTL_MS`. Undo: 2 profile reads + 1 job + up to
- * `MAX_JOB_LOOKUPS_PER_BATCH` job reads.
+ * `SEGMENT_CHECK_TTL_MS`. Undo: 2 profile reads + 1 job; up to
+ * `MAX_JOB_LOOKUPS_PER_BATCH` job reads only when a suppression is dated
+ * well after the cleanup.
  */
 
 /** Why a profile was left untouched. Machine-readable; shown through `SKIP_REASON_LABELS` in labels.ts. */
@@ -101,13 +114,20 @@ export type SkipReason = (typeof SKIP_REASONS)[number];
 /** How long one check of the candidate segment (found, active, not processing, definition unchanged) is trusted. */
 export const SEGMENT_CHECK_TTL_MS = 5 * 60_000;
 /**
- * Tolerance when comparing Klaviyo's suppression timestamps with our own clock and with job completion.
- * Small before our request (clock skew); generous after the job completed, because a late timestamp makes us
- * skip a restore, and restoring is the default when in doubt.
+ * Suppress retries only: how far before our own request Klaviyo's suppression timestamp may be and still count
+ * as the effect of that request (clock skew). Being wrong here re-sends an idempotent suppress, nothing else.
  */
 export const SUPPRESSION_CLOCK_SKEW_MS = 5 * 60_000;
-export const SUPPRESSION_AFTER_JOB_MARGIN_MS = 60 * 60_000;
-/** Undo: at most this many of the cleanup's jobs are read per batch to learn when they completed. */
+/**
+ * Undo: how far outside the cleanup's own time span a suppression must be dated before it counts as evidence
+ * that it is somebody else's. A whole day, on both sides: it absorbs clock differences, a timestamp reported
+ * without its offset or rounded to the day, and a job Klaviyo reports complete before every profile shows it.
+ * Being wrong in this direction leaves a profile suppressed after a "successful" restore, which is the one
+ * thing Restore must not do; being wrong in the other only removes a manual suppression that happened to be
+ * made within a day of the cleanup.
+ */
+export const SUPPRESSION_EVIDENCE_MARGIN_MS = 24 * 60 * 60_000;
+/** Undo: at most this many of the cleanup's jobs are read per batch to learn when they completed. Profiles of a job beyond this are restored. */
 export const MAX_JOB_LOOKUPS_PER_BATCH = 4;
 
 export type GatewayEnv = KlaviyoSecrets & {
@@ -266,11 +286,36 @@ async function revalidateForSuppress(
   return emails;
 }
 
+/**
+ * The only two findings that keep a profile out of a restore. Pure, so the rule can be read and tested on its own.
+ * All times in ms. `suppressedAt`: Klaviyo's timestamp of the profile's USER_SUPPRESSED entry. `requestedAt`: when
+ * our request carrying the profile left (our clock). `jobCompletedAt`: Klaviyo's `completed_at` of the job that
+ * carried it, when it could be read and is `complete`. `cleanupFinishedAt`: when the cleanup closed (our clock).
+ */
+export function undoEvidence(t: {
+  suppressedAt: number | null | undefined;
+  requestedAt: number | null | undefined;
+  jobCompletedAt: number | null | undefined;
+  cleanupFinishedAt: number | null | undefined;
+}): "suppressed_before_cleanup" | "suppressed_after_cleanup" | null {
+  const { suppressedAt, requestedAt, jobCompletedAt, cleanupFinishedAt } = t;
+  if (typeof suppressedAt !== "number" || !Number.isFinite(suppressedAt)) return null;
+  if (typeof requestedAt !== "number" || !Number.isFinite(requestedAt)) return null;
+  if (suppressedAt < requestedAt - SUPPRESSION_EVIDENCE_MARGIN_MS) return "suppressed_before_cleanup";
+  if (typeof jobCompletedAt !== "number" || !Number.isFinite(jobCompletedAt)) return null;
+  if (typeof cleanupFinishedAt !== "number" || !Number.isFinite(cleanupFinishedAt)) return null;
+  // A job cannot be complete before it was requested: if Klaviyo's time says so, the two clocks (or the job we
+  // read) cannot be compared, and there is no upper bound.
+  if (jobCompletedAt < requestedAt - SUPPRESSION_CLOCK_SKEW_MS) return null;
+  if (suppressedAt > Math.max(jobCompletedAt, cleanupFinishedAt) + SUPPRESSION_EVIDENCE_MARGIN_MS) return "suppressed_after_cleanup";
+  return null;
+}
+
 /** Undo: restores everything the cleanup may have suppressed, except what is provably not the cleanup's doing. */
 async function selectForUndo(db: Db, client: KlaviyoClient, request: BatchRequest, profileIds: string[], skip: (id: string, reason: SkipReason) => void): Promise<string[]> {
   const undoRun = await db.query.runs.findFirst({ where: eq(schema.runs.id, request.runId), columns: { undoOfRunId: true } });
   const original = undoRun?.undoOfRunId
-    ? await db.query.runs.findFirst({ where: eq(schema.runs.id, undoRun.undoOfRunId), columns: { id: true, startedAt: true, createdAt: true } })
+    ? await db.query.runs.findFirst({ where: eq(schema.runs.id, undoRun.undoOfRunId), columns: { id: true, startedAt: true, createdAt: true, finishedAt: true } })
     : null;
 
   const [undoRows, originalRows] = await Promise.all([
@@ -303,16 +348,27 @@ async function selectForUndo(db: Db, client: KlaviyoClient, request: BatchReques
     for (const [id, state] of await getProfileStates(client, ids)) states.set(id, state);
   }
 
-  // When did the cleanup's jobs finish? A suppression recorded after that is not theirs. Read-only, best effort.
+  // When did the cleanup's jobs finish? Only one half of the "suppressed again later" evidence, so a job is read
+  // only for a profile whose suppression is dated well after the cleanup closed (normally none). Read-only and
+  // best effort: a job that cannot be read, for whatever reason, gives no upper bound and its profiles are
+  // restored. A failing read never holds a restore back.
+  const cleanupFinishedAt = original?.finishedAt?.getTime();
+  const userSuppressedAt = (id: string) => states.get(id)?.suppressions?.find((x) => x.reason === "USER_SUPPRESSED")?.at?.getTime();
   const completedAt = new Map<string, number>();
-  const jobIds = [...new Set(remaining.flatMap((id) => (sentBy.get(id)?.status === "submitted" && sentBy.get(id)?.jobId && sentBy.get(id)!.jobId !== NO_JOB_ID ? [sentBy.get(id)!.jobId!] : [])))];
-  for (const jobId of jobIds.slice(0, MAX_JOB_LOOKUPS_PER_BATCH)) {
+  const jobIds = new Set<string>();
+  for (const id of remaining) {
+    const sent = sentBy.get(id);
+    const at = userSuppressedAt(id);
+    if (!sent || sent.status !== "submitted" || !sent.jobId || sent.jobId === NO_JOB_ID) continue;
+    if (at === undefined || cleanupFinishedAt === undefined || at <= cleanupFinishedAt + SUPPRESSION_EVIDENCE_MARGIN_MS) continue;
+    jobIds.add(sent.jobId);
+  }
+  for (const jobId of [...jobIds].slice(0, MAX_JOB_LOOKUPS_PER_BATCH)) {
     try {
       const job = await getSuppressionJob(client, "suppress", jobId);
       if (job.status === "complete" && job.completedAt) completedAt.set(jobId, job.completedAt.getTime());
-    } catch (err) {
-      // Unreadable (for example older than Klaviyo keeps jobs): no upper bound for its profiles; they are restored.
-      if (err instanceof KlaviyoError && err.retryable) throw err;
+    } catch {
+      // No upper bound for this job's profiles.
     }
   }
 
@@ -328,20 +384,17 @@ async function selectForUndo(db: Db, client: KlaviyoClient, request: BatchReques
       continue;
     }
     const sent = sentBy.get(id);
-    const ours = state.suppressions?.find((x) => x.reason === "USER_SUPPRESSED");
-    if (ours?.at && sent) {
-      const requestedAt = (sent.attemptedAt ?? original?.startedAt ?? original?.createdAt)?.getTime();
-      const jobDoneAt = sent.status === "submitted" && sent.jobId ? completedAt.get(sent.jobId) : undefined;
-      if (requestedAt !== undefined && ours.at.getTime() < requestedAt - SUPPRESSION_CLOCK_SKEW_MS) {
-        skip(id, "suppressed_before_cleanup");
-        continue;
-      }
-      if (jobDoneAt !== undefined && ours.at.getTime() > jobDoneAt + SUPPRESSION_AFTER_JOB_MARGIN_MS) {
-        skip(id, "suppressed_after_cleanup");
-        continue;
-      }
-    }
-    emails.push(state.email);
+    const evidence = sent
+      ? undoEvidence({
+          suppressedAt: userSuppressedAt(id),
+          // The earliest moment the request can have left: never later than the real one.
+          requestedAt: (sent.attemptedAt ?? original?.startedAt ?? original?.createdAt)?.getTime(),
+          jobCompletedAt: sent.status === "submitted" && sent.jobId ? completedAt.get(sent.jobId) : undefined,
+          cleanupFinishedAt,
+        })
+      : null;
+    if (evidence) skip(id, evidence);
+    else emails.push(state.email);
   }
   return emails;
 }

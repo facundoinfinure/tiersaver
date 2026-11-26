@@ -46,6 +46,10 @@ export interface FakeJob {
   id: string;
   kind: "suppress" | "unsuppress";
   emails: string[];
+  /** When the POST arrived, on the fake's clock (ISO). */
+  createdAt: string;
+  /** When Klaviyo finished applying it; null while it is queued or processing. Tests may overwrite it. */
+  completedAt: string | null;
 }
 
 type Responder = (req: FakeRequest) => Response | null | undefined;
@@ -104,8 +108,18 @@ export class FakeKlaviyo {
   suppressed = new Set<string>();
   /** When each email in `suppressed` got its USER_SUPPRESSED reason (ISO). Missing = the fixed default below. */
   suppressedAt = new Map<string, string>();
-  /** `completed_at` reported for jobs. */
-  jobCompletedAt = "2026-11-25T12:00:05+00:00";
+  /**
+   * How long Klaviyo takes to apply a bulk suppression job. Every time of a job and of the suppressions it
+   * creates comes from the SAME clock (`now`), like in the real service: `created_at` is the moment of the POST,
+   * the profiles change and `completed_at` is set `jobProcessingMs` later, and each profile's suppression
+   * `timestamp` is the moment it was applied. So `created_at <= suppression.timestamp <= completed_at` always
+   * holds for a job's own suppressions. (Until 2026-11-26 `completed_at` was a fixed date while suppressions
+   * were stamped with the real clock, which made every suppression look newer than its own job.)
+   *
+   * 0 (default) applies the job inside the POST. Seen on the test account, revision 2026-10-15: about 15 s for
+   * one profile and 25 s for 100; the POST answers `total_count: 0`, `skipped_count: null`.
+   */
+  jobProcessingMs = 0;
   jobs: FakeJob[] = [];
 
   requests: FakeRequest[] = [];
@@ -116,6 +130,7 @@ export class FakeKlaviyo {
   private refreshTokens = new Map<string, { scope: string; alive: boolean }>();
   private accessTokens = new Map<string, { expiresAt: number }>();
   private counter = 0;
+  private jobCounter = 0;
   now: () => number = Date.now;
 
   readonly fetch: typeof fetch = async (input, init) => {
@@ -259,8 +274,34 @@ export class FakeKlaviyo {
 
   // -- API ------------------------------------------------------------------
 
+  /** Applies every job whose processing time has passed. Called before each API request is answered. */
+  private settleJobs(): void {
+    for (const job of this.jobs) {
+      if (job.completedAt !== null) continue;
+      const doneAt = Date.parse(job.createdAt) + this.jobProcessingMs;
+      if (doneAt > this.now()) continue;
+      this.applyJob(job, new Date(doneAt).toISOString());
+    }
+  }
+
+  private applyJob(job: FakeJob, at: string): void {
+    for (const email of job.emails) {
+      if (job.kind === "suppress") {
+        // Not established by Klaviyo's documentation: whether suppressing an already suppressed profile moves its
+        // timestamp. The fake keeps the first one.
+        if (!this.suppressed.has(email)) this.suppressedAt.set(email, at);
+        this.suppressed.add(email);
+      } else {
+        this.suppressed.delete(email);
+        this.suppressedAt.delete(email);
+      }
+    }
+    job.completedAt = at;
+  }
+
   private handleApi(req: FakeRequest): Response {
     if (req.url.host !== "a.klaviyo.com") return apiError(404, "not_found");
+    this.settleJobs();
     const auth = req.headers.get("Authorization") ?? "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     const known = this.accessTokens.get(token);
@@ -359,7 +400,7 @@ export class FakeKlaviyo {
     if ((m = path.match(/^\/api\/profile-suppression-bulk-(create|delete)-jobs\/([^/]+)$/)) && req.method === "GET") {
       const job = this.jobs.find((j) => j.id === m![2] && j.kind === (m![1] === "create" ? "suppress" : "unsuppress"));
       if (!job) return apiError(404, "not_found");
-      return json(200, { data: this.jobResource(job, "complete") });
+      return json(200, { data: this.jobResource(job) });
     }
     return apiError(404, "not_found", `no route for ${req.method} ${path}`);
   }
@@ -523,17 +564,19 @@ export class FakeKlaviyo {
     });
   }
 
-  private jobResource(job: FakeJob, status: string): unknown {
+  /** `fresh`: the answer to the POST itself, which reports no counts yet. */
+  private jobResource(job: FakeJob, fresh = false): unknown {
+    const complete = job.completedAt !== null && !fresh;
     return {
       type: `profile-suppression-bulk-${job.kind === "suppress" ? "create" : "delete"}-job`,
       id: job.id,
       attributes: {
-        status,
-        created_at: "2026-11-25T12:00:00+00:00",
-        total_count: job.emails.length,
-        completed_count: status === "complete" ? job.emails.length : 0,
-        skipped_count: 0,
-        completed_at: status === "complete" ? this.jobCompletedAt : null,
+        status: complete ? "complete" : fresh ? "queued" : "processing",
+        created_at: job.createdAt,
+        total_count: fresh ? 0 : job.emails.length,
+        completed_count: complete ? job.emails.length : 0,
+        skipped_count: fresh ? null : 0,
+        completed_at: complete ? job.completedAt : null,
       },
       links: { self: "https://a.klaviyo.com/api/jobs/" },
     };
@@ -561,18 +604,11 @@ export class FakeKlaviyo {
       }
       emails.push(email);
     }
-    for (const email of emails) {
-      if (kind === "suppress") {
-        if (!this.suppressed.has(email)) this.suppressedAt.set(email, new Date(this.now()).toISOString());
-        this.suppressed.add(email);
-      } else {
-        this.suppressed.delete(email);
-        this.suppressedAt.delete(email);
-      }
-    }
-    const job: FakeJob = { id: `JOB${String(this.jobs.length + 1).padStart(4, "0")}`, kind, emails };
+    const createdAt = new Date(this.now()).toISOString();
+    const job: FakeJob = { id: `JOB${String(++this.jobCounter).padStart(4, "0")}`, kind, emails, createdAt, completedAt: null };
     this.jobs.push(job);
-    return json(202, { data: this.jobResource(job, "queued") });
+    if (this.jobProcessingMs <= 0) this.applyJob(job, createdAt);
+    return json(202, { data: this.jobResource(job, true) });
   }
 }
 

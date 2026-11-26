@@ -365,13 +365,12 @@ describe("M3: a batch Klaviyo accepted but whose answer was lost", () => {
 });
 
 describe("M6 + S-07: undo leaves alone what is provably not the cleanup's doing", () => {
-  it("skips a redacted customer and suppressions dated before the cleanup or after its job finished", async () => {
+  it("skips a redacted customer and suppressions dated well before the cleanup or well after it finished", async () => {
     const w = await world(6);
     const [normal, redacted, before, after, unsubscribed, gone] = w.profileIds as [string, string, string, string, string, string];
     const outcome = await executeRun({ db, gateway: w.gateway, step: new FakeSteps() }, w.runId);
     expect(outcome).toMatchObject({ status: "completed", submitted: 6 });
     const job = Date.now();
-    w.fake.jobCompletedAt = new Date(job).toISOString();
 
     await db.update(schema.runProfiles).set({ emailHash: null }).where(eq(schema.runProfiles.profileId, redacted));
     // Klaviyo says this one has been suppressed since long before our request: not ours.
@@ -396,8 +395,8 @@ describe("M6 + S-07: undo leaves alone what is provably not the cleanup's doing"
     expect([...w.fake.jobs.at(-1)!.emails].sort()).toEqual([emailOf(normal), emailOf(unsubscribed)].sort());
     expect(w.fake.suppressed.has(emailOf(before))).toBe(true);
     expect(w.fake.suppressed.has(emailOf(after))).toBe(true);
-    // Only what was sent is stamped as restored; the rest is still listed as restorable.
-    expect((await loadRunDetail(w.shop, w.runId))?.undo).toMatchObject({ restored: 2, restorable: 4 });
+    // Only what was sent is stamped as restored. What the restore left alone is not offered again as restorable.
+    expect((await loadRunDetail(w.shop, w.runId))?.undo).toMatchObject({ restored: 2, restorable: 0, leftAlone: 4, fullyRestored: false });
   });
 
   it("restores as before when Klaviyo cannot tell (job unreadable, or no suppression state returned)", async () => {

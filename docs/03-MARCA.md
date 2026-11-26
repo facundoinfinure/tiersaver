@@ -11,7 +11,7 @@ Cuidado: en el Shopify App Store "tier" suele leerse como descuento por volumen.
 
 **Decidido el 2026-11-25:** se mantiene la marca TierSaver y el descriptor pasa a "TierSaver: List Hygiene for Klaviyo" (opción 2 de `12-CUMPLIMIENTO-KLAVIYO.md`, sección 3.3). En la ficha de Shopify, cuyo campo de nombre admite 30 caracteres, va "TierSaver for Klaviyo" con "list hygiene" en el subtítulo.
 
-Uso de la marca de Klaviyo: "Klaviyo" solo como texto descriptivo de compatibilidad. Sin su logo, tipografía ni colores, y sin "official", "certified", "recommended by" ni "partner".
+Uso de la marca de Klaviyo: "Klaviyo" solo como texto descriptivo de compatibilidad. Sin su logo, tipografía ni colores, y sin "official", "certified", "recommended by" ni "partner". Tampoco "recommended" ni "recommends" junto al nombre de Klaviyo (reglas de ficha de Klaviyo): los criterios se nombran como "the criteria Klaviyo publishes for suppressing unengaged profiles".
 
 ## Posicionamiento
 
@@ -29,7 +29,7 @@ Revisados el 2026-11-25 después de la revisión de políticas. Facundo había a
 | Uso | Texto |
 | --- | --- |
 | Titular | Automatic list hygiene for Klaviyo. |
-| Subtítulo | TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. Every cleanup is simulated first, approved by you and logged. Nothing is deleted. |
+| Subtítulo | TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles. Every cleanup is simulated first, approved by you and logged. Nothing is deleted. |
 | Prueba 1 | Every profile is checked against your Shopify orders before anything changes. |
 | Prueba 2 | Every cleanup is simulated first, approved by you, and can be undone. |
 | Prueba 3 | A flat monthly price by list size. A month with no cleanup is not charged. |

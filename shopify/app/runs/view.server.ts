@@ -2,8 +2,11 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "../db.server";
 import { getSuppressionJob, type SuppressionJob } from "../klaviyo/api";
 import type { KlaviyoClient } from "../klaviyo/client";
+import type { RuleSettings } from "@tiersaver/core";
+import { isKlaviyoRecommended } from "../settings/settings";
 import { NO_JOB_ID } from "./gateway.server";
 import { MAYBE_CHANGED_SQL, renewalSince } from "./engine";
+import { CHARGE_HOLD_HOURS } from "./labels";
 
 /** What the history and run screens show. Ids, counts and dates only: no profile data. */
 export interface RunListItem {
@@ -23,6 +26,9 @@ export interface RunListItem {
   /** "Stop cleanup" was pressed and the run has not closed yet. */
   stopping: boolean;
 }
+
+/** The rule windows of a simulation, in days. null = "ever". */
+export type RuleWindows = Pick<RuleSettings, "purchaseDays" | "clickDays" | "openDays" | "siteActivityDays">;
 
 type RunRow = typeof schema.runs.$inferSelect;
 
@@ -55,10 +61,28 @@ export interface RunDetail {
   skipReasons: { reason: string; count: number }[];
   /** Cleanups only. `canStop`: the "Stop cleanup" action is available. `requestedAt`: it was pressed. */
   stop: { canStop: boolean; requestedAt: string | null; requestedBy: string | null } | null;
-  /** Suppress runs: how many profiles an undo would restore, and whether it needs the renewal confirmation. */
-  undo: { restorable: number; restored: number; renewal: "yes" | "no" | "unknown"; inProgress: boolean } | null;
+  /**
+   * Cleanups: what a restore would do. `restorable`: profiles a restore started now would send. `leftAlone`:
+   * profiles the latest restore checked and left as they are, with the reasons; they are not offered again.
+   * `fullyRestored`: no profile Klaviyo accepted is left unrestored, which is what makes a pending charge void
+   * (same condition as billing/billing.ts).
+   */
+  undo: {
+    restorable: number;
+    restored: number;
+    leftAlone: number;
+    leftAloneReasons: { reason: string; count: number }[];
+    fullyRestored: boolean;
+    renewal: "yes" | "no" | "unknown";
+    inProgress: boolean;
+  } | null;
   undoRuns: RunListItem[];
-  charge: { status: string; feeCents: number; reason: string | null; chargedAt: string | null } | null;
+  /** `sendAt`: when a charge that is not out yet goes to Shopify (end of the restore window). */
+  charge: { status: string; feeCents: number; reason: string | null; chargedAt: string | null; sendAt: string | null } | null;
+  /** Cleanups: who approved the simulation, when, and with which rules. Null when the simulation is gone. */
+  approval: { by: string | null; automatic: boolean; at: string | null; recommendedRules: boolean; windows: RuleWindows } | null;
+  /** Cleanups: profiles by the reason they were candidates (CandidateReason). */
+  candidateReasons: { reason: string; count: number }[];
   /** Number of Klaviyo bulk jobs the run created. */
   jobCount: number;
 }
@@ -93,7 +117,29 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
   let undo: RunDetail["undo"] = null;
   let undoRuns: RunListItem[] = [];
   let charge: RunDetail["charge"] = null;
+  let approval: RunDetail["approval"] = null;
+  let candidateReasons: RunDetail["candidateReasons"] = [];
   if (run.kind === "suppress") {
+    const simulation = run.simulationId
+      ? await db.query.simulations.findFirst({ where: and(eq(schema.simulations.id, run.simulationId), eq(schema.simulations.shop, shop)), columns: { approvedAt: true, approvedBy: true, ruleSettings: true } })
+      : null;
+    if (simulation) {
+      const rules = simulation.ruleSettings as RuleSettings;
+      approval = {
+        by: simulation.approvedBy && simulation.approvedBy !== "automatic" ? simulation.approvedBy.replace(/^user:/, "") : null,
+        automatic: simulation.approvedBy === "automatic",
+        at: simulation.approvedAt?.toISOString() ?? null,
+        recommendedRules: isKlaviyoRecommended(rules),
+        windows: { purchaseDays: rules.purchaseDays ?? null, clickDays: rules.clickDays ?? null, openDays: rules.openDays ?? null, siteActivityDays: rules.siteActivityDays ?? null },
+      };
+    }
+    const reasonRows = await db
+      .select({ reason: schema.runProfiles.reason, n: sql<number>`COUNT(*)` })
+      .from(schema.runProfiles)
+      .where(eq(schema.runProfiles.runId, runId))
+      .groupBy(schema.runProfiles.reason);
+    candidateReasons = reasonRows.map((r) => ({ reason: r.reason, count: r.n })).sort((a, b) => b.count - a.count);
+
     // Everything the cleanup may have changed in Klaviyo: accepted, or sent without a confirmed outcome.
     const [changed] = await db
       .select({ n: sql<number>`COUNT(*)`, restored: sql<number>`COALESCE(SUM(CASE WHEN ${schema.runProfiles.reactivatedAt} IS NOT NULL THEN 1 ELSE 0 END), 0)` })
@@ -107,9 +153,29 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       db.query.usageCharges.findFirst({ where: eq(schema.usageCharges.runId, runId) }),
     ]);
     undoRuns = children.map(toItem);
+    // Profiles the latest finished restore checked and left as they are (provably not this cleanup's suppression,
+    // gone from Klaviyo, erased on request). Every restore takes all that is still unrestored, so the latest one
+    // speaks for all of them. They are not counted as restorable: offering them again would promise nothing.
+    const lastRestore = children.find((c) => c.status !== "queued" && c.status !== "running");
+    const leftRows = lastRestore
+      ? await db
+          .select({ reason: sql<string>`COALESCE(${schema.runProfiles.errorCode}, 'skipped')`, n: sql<number>`COUNT(*)` })
+          .from(schema.runProfiles)
+          .where(and(eq(schema.runProfiles.runId, lastRestore.id), eq(schema.runProfiles.status, "skipped")))
+          .groupBy(sql`COALESCE(${schema.runProfiles.errorCode}, 'skipped')`)
+      : [];
+    const leftAloneReasons = leftRows.map((r) => ({ reason: r.reason, count: r.n })).sort((a, b) => b.count - a.count);
+    const leftAlone = Math.min(leftAloneReasons.reduce((n, r) => n + r.count, 0), (changed?.n ?? 0) - restored);
+    const [accepted] = await db
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(schema.runProfiles)
+      .where(and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.reactivatedAt} IS NULL`));
     undo = {
-      restorable: (changed?.n ?? 0) - restored,
+      restorable: (changed?.n ?? 0) - restored - leftAlone,
       restored,
+      leftAlone,
+      leftAloneReasons,
+      fullyRestored: restored > 0 && (accepted?.n ?? 0) === 0,
       renewal: renewalSince(run.finishedAt ?? run.createdAt, now, {
         periodEnds: audits.flatMap((a) => (a.periodEnd ? [a.periodEnd] : [])),
         billingDay: settings?.billingDay ?? null,
@@ -117,11 +183,21 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       inProgress: children.some((c) => c.status === "queued" || c.status === "running"),
     };
     charge = chargeRow
-      ? { status: chargeRow.status, feeCents: chargeRow.feeCents, reason: chargeRow.noChargeReason, chargedAt: chargeRow.chargedAt?.toISOString() ?? null }
+      ? {
+          status: chargeRow.status,
+          feeCents: chargeRow.feeCents,
+          reason: chargeRow.noChargeReason,
+          chargedAt: chargeRow.chargedAt?.toISOString() ?? null,
+          // Same instant as billing/billing.ts: the end of the restore window.
+          sendAt:
+            chargeRow.status === "pending" || chargeRow.status === "failed"
+              ? new Date((run.finishedAt ?? chargeRow.createdAt).getTime() + CHARGE_HOLD_HOURS * 60 * 60 * 1000).toISOString()
+              : null,
+        }
       : null;
   }
 
-  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, skipReasons, stop, undo, undoRuns, charge, jobCount: jobs?.n ?? 0 };
+  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, skipReasons, stop, undo, undoRuns, charge, approval, candidateReasons, jobCount: jobs?.n ?? 0 };
 }
 
 /** Jobs read from Klaviyo per request: one page of the run's jobs, inside a Worker invocation's subrequest budget. */

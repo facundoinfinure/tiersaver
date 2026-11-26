@@ -3,8 +3,8 @@ title: Settings: criteria, protected lists and the monthly schedule
 seoTitle: Settings: criteria, protected lists, schedule
 nav: Settings
 description: What each option on TierSaver's Settings page does: the cleanup criteria, protected lists and segments, the monthly schedule and automatic mode.
-summary: Every option on the Settings page: criteria, protected lists and segments, schedule and automatic mode.
-lead: The Settings page has three sections. The defaults are the cautious choice in each one.
+summary: Every option on the Settings page: criteria, protected lists, schedule, automatic mode and customer data requests.
+lead: The Settings page, section by section. Where there is a default, it is the cautious choice.
 layout: doc
 group: help
 order: 6.5
@@ -12,7 +12,7 @@ updated: 2026-11-26
 -->
 <h2>Who counts as inactive</h2>
 <p>By default TierSaver uses the criteria Klaviyo publishes for suppressing unengaged profiles: a profile created at least {{criteria.ageDays}} days ago that was sent {{criteria.emails}} or more emails in about {{criteria.weeks}} weeks and never opened, clicked, visited your site or purchased. Profiles with SMS consent, in a protected list or segment, or restored in the last {{criteria.undoLockDays}} days are always kept active.</p>
-<p>Ticking the wider-windows box replaces "never" with time windows. This is TierSaver's own, stricter setting and goes beyond the criteria Klaviyo publishes. It shows these fields:</p>
+<p>Ticking the wider-windows box replaces "never" with time windows. This is TierSaver's own optional setting. It goes beyond the criteria Klaviyo publishes and suppresses more profiles, because it can also select people who engaged or bought in the past. It shows these fields:</p>
 <ul>
   <li><strong>Purchased, clicked, opened, was on your site in the last (days).</strong> One field each. A profile with that activity inside the window is kept active. Leave a field empty for "ever". The shortest windows allowed are {{criteria.widerPurchaseDays}} days for purchases and {{criteria.widerEngagementDays}} days for the others.</li>
   <li><strong>Created or subscribed in the last (days).</strong> Newer profiles are kept active. Between {{criteria.widerAgeDays}} and {{criteria.maxAgeDays}} days.</li>
@@ -36,19 +36,21 @@ updated: 2026-11-26
 <ul>
   <li><strong>Run the audit every month.</strong> Turns the schedule on or off. Turning it off takes effect at once and does not undo anything that already ran.</li>
   <li><strong>Day of the month your Klaviyo plan renews.</strong> A day from 1 to 31. Leave it empty to use the day Klaviyo reported in your last audit, when one is available.</li>
-  <li><strong>Days before the renewal to run.</strong> Between {{schedule.minLeadDays}} and {{app.maxLeadDays}}. The default is {{schedule.leadDays}}.</li>
-  <li><strong>Run the scheduled cleanup automatically, without waiting for my approval.</strong> Off by default. With it off, each scheduled audit waits for your approval for {{sim.ttlHours}} hours.</li>
+  <li><strong>Days before the renewal to run the audit.</strong> Between {{schedule.minLeadDays}} and {{app.maxLeadDays}}. The default is {{schedule.leadDays}}.</li>
 </ul>
 
-<h2>Automatic mode</h2>
-<p>Automatic mode lets the scheduled cleanup start without a separate approval each month. The app only accepts it when all of these hold:</p>
+<h2>Automatic cleanups</h2>
+<p>Off by default. With it off, each scheduled audit waits for your approval for {{sim.ttlHours}} hours. Automatic mode lets the scheduled cleanup start without a separate approval each month. You turn it on by ticking the box in this section, which also authorizes the monthly charges and accepts TierSaver's terms of service; the app records who turned it on, when, the price shown and the version of the terms. The app only accepts it when all of these hold:</p>
 <ul>
   <li>the monthly schedule is on;</li>
   <li>you use the default criteria, not wider windows;</li>
   <li>you have already approved and run at least one cleanup yourself. Until then, scheduled simulations keep waiting for your approval.</li>
 </ul>
-<p>Even then, an automatic cleanup waits for your review when it does not look like the one you last approved: see <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>Even then, an automatic cleanup waits for your review when it does not look like the one you last approved: when that cleanup was restored in full, when your criteria or protected lists changed since, or when it would suppress more than 10% of your active profiles or more than three times as many profiles as the last cleanup you approved. See <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
 <p>Each automatic cleanup is charged like any other, under the rules in <a href="/help/pricing">how pricing works</a>, and is listed under <a href="/help/history">History</a>. The app does not send email about it. To stop it, untick the box or turn the schedule off.</p>
+
+<h2>Customer data requests</h2>
+<p>When one of your customers asks your store for their data, Shopify sends the request to TierSaver. The request is listed in this section for 90 days, with a Download button. The file holds what TierSaver stores that is linked to that customer's email address: whether an order is on record, and the cleanups that included their Klaviyo profile. Pass it on to your customer; the app does not send it for you. See <a href="/help/data-and-privacy">data and privacy</a>.</p>
 
 <h2>When you change a setting</h2>
 <p>Changes apply when you confirm them with the button at the bottom of the page. If you change the criteria or the protected lists and segments, simulations that have not run yet are discarded: run the audit again before the next cleanup. Changing only the schedule does not discard them. If a value is outside its limits, the page says which one and nothing is changed.</p>

@@ -20,15 +20,16 @@ updated: 2026-11-26
 <ol>
   <li><strong>Estimated charge.</strong> When the cleanup finishes, its page shows an estimated charge. Nothing has been sent to Shopify yet.</li>
   <li><strong>Confirmation by Klaviyo.</strong> TierSaver waits until Klaviyo reports that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.</li>
-  <li><strong>{{fee.holdHours}} hours.</strong> The charge is sent to Shopify {{fee.holdHours}} hours after the cleanup finished. If you restore the whole cleanup before then, nothing is charged.</li>
+  <li><strong>{{fee.holdHours}} hours.</strong> The charge is sent to Shopify {{fee.holdHours}} hours after the cleanup finished. If you restore the whole cleanup before then, nothing is charged. If a restore is still running when the {{fee.holdHours}} hours end, the charge waits until it has finished.</li>
   <li><strong>Charged.</strong> The cleanup's page shows the amount and the date. On your Shopify invoice the charge is described as "List cleanup", with the number of profiles suppressed.</li>
 </ol>
+<p>If a charge cannot be created in Shopify, for example because Shopify cannot be reached, TierSaver tries again later. The amount does not change.</p>
 
 <h2>When a cleanup is not charged</h2>
 <p>The cleanup's page gives one of these reasons:</p>
 <ul>
   <li>No profile was suppressed.</li>
-  <li>A cleanup was already charged in the last {{fee.minDays}} days.</li>
+  <li>A cleanup was already charged in the last {{fee.minDays}} days. Of two cleanups within {{fee.minDays}} days, only one is charged.</li>
   <li>The cleanup was undone in full before its charge was created.</li>
   <li>The monthly maximum of {{fee.maxPerWindow}} was already reached.</li>
   <li>The list is above {{plans.maxProfiles}} active profiles, which is priced by agreement and not charged automatically.</li>

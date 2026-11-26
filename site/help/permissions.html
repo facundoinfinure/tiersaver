@@ -72,7 +72,7 @@
       <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
     </thead>
     <tbody>
-      <tr><th scope="row"><code>read_orders</code></th><td>Reading your orders, to find which email addresses have bought from your store. A profile matched to an order is kept active. TierSaver stores a one-way hash of the address and the date of the last order, not the order itself.</td></tr>
+      <tr><th scope="row"><code>read_orders</code></th><td>Reading your orders, to find which email addresses have bought from your store. A profile matched to an order is kept active. TierSaver reads them every hour and before each audit. It stores a keyed hash of the address and the date of the last order, not the order itself.</td></tr>
     </tbody>
   </table>
 </div>
@@ -88,7 +88,7 @@
     </thead>
     <tbody>
       <tr><th scope="row"><code>accounts:read</code></th><td>Identifying which Klaviyo account is connected. Klaviyo requires it for every connected app.</td></tr>
-      <tr><th scope="row"><code>profiles:read</code></th><td>Reading the profiles that meet the criteria and the members of the lists and segments you protect, and reading a profile's email address at the moment it is suppressed or included in your CSV download.</td></tr>
+      <tr><th scope="row"><code>profiles:read</code></th><td>Reading the profiles that meet the criteria and the members of the lists and segments you protect, and reading a profile's email address and suppression status right before it is suppressed or restored, or when it is included in your CSV download.</td></tr>
       <tr><th scope="row"><code>profiles:write</code></th><td>Suppressing profiles in a cleanup you approved. Klaviyo requires it, together with <code>subscriptions:write</code>, for bulk suppression. TierSaver does not edit or delete profiles.</td></tr>
       <tr><th scope="row"><code>subscriptions:write</code></th><td>Suppressing profiles in a cleanup, and removing that suppression when you restore one.</td></tr>
       <tr><th scope="row"><code>subscriptions:read</code></th><td>Checking the status of the suppression jobs Klaviyo runs for a cleanup or a restore.</td></tr>

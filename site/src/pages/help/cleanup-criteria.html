@@ -34,13 +34,14 @@ updated: 2026-11-26
 <p>Profiles that are already suppressed, and profiles with no email address, are skipped entirely.</p>
 
 <h2>Buyers are checked twice</h2>
-<p>Klaviyo only knows about the purchases it has recorded. Your Shopify order history is an independent check. To match orders to Klaviyo profiles, TierSaver compares one-way hashes of email addresses, so it does not need to store your customers' email addresses. See <a href="/help/data-and-privacy">data and privacy</a>.</p>
+<p>Klaviyo only knows about the purchases it has recorded. Your Shopify order history is an independent check. To match orders to Klaviyo profiles, TierSaver compares keyed hashes of email addresses, so it does not need to store your customers' email addresses. See <a href="/help/data-and-privacy">data and privacy</a>.</p>
+<p>Your Shopify orders are read every hour and again right before each audit, not only when you install the app. If TierSaver's order data is not up to date when an audit runs, every profile is kept active.</p>
 
 <h2>About opens</h2>
 <p>Klaviyo flags opens that may have been triggered by Apple's Mail Privacy Protection instead of a person. By default TierSaver counts those opens as engagement, which is the cautious choice: a flagged open keeps the profile. The wider mode has an option to ignore them.</p>
 
 <h2>The wider mode</h2>
-<p>You can opt in to a wider mode that uses time windows instead of "never". It is TierSaver's own, stricter setting: it goes beyond the criteria Klaviyo publishes, because it can also select people who engaged with you in the past, and the app says so when you turn it on. The windows cannot be set shorter than these floors:</p>
+<p>You can opt in to a wider mode that uses time windows instead of "never". It is TierSaver's own optional setting. It goes beyond the criteria Klaviyo publishes and suppresses more profiles, because it can also select people who engaged with you in the past, and the app says so when you turn it on. The windows cannot be set shorter than these floors:</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Floors of the wider mode">
   <table class="data-table">
     <thead>

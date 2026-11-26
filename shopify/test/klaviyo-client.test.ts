@@ -490,7 +490,8 @@ describe("API functions", () => {
     const { fake, client } = setup();
     const emails = Array.from({ length: 100 }, (_, i) => `p${i}@buyers.test`);
     const job = await submitSuppressionJob(client, "suppress", emails);
-    expect(job).toMatchObject({ id: "JOB0001", status: "queued", totalCount: 100 });
+    // Like the real API, the answer to the POST carries no counts yet (seen on the test account, 2026-11-25).
+    expect(job).toMatchObject({ id: "JOB0001", status: "queued", totalCount: 0 });
     const sent = fake.requests.at(-1)!;
     expect(sent.method).toBe("POST");
     expect(sent.url.pathname).toBe("/api/profile-suppression-bulk-create-jobs");

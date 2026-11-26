@@ -293,6 +293,35 @@ describe("numbers on the pages come from core", () => {
       expect(textOf(generated.get(path)!), path).toContain(`"${CANDIDATE_SEGMENT_NAME}"`);
     }
   });
+
+  it("numbers the pages type by hand about cleanups, automatic mode and deletion match the app's source", async () => {
+    // These pages state the numbers in words; fail if the app changes them.
+    const automatic = await appSource("app/schedule/automatic.ts");
+    expect(automatic).toContain("export const AUTO_MAX_CANDIDATE_SHARE = 0.1;");
+    expect(automatic).toContain("export const AUTO_MAX_GROWTH_FACTOR = 3;");
+    expect(automatic).toContain("export const AUTO_GROWTH_FLOOR = 200;");
+    expect(await appSource("app/runs/engine.ts")).toContain("export const RUN_BATCH_SIZE = 100;");
+    const housekeeping = await appSource("app/data/housekeeping.ts");
+    expect(housekeeping).toContain("export const UNINSTALLED_SHOP_RETENTION_DAYS = 10;");
+    expect(housekeeping).toContain("export const PRIVACY_REQUEST_RETENTION_DAYS = 90;");
+    expect(await appSource("app/routes/app.settings.tsx")).toContain('<s-section heading="Customer data requests">');
+
+    for (const path of ["help/simulation-and-approval.html", "help/settings.html", "help/troubleshooting.html"]) {
+      const text = textOf(generated.get(path)!);
+      expect(text, path).toContain("more than 10% of your active profiles");
+      expect(text, path).toMatch(/more than three times as many profiles as the last (cleanup|one) you approved/);
+    }
+    expect(textOf(generated.get("help/simulation-and-approval.html")!)).toContain("applies above 200 profiles");
+    for (const path of ["help/simulation-and-approval.html", "help/history.html", "help/troubleshooting.html", "terms.html"]) {
+      expect(textOf(generated.get(path)!), path).toContain("up to 100 profiles");
+    }
+    for (const path of ["index.html", "help/uninstalling.html", "help/data-and-privacy.html", "privacy.html", "dpa.html"]) {
+      expect(textOf(generated.get(path)!), path).toMatch(/10 days after (the|you) uninstall/);
+    }
+    for (const path of ["help/settings.html", "help/data-and-privacy.html", "privacy.html", "dpa.html", "terms.html"]) {
+      expect(textOf(generated.get(path)!), path).toContain("for 90 days");
+    }
+  });
 });
 
 describe("copy rules (brand/messaging.md)", () => {
@@ -333,6 +362,8 @@ describe("copy rules (brand/messaging.md)", () => {
     ["endorsement words", /\bofficial|\bcertified|recommended by|\bpartners?\b/i],
     // Review of 2026-11-26: the criteria are the ones Klaviyo publishes; nothing is "recommended" by Klaviyo here.
     ["Klaviyo recommends", /recommend/i],
+    // The wider mode suppresses more profiles; "stricter" can be read as the opposite.
+    ["stricter", /stricter/i],
     // The audit creates a segment in the merchant's Klaviyo account, so it is not read-only.
     ["read-only audit", /read-only/i],
     // The app sends no email.

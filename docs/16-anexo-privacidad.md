@@ -2,7 +2,7 @@
 
 Fecha: 2026-11-26. Anexo de `docs/16-LEGALES-PARA-ABOGADO.md`. Lo redactó un revisor de políticas de privacidad, no un abogado. No es asesoramiento legal.
 
-Actualizado el 2026-11-26 después de la revisión independiente de privacidad: ver "Qué cambió en la segunda ronda" al final de la sección 1. Las preguntas de este anexo pasaron a la lista única del memo (sección 3).
+Actualizado el 2026-11-26 después de la revisión independiente de privacidad (ver "Qué cambió en la segunda ronda") y otra vez esa tarde, cuando el código cambió (ver "Qué cambió la tarde del 2026-11-26"), las dos al final de la sección 1. Donde un punto de más arriba diga otra cosa, vale lo de la tarde. Las preguntas de este anexo pasaron a la lista única del memo (sección 3).
 
 Qué es: el resultado de contrastar `site/src/pages/privacy.html` con el código de la app, tabla por tabla y log por log. Las respuestas de la sección 1 salen de leer el código; lo que no se pudo comprobar está en la sección 2.
 
@@ -24,7 +24,7 @@ Esto responde la pregunta 12 del memo. Certeza alta por lectura de código; falt
 
 Por cada perfil evaluado se guarda, mientras dura la auditoría:
 
-- id de perfil de Klaviyo y hash SHA-256 del mail;
+- id de perfil de Klaviyo y hash del mail (HMAC-SHA-256 con clave por tienda);
 - fecha de creación y fecha de última actividad;
 - estado de email: si puede recibir marketing, consentimiento, fecha del consentimiento y motivos de supresión;
 - estado de SMS: si puede recibir marketing y consentimiento;
@@ -54,12 +54,12 @@ Reservas: `shopify/app/entry.server.tsx` registra el error de render sin filtrar
 
 ### Otros hechos que cambiaron el texto
 
-- El mail de los perfiles de Klaviyo se lee en tres situaciones, no en dos: en cada auditoría (para calcular el hash), al suprimir o restaurar, y al descargar el CSV.
+- El mail de los perfiles de Klaviyo se lee en tres situaciones, no en dos: en cada auditoría (para calcular el hash), al suprimir o restaurar (ahora también para volver a revisar cada perfil justo antes del envío), y al descargar el CSV.
 - La app no lee aperturas, clics ni eventos de Klaviyo. Los criterios los evalúa Klaviyo dentro del segmento que la app mantiene.
-- Los hashes son hoy SHA-256 sin sal ni clave: quien conoce un mail puede calcular su hash, y el mismo cliente tiene el mismo valor en todas las tiendas. Está decidido pasarlos a HMAC-SHA-256 con clave por tienda guardada fuera de la base. La política ya los describe así ("keyed, per-store pseudonymized hashes"); el código todavía no (ver memo, sección 5).
-- Ante un pedido de acceso, la app guarda más que un hash: también el id de perfil de Klaviyo, el motivo, el estado y las fechas. El webhook `customers/data_request` hoy no hace nada. Está decidido que registre el pedido y que el merchant vea en la app los datos que tenemos de ese cliente. El registro ya está en el código en curso (tabla `privacy_requests`, 90 días); la pantalla de descarga todavía no (ver memo, sección 5).
+- Los hashes de mail son HMAC-SHA-256 con una clave por tienda, derivada de un secreto (`HASH_PEPPER`) guardado fuera de la base (`shopify/app/email-hash.ts`). Sin el secreto la app no calcula ningún hash: no hay vuelta a un hash sin clave. La política los describe como "keyed, per-store pseudonymized hashes". El hash del id de cliente de Shopify es distinto: SHA-256 sin clave del id combinado con el dominio de la tienda (`hashCustomerId` en `shopify/app/data/privacy.ts`); la política y el DPA ya no lo llaman "keyed".
+- Ante un pedido de acceso, la app guarda más que un hash: también el id de perfil de Klaviyo, el motivo, el estado y las fechas. El webhook `customers/data_request` registra el pedido (tabla `privacy_requests`: id del pedido, id de cliente de Shopify, hash del mail y fechas; 90 días) y el merchant descarga los datos de ese cliente desde Settings → "Customer data requests". La app no le envía nada al cliente.
 - El segmento que la app crea en Klaviyo queda en la cuenta del merchant al desinstalar. Esto responde la pregunta 11 del memo.
-- La zona horaria de la tienda no se guarda hoy (la columna existe y nadie la escribe). Se sacó de la política.
+- La zona horaria de la tienda ahora sí se guarda (`shops.iana_timezone`, escrita por `shopify/app/orders/sync.ts`), junto con hasta dónde se leyeron los pedidos. Volvió a la política (sección 3, Store details).
 
 ### Qué cambió en la segunda ronda
 
@@ -73,7 +73,19 @@ La revisión independiente de privacidad volvió a leer el código y la document
 - **Contrato de encargado.** Existe ahora `site/src/pages/dpa.html`, con cláusulas contractuales tipo (módulo 2), addendum del Reino Unido y tres anexos. El Anexo II lista solo medidas que el código tiene; no menciona 2FA, separación de ambientes ni registro de accesos del operador, porque no hay evidencia de ninguna de las tres.
 - **Prospectos.** La política cubre los datos de contactos comerciales (sección 10).
 
-Lo que la revisión propuso y **no** se aplicó, porque no hay decisión ni código: plazos de retención mientras la app está instalada; un registro mínimo que sobreviva a la desinstalación; borrar el id de perfil de Klaviyo ante un `customers/redact`; limitar los campos del webhook de pedidos (sigue desactivado).
+Lo que la revisión propuso y **no** se aplicó, porque no hay decisión ni código: plazos de retención mientras la app está instalada; un registro mínimo que sobreviva a la desinstalación; limitar los campos del webhook de pedidos (sigue desactivado).
+
+### Qué cambió la tarde del 2026-11-26
+
+Hechos nuevos, leídos en el código esa tarde, y dónde quedaron en los textos:
+
+- **`customers/redact` corta el vínculo con Klaviyo.** Además de borrar el hash de compras y las filas del cliente en simulaciones, en las limpiezas pasadas se borra su hash y el id de perfil de Klaviyo se reemplaza por un valor al azar (`redactCustomer`). La limpieza conserva conteos, motivo y estado. Un deshacer posterior no restaura a esa persona. También se borra el registro de un pedido de acceso del mismo cliente. Privacidad 9, DPA 4 y la ayuda lo dicen.
+- **Pedidos leídos de forma continua.** Cada hora y antes de cada auditoría, no solo al instalar (`shopify/app/orders/sync.ts`). La app guarda desde y hasta cuándo leyó, y el cursor de una lectura en curso. Si los datos tienen más de 6 horas al evaluar (`PURCHASE_DATA_MAX_AGE_HOURS`), todos los perfiles quedan protegidos. Los textos no ponen el número de horas.
+- **Lectura previa al envío.** Justo antes de suprimir o restaurar, la app lee de Klaviyo el mail actual y las supresiones del perfil, con motivo y fecha (`shopify/app/runs/gateway.server.ts`). No se guardan. Privacidad 3 y DPA Anexo I lo declaran.
+- **Purga a los 10 días.** `UNINSTALLED_SHOP_RETENTION_DAYS = 10`: si el `shop/redact` no llegó, la tarea horaria borra todo lo de la tienda (pocas tiendas por pasada).
+- **Modo automático.** Activarlo registra quién, cuándo, el precio mostrado y la versión de los términos (`automatic_mode.enabled` en el registro de acciones).
+- **Logs por pedido de Cloudflare:** siguen apagados (`invocation_logs: false`).
+- **Avisos dentro de la app:** la política promete avisos en la app (subencargados, cambios significativos) y la app no tiene todavía cómo mostrarlos. Está en el memo, sección 5, como "notice banner", y en la pregunta 43.
 
 Requisitos de Shopify (datos protegidos, nivel 2) y de Klaviyo que hoy no se cumplen y no se arreglan con texto: política de respuesta a incidentes, política de acceso y prevención de pérdida de datos, registro de accesos del operador, separación de datos de prueba y de producción, logs de 365 días a prueba de manipulación, procedimiento de rotación de secretos. Están en el memo, sección 4, punto 5.
 
@@ -96,7 +108,7 @@ Pasaron a la lista única de `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3. Equi
 | --- | --- | --- |
 | 1 | Hashes como datos seudonimizados | 25 |
 | 2 | Pedido de acceso (`customers/data_request`) | 24 |
-| 3 | Qué se conserva tras un `customers/redact` | 24 |
+| 3 | Qué se conserva tras un `customers/redact` (desde la tarde del 2026-11-26, ya no el id de perfil) | 24 |
 | 4 | Retención mientras la app está instalada | 21 |
 | 5 | Copias de respaldo, logs y "immediately delete" de Klaviyo | 7 y 22 |
 | 6 | Cookie estrictamente necesaria, sin banner | 36 |
@@ -107,4 +119,4 @@ Pasaron a la lista única de `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3. Equi
 | 11 | Proveedor de los buzones hello@ y support@ | 38 |
 | 12 | Decisiones automatizadas (art. 22 GDPR) | 26 |
 
-Preguntas nuevas de privacidad, también en la lista única: DPA y transferencias (2), contrato de "service provider" de la CCPA (3), prospección (28), Brasil y Argentina (39). Decisiones del dueño relacionadas (memo, sección 4): inscripción ante la AAIP, representante del art. 27 y políticas internas.
+Preguntas nuevas de privacidad, también en la lista única: DPA y transferencias (2), contrato de "service provider" de la CCPA (3), prospección (28), Brasil y Argentina (39), avisos dentro de la app que todavía no existen (43). Decisiones del dueño relacionadas (memo, sección 4): inscripción ante la AAIP, representante del art. 27 y políticas internas.

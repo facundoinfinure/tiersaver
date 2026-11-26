@@ -72,16 +72,16 @@
       <tr><th scope="col">Data</th><th scope="col">Why</th></tr>
     </thead>
     <tbody>
-      <tr><td>Your store's myshopify.com address, install date, the Shopify permissions granted and the date from which your order history has been read</td><td>To identify your store and know which orders are covered</td></tr>
+      <tr><td>Your store's myshopify.com address, install date, the Shopify permissions granted, your store's time zone, and from when and up to when your orders have been read</td><td>To identify your store, show dates in your time zone and know which orders are covered</td></tr>
       <tr><td>Shopify and Klaviyo access and refresh tokens, encrypted</td><td>To read orders and to read and suppress profiles on your behalf</td></tr>
       <tr><td>Your Klaviyo account ID and the permissions you granted</td><td>To know which account is connected</td></tr>
       <tr><td>Your settings: cleanup criteria, protected lists, renewal day, run mode</td><td>To apply your choices</td></tr>
       <tr><td>Audit and simulation results: profile counts, the usage figures Klaviyo reports and the criteria used</td><td>To show you results and keep a history</td></tr>
       <tr><td>Klaviyo profile IDs of profiles in a simulation or a run, with the reason, the status and a keyed hash of the profile's email address</td><td>To suppress exactly what you approved and to undo it. The per-profile list of a simulation that was never run is deleted after 7 days</td></tr>
-      <tr><td>A keyed hash of each buyer's email address, with the date of their last order</td><td>To recognize buyers without keeping their email address</td></tr>
-      <tr><td>A log of actions: who approved or did what (by Shopify user ID), when, and the version of the terms accepted with each manual approval</td><td>So every change is traceable</td></tr>
+      <tr><td>A keyed hash of each buyer's email address, with the date of their last order and a hash of their Shopify customer ID</td><td>To recognize buyers without keeping their email address</td></tr>
+      <tr><td>A log of actions: who approved or did what (by Shopify user ID), when, and the version of the terms accepted with each manual approval and when automatic mode is turned on</td><td>So every change is traceable</td></tr>
       <tr><td>Billing records: the list size and price band that applied, the number of profiles suppressed, the amount, whether a charge was created and why not, and the charges created through Shopify</td><td>To bill correctly</td></tr>
-      <tr><td>Customer data requests that Shopify sends for your store, with the information TierSaver holds about that customer</td><td>So you can answer your customer from the app</td></tr>
+      <tr><td>Customer data requests that Shopify sends for your store: Shopify's request ID, the Shopify customer ID and a keyed hash of the customer's email address. Kept for 90 days</td><td>So you can download what TierSaver holds about that customer and answer them</td></tr>
     </tbody>
   </table>
 </div>
@@ -93,25 +93,25 @@
   <li>The contents of orders: products, amounts or payment details.</li>
   <li>The content of your emails or campaigns.</li>
 </ul>
-<p>Email addresses pass through TierSaver's systems briefly in four moments: when an order's email is turned into a hash, when an audit turns the email of each profile it evaluates into a hash, when a batch of profiles is sent to Klaviyo to be suppressed or restored, and when you download the list of profiles in a simulation as a CSV file. They are not written to the database or to logs.</p>
+<p>Email addresses pass through TierSaver's systems briefly in four moments: when an order's email is turned into a hash, when an audit turns the email of each profile it evaluates into a hash, when a batch of profiles is checked again and sent to Klaviyo to be suppressed or restored, and when you download the list of profiles in a simulation as a CSV file. They are not written to the database or to logs.</p>
 <p>While an audit runs, TierSaver holds working data for each profile it evaluates: the profile ID, the hash of its email address, its dates and its consent and suppression status. It is deleted when the audit finishes or fails, and in any case about 24 hours after the audit started.</p>
 
 <h2 id="how-hashes-are-used">How hashes are used</h2>
 <p>A hash is a fingerprint of a normalized email address. TierSaver compares the fingerprint from a Shopify order with the fingerprint of a Klaviyo profile's email to know that a profile belongs to a buyer.</p>
-<p>The fingerprints are keyed hashes (HMAC-SHA-256), computed with a secret key that is unique to your store and kept outside the database. They are keyed, per-store pseudonymized hashes, not anonymous data: they still relate to a person, so TierSaver treats hashes and Klaviyo profile IDs as personal data. Without the key, a fingerprint cannot be computed from an email address, and the fingerprints of your store cannot be matched with those of another store.</p>
+<p>The fingerprints are keyed hashes (HMAC-SHA-256), computed with a key that is unique to your store. That key is derived from a secret kept outside the database. They are keyed, per-store pseudonymized hashes, not anonymous data: they still relate to a person, so TierSaver treats hashes and Klaviyo profile IDs as personal data. Without the key, a fingerprint cannot be computed from an email address, and the fingerprints of your store cannot be matched with those of another store.</p>
 
 <h2 id="access-and-permissions">Access and permissions</h2>
 <p>TierSaver requests only the permissions it uses. In Shopify, it reads orders, and of the protected customer fields only the email address. In Klaviyo, it reads profiles with their dates and their consent and suppression status, it does not read individual opens or clicks, and the only change it makes to a profile is its suppression status, for the profiles in a cleanup you approved. It also creates and keeps one segment in your Klaviyo account, from the first audit, which Klaviyo uses to evaluate the cleanup criteria. The audit changes no profile.</p>
 <p>Access tokens are encrypted before they are stored. The encryption key is held separately from the database.</p>
 
 <h2 id="where-it-runs">Where it runs</h2>
-<p>The app and its database run on Cloudflare, with the database in the United States (eastern North America). The person who operates and supports TierSaver works from Argentina and can access the data from there for maintenance and support. Charges are handled by Shopify. See section 7 of the <a href="/privacy">privacy policy</a>, and the <a href="/dpa">Data Processing Addendum</a> for the terms that cover transfers.</p>
+<p>The app and its database run on Cloudflare, with the database in the United States (eastern North America). The person who operates and supports TierSaver works from Argentina and can access the data from there for maintenance and support. Charges are handled by Shopify. Cloudflare's per-request logs are switched off for the app. See section 7 of the <a href="/privacy">privacy policy</a>, and the <a href="/dpa">Data Processing Addendum</a> for the terms that cover transfers.</p>
 
 <h2 id="deletion">Deletion</h2>
 <ul>
-  <li><strong>When you uninstall:</strong> tokens are deleted as soon as Shopify notifies TierSaver, and TierSaver asks Klaviyo to revoke its access. Everything else is deleted when Shopify sends its shop deletion request, 48 hours after uninstalling, and as a backstop TierSaver purges the data of an uninstalled store within about 10 days. Deleted data can remain for up to 30 days in the hosting provider's point-in-time recovery copies of the database, which cannot be switched off, before it is permanently removed. See <a href="/help/uninstalling">what happens on uninstall</a>.</li>
-  <li><strong>When a customer asks your store to erase their data:</strong> Shopify notifies TierSaver, which deletes that customer's hashed purchase record and removes their hash from past cleanups and simulations. Their Klaviyo profile ID stays in the cleanup history so the cleanup can still be undone.</li>
-  <li><strong>When a customer asks for a copy of their data:</strong> TierSaver holds a keyed hash of their email address, the date of their last order and, if their profile was in a simulation or a cleanup, the Klaviyo profile ID, the reason, the status and the dates. When Shopify sends TierSaver the customer's data request, TierSaver records it and gives you that information in the app, so you can answer your customer.</li>
+  <li><strong>When you uninstall:</strong> tokens are deleted as soon as Shopify notifies TierSaver, and TierSaver asks Klaviyo to revoke its access. Everything else is deleted when Shopify sends its shop deletion request, 48 hours after uninstalling, and as a backstop TierSaver itself deletes the data of an uninstalled store 10 days after the uninstall if that request has not arrived. Deleted data can remain for up to 30 days in the hosting provider's point-in-time recovery copies of the database, which cannot be switched off, before it is permanently removed. See <a href="/help/uninstalling">what happens on uninstall</a>.</li>
+  <li><strong>When a customer asks your store to erase their data:</strong> Shopify notifies TierSaver, which deletes that customer's hashed purchase record, removes them from simulations and removes the link between past cleanups and their Klaviyo profile. The cleanups keep their counts, but a later restore leaves that customer's profile as it is.</li>
+  <li><strong>When a customer asks for a copy of their data:</strong> TierSaver holds a keyed hash of their email address, the date of their last order and, if their profile was in a simulation or a cleanup, the Klaviyo profile ID, the reason, the status and the dates. When Shopify sends TierSaver the customer's data request, TierSaver records it and lists it in Settings, under "Customer data requests", where you can download that information for 90 days and pass it on to your customer. The app does not send it for you.</li>
 </ul>
 <p>Profiles in Klaviyo are never deleted by TierSaver. They are your data, in your Klaviyo account.</p>
 

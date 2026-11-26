@@ -76,7 +76,7 @@
 
 <h2 id="approving">Approving</h2>
 <p>On the "Review cleanup" page, read the notices, tick the box and approve. Ticking the box also accepts TierSaver's terms of service. Approving does not suppress anyone yet: the cleanup starts when you select "Start cleanup". Before your first cleanup Shopify asks you to accept TierSaver's pricing; see <a href="/help/billing">billing and charges</a>.</p>
-<p>The cleanup suppresses profiles from that simulation and no others. Each batch is checked again right before it is sent to Klaviyo, and a profile that is no longer a candidate is left untouched: for example one that placed an order after the simulation, no longer meets the criteria in Klaviyo, changed its email address, is already suppressed or no longer exists. The cleanup's page shows how many were left untouched and why.</p>
+<p>The cleanup suppresses profiles from that simulation and no others. Each batch is checked again right before it is sent to Klaviyo, and a profile that is no longer a candidate is left untouched: for example one that placed an order after the simulation, no longer meets the criteria in Klaviyo, changed its email address, is already suppressed or no longer exists. So a cleanup can suppress fewer profiles than the number you approved. The cleanup's page shows how many were left untouched and why.</p>
 <p>An approval is tied to one simulation:</p>
 <ul>
   <li><strong>It expires after 24 hours.</strong> Lists change. A simulation can be approved and run for 24 hours after it was computed; after that, run the audit again to get a current one.</li>
@@ -92,7 +92,7 @@
 <p>The monthly schedule is off by default. If you turn it on in <a href="/help/settings">Settings</a>, TierSaver runs a new audit once a month and its simulation appears on the app's home page. The app does not send email, so open the app around your scheduled day. There are two modes:</p>
 <ul>
   <li><strong>Approval required</strong> (default). The simulation waits for you. If it is not approved within 24 hours it expires: nothing is suppressed and nothing is charged. You can run a new audit and approve it at any time.</li>
-  <li><strong>Automatic.</strong> A separate opt-in. It is only available with the default criteria, with the schedule on, and after you have approved and run at least one cleanup yourself. The cleanup then starts from the scheduled simulation without waiting for you, under the criteria you approved. The result is listed under <a href="/help/history">History</a>. An automatic cleanup still waits for your review when it does not look like the one you last approved: when that cleanup was restored afterwards, when your criteria or protected lists changed since, or when it would suppress an unusually large share of your list or many more profiles than the last one.</li>
+  <li><strong>Automatic.</strong> A separate opt-in. It is only available with the default criteria, with the schedule on, and after you have approved and run at least one cleanup yourself. The cleanup then starts from the scheduled simulation without waiting for you, under the criteria you approved. The result is listed under <a href="/help/history">History</a>. An automatic cleanup still waits for your review when it does not look like the one you last approved: when that cleanup was restored in full afterwards, when your criteria or protected lists changed since, when it would suppress more than 10% of your active profiles, or when it would suppress more than three times as many profiles as the last cleanup you approved (this last check applies above 200 profiles). When you turn automatic mode on, the app records who did it, when, the price shown and the version of the terms accepted.</li>
 </ul>
 <p>See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule</a> for when the audit runs.</p>
 
@@ -105,7 +105,7 @@
 </ul>
 
 <h2 id="while-a-cleanup-runs">While a cleanup runs</h2>
-<p>Profiles are suppressed in batches, and the cleanup's page shows how many have been sent to Klaviyo so far; you can leave the page. While it runs you can stop it from that page: profiles already sent stay suppressed, and the ones it had not reached stay as they are. If a cleanup is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If it stops early, the profiles it did not reach are left untouched. <a href="/help/history">History</a> explains each status.</p>
+<p>Profiles are suppressed in batches, and the cleanup's page shows how many have been sent to Klaviyo so far; you can leave the page. While it runs you can stop it from that page with "Stop cleanup": the batch being sent at that moment, up to 100 profiles, still goes through, profiles already sent stay suppressed, and the ones it had not reached stay as they are. If a cleanup is interrupted, it resumes where it stopped without suppressing anyone twice or skipping a batch. If it stops early, the profiles it did not reach are left untouched. A cleanup that stops responding is closed automatically, normally within one to two hours, with a record of what was really sent, so it can be restored. <a href="/help/history">History</a> explains each status.</p>
 
 <h2 id="sources">Sources</h2>
 <ul class="sources">

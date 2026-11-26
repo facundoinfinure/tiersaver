@@ -18,7 +18,7 @@ Qué destraba: pedir datos protegidos, la Billing API (cobro) y, más adelante, 
 2. **Protected customer data** → **Manage** (o **Request access**):
    - Motivo de uso: marcar el que hable de funcionalidad de la app / personalización. Texto, si pide uno: `Match the store's buyers to Klaviyo profiles, by a hash of the email address, so that customers who purchased are never suppressed.`
    - Campos: **solo Email**. No marcar nombre, teléfono ni dirección.
-   - El formulario de protección de datos pregunta por cifrado, retención y acceso. Respuestas que corresponden a lo que hace la app: los mails no se guardan (solo un hash SHA-256); tokens cifrados en reposo (AES-GCM); todo se borra con los webhooks de privacidad al desinstalar; acceso del personal limitado al dueño.
+   - El formulario de protección de datos pregunta por cifrado, retención y acceso. Respuestas que corresponden a lo que hace la app: los mails no se guardan (solo un hash con clave por tienda, HMAC-SHA-256); tokens cifrados en reposo (AES-GCM); todo se borra con los webhooks de privacidad al desinstalar; acceso del personal limitado al dueño.
 3. **Read all orders** → **Request access**. Motivo: `The default cleanup rule is "never purchased". The app needs each buyer's full order history, stored only as a hash of the email, to keep every past customer active.`
 
 Qué destraba: la regla de compras. Sin esto, con las reglas por defecto un merchant real no tiene candidatos.
@@ -34,19 +34,19 @@ Archivo: `brand/logo/final/app-icon.png` (1200 × 1200, del repo).
 
 ## 4. App OAuth de Klaviyo: logo y textos
 
-Según developers.klaviyo.com/en/docs/submit_your_app_for_review (leída el 2026-11-26). Todo esto se **guarda** con el botón **Save** de cada sección; nada se envía a revisión mientras no aprietes **Review submission**. Las revisiones de Klaviyo están en pausa y además piden 5 instalaciones reales, así que hoy esto solo sirve para que el consentimiento y la ficha en borrador muestren la marca.
+Según developers.klaviyo.com/en/docs/submit_your_app_for_review (leída el 2026-11-26). Todo esto se **guarda** con el botón **Save** de cada sección; nada se envía a revisión mientras no aprietes **Review submission**. Hasta que la app se envíe a revisión, esto solo sirve para que el consentimiento y la ficha en borrador muestren la marca. (Una versión anterior de este documento decía que las revisiones de Klaviyo estaban en pausa: la página de envío leída el 2026-11-26 no lo dice, y se sacó. Los requisitos de envío, como la cantidad de instalaciones, hay que releerlos en esa página antes de enviar.)
 
 1. https://www.klaviyo.com/manage-apps → app **TierSaver**.
 2. Sección **Logo**: subir `brand/logo/final/klaviyo-app-logo.svg` (SVG de 48 × 48, sin scripts, que es lo que pide Klaviyo) → **Save**.
 3. Sección **App listing → Information**:
    - Short description (máx. 75; tiene 61): `Automatic list hygiene: suppress profiles that never engaged.`
-   - Full description (máx. 300; tiene 269): `TierSaver keeps your Klaviyo list clean. It finds profiles that never engaged, using Klaviyo's own recommended criteria, shows you exactly who would be suppressed, and runs only after you approve. Profiles are suppressed, never deleted, and every cleanup can be undone.`
+   - Full description (máx. 300; tiene 294): `TierSaver keeps your Klaviyo list clean. It finds profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles, shows you who would be suppressed, and runs only after you approve. Profiles are suppressed, never deleted, and a cleanup can be restored.`
 4. Pestaña **Company information**: nombre `TierSaver`, sitio `https://tiersaver.com`, descripción: `TierSaver builds list hygiene tools for Shopify brands that use Klaviyo. Operated by Digital Solvers LLC.`
 5. Sección **Features** (2 a 6; título máx. 65, descripción máx. 225):
-   - `Free, read-only list audit` · `Counts the profiles that meet Klaviyo's criteria for long-term inactive profiles. Nothing changes in your account.`
+   - `Free list audit that changes no profile` · `Counts the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles. It adds one segment to your account and changes no profile.`
    - `Simulation you approve` · `See and download the exact profiles a cleanup would suppress. Nothing runs until you approve it.`
    - `Buyers stay active` · `Every profile is checked against your Shopify orders. Customers who purchased are never suppressed.`
-   - `Undo and full history` · `Profiles are suppressed, never deleted. Every cleanup is logged and can be undone.`
+   - `Restore and full history` · `Profiles are suppressed, never deleted. Every cleanup is logged and can be restored from the app.`
 6. URLs (se pueden dejar para cuando el sitio esté publicado): privacy policy `https://tiersaver.com/privacy.html`, soporte `support@tiersaver.com`. La "OAuth installation URL" y la "Settings URL" todavía no existen como páginas públicas: dejarlas vacías.
 7. **No apretar "Review submission".**
 

@@ -1,25 +1,96 @@
 import { env } from "cloudflare:workers";
-import { formatUsd } from "@tiersaver/core";
-import { useEffect } from "react";
+import { formatUsd, RULE_LIMITS, type CandidateReason } from "@tiersaver/core";
+import { eq } from "drizzle-orm";
+import { useEffect, useRef, useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation, useRevalidator } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { flags } from "../components/home-screen";
-import { db } from "../db.server";
+import { errorFocus, number, Row, Time, useRevealError } from "../components/ui";
+import { db, schema } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
-import { CHARGE_HOLD_HOURS, OTHER_SKIP_LABEL, SKIP_REASON_LABELS, STATUS_LABELS } from "../runs/labels";
+import { legalUrls } from "../legal";
+import { CHARGE_HOLD_HOURS, NO_CHARGE_LABELS, OTHER_RUN_ERROR_LABEL, OTHER_SKIP_LABEL, RUN_ERROR_LABELS, SKIP_REASON_LABELS, statusLabel } from "../runs/labels";
 import { confirmRunJobs } from "../runs/confirm";
 import { requestStopRun } from "../runs/engine";
 import { startUndoRun } from "../runs/start.server";
-import { checkRunJobs, loadRunDetail, type JobsCheck } from "../runs/view.server";
+import { checkRunJobs, loadRunDetail, type JobsCheck, type RuleWindows } from "../runs/view.server";
+import { shopTimeZone, stamp } from "../settings/timezone";
+import { CANDIDATE_REASON_LABELS } from "../simulations/review";
 import { authenticate } from "../shopify.server";
+
+/** "user:1001" -> "Shopify user 1001". Only the id is stored, so only the id is shown. */
+function actorText(actor: string | null | undefined): string | null {
+  if (!actor) return null;
+  if (actor === "schedule") return "your monthly schedule";
+  const id = actor.replace(/^user:/, "");
+  return /^\d+$/.test(id) ? `Shopify user ${id}` : null;
+}
+
+function rulesText(recommended: boolean, w: RuleWindows): string {
+  if (recommended) return "Klaviyo's published criteria";
+  const days = (n: number | null) => (n === null ? "ever" : `in the last ${number(n)} days`);
+  return `Your wider windows: no purchase ${days(w.purchaseDays)}, no click ${days(w.clickDays)}, no open ${days(w.openDays)}, no site activity ${days(w.siteActivityDays)}`;
+}
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const detail = await loadRunDetail(session.shop, params.runId ?? "");
   if (!detail) throw new Response("Not found", { status: 404 });
-  return detail;
+  const [zone, settings] = await Promise.all([
+    shopTimeZone(db, session.shop),
+    db.query.settings.findFirst({ where: eq(schema.settings.shop, session.shop), columns: { reactivationLockDays: true } }),
+  ]);
+  // Every date is formatted here, in the shop's time zone: the browser never formats one (see settings/timezone.ts).
+  const at = (iso: string | null | undefined) => (iso ? stamp(iso, zone) : null);
+  const { run, charge, approval } = detail;
+  const legal = legalUrls(env);
+  return {
+    run: {
+      id: run.id,
+      kind: run.kind,
+      origin: run.origin,
+      status: run.status,
+      total: run.total,
+      submitted: run.submitted,
+      skipped: run.skipped,
+      failed: run.failed,
+      unknown: run.unknown,
+      error: run.error,
+      stopping: run.stopping,
+      undoOfRunId: run.undoOfRunId,
+      createdAt: stamp(run.createdAt, zone),
+      finishedAt: at(run.finishedAt),
+      startedBy: actorText(run.createdBy),
+    },
+    progress: detail.progress,
+    skipReasons: detail.skipReasons.map((s) => ({ ...s, label: SKIP_REASON_LABELS[s.reason] ?? OTHER_SKIP_LABEL })),
+    stop: detail.stop ? { canStop: detail.stop.canStop } : null,
+    undo: detail.undo
+      ? { ...detail.undo, leftAloneReasons: detail.undo.leftAloneReasons.map((s) => ({ ...s, label: SKIP_REASON_LABELS[s.reason] ?? OTHER_SKIP_LABEL })) }
+      : null,
+    undoRuns: detail.undoRuns.map((u) => ({ id: u.id, createdAt: stamp(u.createdAt, zone), ...statusLabel(u), submitted: u.submitted, skipped: u.skipped })),
+    charge: charge
+      ? {
+          status: charge.status,
+          fee: formatUsd(charge.feeCents),
+          reason: charge.reason,
+          chargedAt: at(charge.chargedAt),
+          sendAt: at(charge.sendAt),
+          // The restore window is still open. Decided here: the browser's clock is not used for anything shown.
+          windowOpen: Boolean(charge.sendAt && Date.parse(charge.sendAt) > Date.now()),
+        }
+      : null,
+    approval: approval
+      ? { by: actorText(approval.by), automatic: approval.automatic, at: at(approval.at), rules: rulesText(approval.recommendedRules, approval.windows) }
+      : null,
+    candidateReasons: detail.candidateReasons.map((r) => ({ label: CANDIDATE_REASON_LABELS[r.reason as CandidateReason] ?? r.reason, count: r.count })),
+    jobCount: detail.jobCount,
+    restoreLockDays: settings?.reactivationLockDays ?? RULE_LIMITS.reactivationLockDays.min,
+    holdHours: CHARGE_HOLD_HOURS,
+    help: { undo: legal.articles.undo, support: legal.support, supportEmail: legal.supportEmail },
+  };
 };
 
 type ActionData = { error?: string; needsConfirmation?: "yes" | "unknown"; jobs?: JobsCheck };
@@ -80,8 +151,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 
 const ERRORS: Record<string, string> = {
   klaviyo_not_connected: "Klaviyo is not connected. Reconnect it from the home page.",
-  klaviyo_unavailable: "Klaviyo could not be reached. Please try again.",
-  klaviyo_still_processing: "Klaviyo is still applying this cleanup. Try the restore again in a minute or two.",
+  klaviyo_unavailable: "Klaviyo could not be reached. Nothing was changed. Please try again.",
+  klaviyo_still_processing: "Klaviyo is still applying this cleanup, so nothing was restored yet. Try again in a minute or two.",
   nothing_to_restore: "There is nothing left to restore from this cleanup.",
   undo_in_progress: "A restore of this cleanup is already in progress.",
   still_running: "This cleanup is still running. You can restore it once it has finished.",
@@ -90,76 +161,88 @@ const ERRORS: Record<string, string> = {
   not_found: "This cleanup no longer exists.",
 };
 
-const RUN_ERRORS: Record<string, string> = {
-  suppression_disabled: "Cleanups are not switched on for this installation. Nothing was changed in Klaviyo.",
-  suppression_not_allowed_for_account: "Cleanups are not switched on for this Klaviyo account. Nothing was changed in Klaviyo.",
-  klaviyo_needs_reauth: "TierSaver's access to Klaviyo ended. Reconnect Klaviyo from the home page.",
-  klaviyo_not_connected: "Klaviyo is not connected.",
-  klaviyo_disconnected: "Klaviyo was disconnected.",
-  simulation_expired: "The simulation was more than 24 hours old when the cleanup started.",
-  simulation_superseded: "Your rules changed after the simulation was approved.",
-  run_stalled: "The cleanup stopped responding and was closed. The counts below are what was actually sent to Klaviyo.",
-  run_never_started: "The cleanup could not be started. Nothing was changed in Klaviyo.",
-  candidate_segment_missing: "TierSaver's segment in Klaviyo could not be found, so the profiles could not be checked again.",
-  candidate_segment_changed: "TierSaver's segment in Klaviyo was edited or deactivated, so the profiles could not be checked again. Run a new audit.",
-  candidate_segment_processing: "Klaviyo was still updating TierSaver's segment, so the profiles could not be checked again. Run a new audit.",
-  candidate_segment_unavailable: "The profiles could not be checked again in Klaviyo. Run a new audit.",
-  klaviyo_account_changed: "The connected Klaviyo account changed.",
-};
-
-const NO_CHARGE: Record<string, string> = {
-  no_cleanup: "Not charged: no profile was suppressed.",
-  already_charged_this_cycle: "Not charged: a cleanup was already charged in the last 28 days.",
-  cleanup_undone: "Not charged: this cleanup was undone.",
-  cap_reached: "Not charged: the monthly maximum was already reached.",
-  above_price_tiers: "Not charged automatically: lists above 150,000 active profiles are priced by agreement.",
-};
-
-const number = (n: number) => n.toLocaleString("en-US");
-const dateTime = (iso: string) => new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+const RENEWAL_ERROR = "Tick this box to confirm before restoring.";
+const RESTORE_MODAL = "restore-cleanup";
 
 export default function Run() {
-  const { run, progress, skipReasons, stop, undo, undoRuns, charge, jobCount } = useLoaderData<typeof loader>();
+  const { run, progress, skipReasons, stop, undo, undoRuns, charge, approval, candidateReasons, jobCount, restoreLockDays, holdHours, help } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>() as ActionData | undefined;
-  const busy = useNavigation().state !== "idle";
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
+  const pending = busy ? navigation.formData?.get("intent") : null;
   const running = run.status === "queued" || run.status === "running";
   const revalidator = useRevalidator();
+  // A restore of this cleanup that is still going changes what this page says when it ends.
+  const live = running || Boolean(undo?.inProgress);
   useEffect(() => {
-    if (!running) return;
+    if (!live) return;
     const timer = setInterval(() => {
       if (revalidator.state === "idle") revalidator.revalidate();
     }, 5000);
     return () => clearInterval(timer);
-  }, [running, revalidator]);
+  }, [live, revalidator]);
 
   const isUndo = run.kind === "undo";
+  const noun = isUndo ? "restore" : "cleanup";
   const verb = isUndo ? "restored" : "suppressed";
   const done = running ? (progress.submitted ?? 0) : run.submitted;
+  const skipped = running ? (progress.skipped ?? 0) : run.skipped;
+  const notProcessed = running ? 0 : Math.max(0, run.total - run.submitted - run.skipped - run.unknown);
+  const badge = statusLabel(run);
+
   const needsConfirmation = result?.needsConfirmation ?? (undo && undo.renewal !== "no" ? undo.renewal : null);
-  const status = STATUS_LABELS[run.status];
+  // Set when "Restore profiles" is pressed without the tick, or when the server refused for lack of it.
+  const [confirmMissing, setConfirmMissing] = useState(false);
+  const refusedForTick = Boolean(result?.needsConfirmation);
+  useEffect(() => {
+    if (refusedForTick) setConfirmMissing(true);
+  }, [result, refusedForTick]);
+  const tickError = confirmMissing;
+  useRevealError(result, Boolean(result?.error));
+  useEffect(() => {
+    // The explanation and the tick live in the dialog: if the server asks for the tick, the dialog is shown again.
+    if (!refusedForTick) return;
+    const modal = document.getElementById(RESTORE_MODAL) as (HTMLElement & { showOverlay?: () => void }) | null;
+    modal?.showOverlay?.();
+  }, [result, refusedForTick]);
+
+  const chargeLine = !isUndo && charge ? chargeText(charge, Boolean(undo?.fullyRestored), holdHours) : null;
 
   return (
     <s-page heading={isUndo ? "Restore" : "Cleanup"}>
       <s-link slot="breadcrumb-actions" href="/app/runs">
         History
       </s-link>
-      {result?.error ? <s-banner tone="warning">{ERRORS[result.error] ?? "That did not work. Nothing was changed. Please try again."}</s-banner> : null}
+      {result?.error ? (
+        <s-banner tone="warning" heading={isUndo ? "That did not work" : "Nothing was changed"} {...errorFocus(true)}>
+          {ERRORS[result.error] ?? "That did not work. Nothing was changed. Please try again."}{" "}
+          {result.error === "klaviyo_unavailable" || !ERRORS[result.error] ? (
+            <>
+              If it keeps happening, write to <s-link href={help.support}>{help.supportEmail}</s-link>.
+            </>
+          ) : null}
+        </s-banner>
+      ) : null}
 
       <s-section heading="Summary">
         <s-stack gap="base">
-          <s-stack direction="inline" gap="base">
-            <s-badge tone={status?.tone ?? "info"}>{status?.label ?? run.status}</s-badge>
+          <s-stack direction="inline" gap="base" alignItems="center">
+            <s-badge tone={badge.tone}>{badge.label}</s-badge>
             <s-text>
-              Started {dateTime(run.createdAt)}
-              {run.origin === "scheduled" ? " by your monthly schedule" : ""}
-              {run.finishedAt ? `, finished ${dateTime(run.finishedAt)}` : ""}
+              Started <Time at={run.createdAt} />
+              {run.finishedAt ? (
+                <>
+                  , finished <Time at={run.finishedAt} />
+                </>
+              ) : null}
             </s-text>
           </s-stack>
+
           {running ? (
             <s-banner tone="info" heading={run.stopping ? "Stopping this cleanup" : isUndo ? "Restore in progress" : "Cleanup in progress"}>
               {run.stopping
                 ? `No more profiles will be sent. ${number(done)} of ${number(run.total)} were sent to Klaviyo before you stopped it. You can restore them once the cleanup has closed, usually within a few minutes.`
-                : `${number(done)} of ${number(run.total)} profiles sent to Klaviyo so far. You can leave this page.`}
+                : `${number(done)} of ${number(run.total)} profiles sent to Klaviyo so far. It keeps going if you leave this page.`}
             </s-banner>
           ) : null}
           {stop?.canStop ? (
@@ -178,7 +261,7 @@ export default function Run() {
                     Profiles already sent stay suppressed. Once the cleanup has closed you can restore them from this page.
                   </s-paragraph>
                 </s-stack>
-                <s-button slot="primary-action" type="submit" variant="primary" tone="critical" {...flags({ disabled: busy })}>
+                <s-button slot="primary-action" type="submit" variant="primary" tone="critical" {...flags({ disabled: busy, loading: pending === "stop" })}>
                   Stop cleanup
                 </s-button>
                 <s-button slot="secondary-actions" commandFor="stop-cleanup" command="--hide">
@@ -187,132 +270,163 @@ export default function Run() {
               </s-modal>
             </Form>
           ) : null}
-          {run.error ? (
-            <s-banner tone="warning" heading="This run stopped early">
-              {RUN_ERRORS[run.error] ?? "Something went wrong while talking to Klaviyo."} Profiles it did not reach were left untouched.
+
+          {!running && (run.error || notProcessed > 0) ? (
+            <s-banner
+              tone="warning"
+              heading={
+                run.error
+                  ? done + run.unknown > 0
+                    ? `This ${noun} stopped early`
+                    : `This ${noun} did not run`
+                  : `${number(notProcessed)} ${notProcessed === 1 ? "profile was" : "profiles were"} not processed`
+              }
+            >
+              <s-stack gap="base">
+                <s-text>
+                  {run.error ? `${RUN_ERROR_LABELS[run.error] ?? OTHER_RUN_ERROR_LABEL} ` : ""}
+                  {notProcessed > 0
+                    ? isUndo
+                      ? `${number(notProcessed)} ${notProcessed === 1 ? "profile was" : "profiles were"} not reached and ${notProcessed === 1 ? "is" : "are"} still suppressed. Go back to the cleanup to restore ${notProcessed === 1 ? "it" : "them"}.`
+                      : `${number(notProcessed)} ${notProcessed === 1 ? "profile was" : "profiles were"} not reached and ${notProcessed === 1 ? "was" : "were"} left untouched in Klaviyo. Run a new audit to include ${notProcessed === 1 ? "it" : "them"} in the next cleanup.`
+                    : ""}
+                </s-text>
+                {isUndo ? (
+                  run.undoOfRunId ? (
+                    <s-stack direction="inline" gap="base">
+                      <s-button href={`/app/runs/${run.undoOfRunId}`}>View the cleanup</s-button>
+                    </s-stack>
+                  ) : null
+                ) : (
+                  <Form method="post" action="/app/simulation">
+                    <input type="hidden" name="intent" value="scan" />
+                    <s-button type="submit" {...flags({ disabled: busy, loading: pending === "scan" })}>
+                      Run the audit again
+                    </s-button>
+                  </Form>
+                )}
+              </s-stack>
             </s-banner>
           ) : null}
-          <s-table>
-            <s-table-header-row>
-              <s-table-header>Profiles</s-table-header>
-              <s-table-header format="numeric">Count</s-table-header>
-            </s-table-header-row>
-            <s-table-body>
-              <s-table-row>
-                <s-table-cell>In this {isUndo ? "restore" : "cleanup"}</s-table-cell>
-                <s-table-cell>{number(run.total)}</s-table-cell>
-              </s-table-row>
-              <s-table-row>
-                <s-table-cell>Sent to Klaviyo to be {verb}</s-table-cell>
-                <s-table-cell>{number(done)}</s-table-cell>
-              </s-table-row>
-              <s-table-row>
-                <s-table-cell>
-                  Left untouched: checked again right before sending and no longer {isUndo ? "eligible to be restored" : "a candidate"}
-                </s-table-cell>
-                <s-table-cell>{number(running ? (progress.skipped ?? 0) : run.skipped)}</s-table-cell>
-              </s-table-row>
-              {skipReasons.map((s) => (
-                <s-table-row key={s.reason}>
-                  <s-table-cell>
-                    <s-text color="subdued">– {SKIP_REASON_LABELS[s.reason] ?? OTHER_SKIP_LABEL}</s-text>
-                  </s-table-cell>
-                  <s-table-cell>{number(s.count)}</s-table-cell>
-                </s-table-row>
+
+          <s-stack gap="small">
+            <Row strong label={`Profiles in this ${noun}`} value={number(run.total)} />
+            <Row label={`Sent to Klaviyo to be ${verb}`} value={number(done)} />
+            {skipped > 0 || !isUndo ? (
+              <Row label={isUndo ? "Left as they are: checked right before sending, and not restored" : "Left untouched: checked again right before sending, and no longer a candidate"} value={number(skipped)} />
+            ) : null}
+            {skipReasons.map((s) => (
+              <Row key={s.reason} indent label={s.label} value={number(s.count)} />
+            ))}
+            {!running && run.unknown > 0 ? (
+              <Row
+                label={`Result unknown: sent to Klaviyo, but its answer never arrived. They may have been ${verb}.${isUndo ? "" : " A restore includes them."}`}
+                value={number(run.unknown)}
+              />
+            ) : null}
+            {notProcessed > 0 ? <Row label={isUndo ? "Not reached: still suppressed" : "Not reached: left untouched"} value={number(notProcessed)} /> : null}
+            {undo && undo.restored > 0 ? <Row label="Restored since" value={number(undo.restored)} /> : null}
+          </s-stack>
+
+          {!isUndo ? (
+            <s-stack gap="small-200">
+              {approval ? (
+                <s-text color="subdued">
+                  {approval.automatic ? (
+                    "Approved automatically by your monthly schedule"
+                  ) : approval.by ? (
+                    `Approved by ${approval.by}`
+                  ) : (
+                    "Approved in the app"
+                  )}
+                  {approval.at ? (
+                    <>
+                      {" "}
+                      on <Time at={approval.at} />
+                    </>
+                  ) : null}
+                  .
+                </s-text>
+              ) : null}
+              <s-text color="subdued">
+                Started {run.origin === "scheduled" ? "by your monthly schedule" : run.startedBy ? `manually by ${run.startedBy}` : "manually"}.
+              </s-text>
+              {approval ? <s-text color="subdued">Rules: {approval.rules}.</s-text> : null}
+              {candidateReasons.map((r) => (
+                <s-text key={r.label} color="subdued">
+                  Reason: {r.label} ({number(r.count)}).
+                </s-text>
               ))}
-              {!running && run.unknown > 0 ? (
-                <s-table-row>
-                  <s-table-cell>
-                    {`Sent, but the answer from Klaviyo was lost: they may have been ${verb}.${isUndo ? "" : " Undo includes them."}`}
-                  </s-table-cell>
-                  <s-table-cell>{number(run.unknown)}</s-table-cell>
-                </s-table-row>
-              ) : null}
-              {(running ? (progress.failed ?? 0) : run.failed) > 0 ? (
-                <s-table-row>
-                  <s-table-cell>Not processed because of an error</s-table-cell>
-                  <s-table-cell>{number(running ? (progress.failed ?? 0) : run.failed)}</s-table-cell>
-                </s-table-row>
-              ) : null}
-              {undo && undo.restored > 0 ? (
-                <s-table-row>
-                  <s-table-cell>Restored later</s-table-cell>
-                  <s-table-cell>{number(undo.restored)}</s-table-cell>
-                </s-table-row>
-              ) : null}
-            </s-table-body>
-          </s-table>
-          {!isUndo && charge ? (
-            <s-paragraph>
-              {charge.status === "charged"
-                ? `Charged ${formatUsd(charge.feeCents)} through Shopify${charge.chargedAt ? ` on ${dateTime(charge.chargedAt)}` : ""}.`
-                : charge.status === "not_charged"
-                  ? (NO_CHARGE[charge.reason ?? ""] ?? "Not charged.")
-                  : `Estimated charge: ${formatUsd(charge.feeCents)}. It is sent to Shopify ${CHARGE_HOLD_HOURS} hours after the cleanup finished, once Klaviyo has confirmed that its jobs suppressed the profiles. If Klaviyo confirms none, or you restore the whole cleanup before then, nothing is charged.`}
-            </s-paragraph>
+            </s-stack>
+          ) : run.startedBy ? (
+            <s-text color="subdued">Started by {run.startedBy}.</s-text>
           ) : null}
-          {!isUndo && !running && run.submitted > 0 ? (
+
+          {chargeLine ? <s-paragraph>{chargeLine}</s-paragraph> : null}
+          {!isUndo && !running && run.submitted > 0 && !undo?.fullyRestored ? (
             <s-paragraph>
-              Suppressed profiles don't count toward your Klaviyo plan. Klaviyo's count can take up to 72 hours to update.
-              Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.
+              Suppressed profiles don't count toward your Klaviyo plan. Klaviyo's count can take up to 72 hours to update. To move to
+              a lower plan, an Owner or Admin can do it in Klaviyo under Billing, then Preferences. Your Klaviyo plan does not change
+              automatically unless you enabled auto-downgrade.
             </s-paragraph>
           ) : null}
           {isUndo && run.undoOfRunId ? (
             <s-paragraph>
               This restores the profiles of <s-link href={`/app/runs/${run.undoOfRunId}`}>this cleanup</s-link>. Only the suppression
-              TierSaver added is removed: profiles that unsubscribed or bounced stay as they are.
+              TierSaver added is removed: profiles that unsubscribed or bounced stay as they are. Restored profiles are left out of
+              TierSaver cleanups for {number(restoreLockDays)} days.{" "}
+              <s-link href={help.undo} target="_blank">
+                How restoring works
+              </s-link>
             </s-paragraph>
           ) : null}
         </s-stack>
       </s-section>
 
       {jobCount > 0 ? (
-        <s-section heading="Klaviyo jobs">
+        <s-section heading="Klaviyo batches">
           <s-stack gap="base">
             <s-paragraph>
-              Klaviyo processes each batch as a background job. This run created {number(jobCount)} {jobCount === 1 ? "job" : "jobs"}. Check
-              what Klaviyo reports for them.
+              Klaviyo applies this {noun} in {number(jobCount)} {jobCount === 1 ? "batch" : "batches"}, in the background. You can ask
+              Klaviyo how far it is.
             </s-paragraph>
             {result?.jobs ? (
               <s-stack gap="base">
                 <s-banner tone={result.jobs.jobs.every((j) => j.status === "complete") && result.jobs.unreadable === 0 ? "success" : "info"}>
-                  {result.jobs.jobs.filter((j) => j.status === "complete").length} of {result.jobs.jobs.length} jobs{result.jobs.pages > 1 ? " on this page" : ""} are
-                  complete: {number(result.jobs.jobs.reduce((n, j) => n + (j.completed ?? 0), 0))} profiles processed,{" "}
-                  {number(result.jobs.jobs.reduce((n, j) => n + (j.skipped ?? 0), 0))} skipped by Klaviyo.
+                  {result.jobs.jobs.filter((j) => j.status === "complete").length} of {result.jobs.jobs.length} batches
+                  {result.jobs.pages > 1 ? " on this page" : ""} are complete: {number(result.jobs.jobs.reduce((n, j) => n + (j.completed ?? 0), 0))}{" "}
+                  profiles processed, {number(result.jobs.jobs.reduce((n, j) => n + (j.skipped ?? 0), 0))} skipped by Klaviyo.
+                  {result.jobs.unreadable > 0 ? ` ${number(result.jobs.unreadable)} could not be read from Klaviyo right now.` : ""}
+                  {result.jobs.pages > 1 ? ` Page ${result.jobs.page} of ${result.jobs.pages}.` : ""}
                 </s-banner>
-                <s-table>
-                  <s-table-header-row>
-                    <s-table-header>Job</s-table-header>
-                    <s-table-header>Status in Klaviyo</s-table-header>
-                    <s-table-header format="numeric">Processed</s-table-header>
-                    <s-table-header format="numeric">Skipped by Klaviyo</s-table-header>
-                  </s-table-header-row>
-                  <s-table-body>
-                    {result.jobs.jobs.map((job) => (
-                      <s-table-row key={job.id}>
-                        <s-table-cell>{job.id}</s-table-cell>
-                        <s-table-cell>{job.status}</s-table-cell>
-                        <s-table-cell>{job.completed === null ? "–" : `${number(job.completed)}${job.total ? ` of ${number(job.total)}` : ""}`}</s-table-cell>
-                        <s-table-cell>{job.skipped === null ? "–" : number(job.skipped)}</s-table-cell>
-                      </s-table-row>
-                    ))}
-                  </s-table-body>
-                </s-table>
-                {result.jobs.unreadable > 0 ? (
-                  <s-paragraph>{number(result.jobs.unreadable)} jobs could not be read from Klaviyo right now.</s-paragraph>
-                ) : null}
-                {result.jobs.pages > 1 ? (
-                  <s-paragraph>
-                    Page {result.jobs.page} of {result.jobs.pages}.
-                  </s-paragraph>
-                ) : null}
+                <details>
+                  <summary style={{ cursor: "pointer" }}>Show batches</summary>
+                  <s-table>
+                    <s-table-header-row>
+                      <s-table-header>Batch (Klaviyo job)</s-table-header>
+                      <s-table-header>Status in Klaviyo</s-table-header>
+                      <s-table-header format="numeric">Processed</s-table-header>
+                      <s-table-header format="numeric">Skipped by Klaviyo</s-table-header>
+                    </s-table-header-row>
+                    <s-table-body>
+                      {result.jobs.jobs.map((job) => (
+                        <s-table-row key={job.id}>
+                          <s-table-cell>{job.id}</s-table-cell>
+                          <s-table-cell>{JOB_STATUS[job.status] ?? "Unknown"}</s-table-cell>
+                          <s-table-cell>{job.completed === null ? "–" : `${number(job.completed)}${job.total ? ` of ${number(job.total)}` : ""}`}</s-table-cell>
+                          <s-table-cell>{job.skipped === null ? "–" : number(job.skipped)}</s-table-cell>
+                        </s-table-row>
+                      ))}
+                    </s-table-body>
+                  </s-table>
+                </details>
               </s-stack>
             ) : null}
-            <Form method="post">
+            <Form method="post" preventScrollReset>
               <input type="hidden" name="intent" value="jobs" />
               <input type="hidden" name="page" value={result?.jobs && result.jobs.page < result.jobs.pages ? result.jobs.page + 1 : 1} />
-              <s-button type="submit" variant="secondary" {...flags({ disabled: busy })}>
-                {result?.jobs ? (result.jobs.page < result.jobs.pages ? "Check next page" : "Check again") : "Check jobs in Klaviyo"}
+              <s-button type="submit" variant="secondary" {...flags({ disabled: busy, loading: pending === "jobs" })}>
+                {result?.jobs ? (result.jobs.page < result.jobs.pages ? "Check next page" : "Check again") : "Check progress in Klaviyo"}
               </s-button>
             </Form>
           </s-stack>
@@ -320,57 +434,185 @@ export default function Run() {
       ) : null}
 
       {undo ? (
-        <s-section heading="Undo this cleanup">
+        <s-section heading="Restore this cleanup">
           <s-stack gap="base">
             {undoRuns.length > 0 ? (
-              <s-paragraph>
-                Restores of this cleanup:{" "}
-                {undoRuns.map((u, i) => (
-                  <span key={u.id}>
-                    {i > 0 ? ", " : ""}
-                    <s-link href={`/app/runs/${u.id}`}>{dateTime(u.createdAt)}</s-link>
-                  </span>
+              <s-stack gap="small-200">
+                {undoRuns.map((u) => (
+                  <s-text key={u.id}>
+                    <s-link href={`/app/runs/${u.id}`}>
+                      Restore of <Time at={u.createdAt} />
+                    </s-link>
+                    : {u.label.toLowerCase()}, {number(u.submitted)} restored{u.skipped > 0 ? `, ${number(u.skipped)} left as they are` : ""}.
+                  </s-text>
                 ))}
-                .
-              </s-paragraph>
+              </s-stack>
             ) : null}
-            {undo.restorable === 0 ? (
-              <s-paragraph>There is nothing to restore from this cleanup.</s-paragraph>
-            ) : running || undo.inProgress ? (
-              <s-paragraph>You can restore this cleanup once it, and any restore already started, has finished.</s-paragraph>
+            {undo.leftAlone > 0 && !undo.inProgress ? (
+              <s-stack gap="small">
+                <s-text>
+                  The last restore left {number(undo.leftAlone)} {undo.leftAlone === 1 ? "profile" : "profiles"} as{" "}
+                  {undo.leftAlone === 1 ? "it is" : "they are"}, so {undo.leftAlone === 1 ? "it is" : "they are"} not offered again:
+                </s-text>
+                {undo.leftAloneReasons.map((s) => (
+                  <Row key={s.reason} indent label={s.label} value={number(s.count)} />
+                ))}
+                <s-text color="subdued">You can still unsuppress any of them yourself in Klaviyo.</s-text>
+              </s-stack>
+            ) : null}
+            {running || undo.inProgress ? (
+              <s-paragraph>
+                {undo.inProgress ? "A restore of this cleanup is in progress. This page updates when it ends." : "You can restore this cleanup once it has finished."}
+              </s-paragraph>
+            ) : undo.restorable === 0 ? (
+              <s-paragraph>
+                {undo.restored > 0 ? "Nothing is left to restore from this cleanup." : "This cleanup changed nothing in Klaviyo, so there is nothing to restore."}
+              </s-paragraph>
             ) : (
-              <Form method="post">
-                <input type="hidden" name="intent" value="undo" />
-                <s-stack gap="base">
-                  <s-paragraph>
-                    Undo is for correcting a mistake. It removes the suppression from the {number(undo.restorable)} profiles this
-                    cleanup suppressed{run.unknown > 0 ? " or may have suppressed" : ""}, so they can receive marketing email again and count
-                    toward your Klaviyo plan again. Restored profiles are left out of TierSaver cleanups for 365 days. A profile
-                    that Klaviyo shows as suppressed since before this cleanup, or suppressed again after it, is left as it is.
-                  </s-paragraph>
-                  {needsConfirmation ? (
-                    <s-banner tone="warning" heading={needsConfirmation === "yes" ? "Your Klaviyo plan has renewed since this cleanup" : "Your Klaviyo plan may have renewed since this cleanup"}>
-                      <s-stack gap="base">
-                        <s-paragraph>
-                          Restoring these profiles now raises your active profile count after Klaviyo has already counted the
-                          lower one. Use undo only to correct a mistake. Suppressing profiles before a renewal and restoring
-                          them afterwards is against TierSaver's terms and may breach Klaviyo's.
-                        </s-paragraph>
-                        <s-checkbox name="confirmAfterRenewal" value="yes" label="I understand, and I am restoring these profiles to correct a mistake." />
-                      </s-stack>
-                    </s-banner>
-                  ) : null}
-                  <s-button type="submit" tone="critical" {...flags({ disabled: busy })}>
-                    Restore {number(undo.restorable)} profiles
+              <>
+                <s-paragraph>
+                  Restoring is for correcting a mistake. It removes the suppression TierSaver added to the {number(undo.restorable)}{" "}
+                  {undo.restorable === 1 ? "profile" : "profiles"} this cleanup suppressed{run.unknown > 0 ? " or may have suppressed" : ""}.{" "}
+                  <s-link href={help.undo} target="_blank">
+                    How restoring works
+                  </s-link>
+                </s-paragraph>
+                <div>
+                  <s-button tone="critical" commandFor={RESTORE_MODAL} command="--show" {...flags({ disabled: busy })}>
+                    Restore {number(undo.restorable)} {undo.restorable === 1 ? "profile" : "profiles"}
                   </s-button>
-                </s-stack>
-              </Form>
+                </div>
+                <Form
+                  method="post"
+                  preventScrollReset
+                  onSubmit={(event) => {
+                    // The tick is required: say so next to it instead of sending a request that will be refused.
+                    const box = event.currentTarget.querySelector<HTMLElement & { checked?: boolean }>('s-checkbox[name="confirmAfterRenewal"]');
+                    if (box && !box.checked) {
+                      event.preventDefault();
+                      setConfirmMissing(true);
+                    }
+                  }}
+                >
+                  <input type="hidden" name="intent" value="undo" />
+                  <s-modal id={RESTORE_MODAL} heading={`Restore ${number(undo.restorable)} ${undo.restorable === 1 ? "profile" : "profiles"}?`}>
+                    <s-stack gap="base">
+                      <s-paragraph>They can receive marketing email again and count toward your Klaviyo plan again.</s-paragraph>
+                      <s-paragraph>
+                        TierSaver will not suppress them again for {number(restoreLockDays)} days. Klaviyo's help center also says that a
+                        profile that was unsuppressed cannot be suppressed by hand again until 90 days after its last suppression.
+                      </s-paragraph>
+                      <s-paragraph>
+                        Only the suppression TierSaver added is removed: profiles that unsubscribed or bounced stay as they are. A
+                        profile that Klaviyo shows as suppressed since more than a day before this cleanup, or suppressed again more than
+                        a day after it, is left as it is. Before you send to these profiles again, check that you may lawfully email them.
+                      </s-paragraph>
+                      {charge ? <s-paragraph>{restoreChargeText(charge)}</s-paragraph> : null}
+                      {needsConfirmation ? (
+                        <s-banner tone="warning" heading={needsConfirmation === "yes" ? "Your Klaviyo plan has renewed since this cleanup" : "Your Klaviyo plan may have renewed since this cleanup"}>
+                          <s-stack gap="base">
+                            <s-paragraph>
+                              Restoring these profiles now raises your active profile count after Klaviyo has already counted the lower
+                              one. Restore only to correct a mistake. Suppressing profiles before a renewal and restoring them afterwards
+                              is against TierSaver's terms and may breach Klaviyo's.
+                            </s-paragraph>
+                            <ConfirmBox error={tickError ? RENEWAL_ERROR : undefined} onChange={(checked) => checked && setConfirmMissing(false)} />
+                          </s-stack>
+                        </s-banner>
+                      ) : null}
+                      <s-link href={help.undo} target="_blank">
+                        How restoring works
+                      </s-link>
+                    </s-stack>
+                    <s-button slot="primary-action" type="submit" variant="primary" tone="critical" {...flags({ disabled: busy, loading: pending === "undo" })}>
+                      Restore profiles
+                    </s-button>
+                    <s-button slot="secondary-actions" commandFor={RESTORE_MODAL} command="--hide">
+                      Cancel
+                    </s-button>
+                  </s-modal>
+                </Form>
+              </>
             )}
           </s-stack>
         </s-section>
       ) : null}
     </s-page>
   );
+}
+
+const JOB_STATUS: Record<string, string> = { queued: "Waiting", processing: "In progress", complete: "Complete", cancelled: "Cancelled by Klaviyo" };
+
+/** The renewal confirmation. A custom element: React 18 does not deliver its `change` event through props, so it is listened to directly. */
+function ConfirmBox({ error, onChange }: { error: string | undefined; onChange: (checked: boolean) => void }) {
+  const ref = useRef<HTMLElement | null>(null);
+  const latest = useRef(onChange);
+  latest.current = onChange;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const listener = () => latest.current(Boolean((el as HTMLElement & { checked?: boolean }).checked));
+    el.addEventListener("change", listener);
+    return () => el.removeEventListener("change", listener);
+  }, []);
+  return (
+    <s-checkbox
+      ref={ref as never}
+      name="confirmAfterRenewal"
+      value="yes"
+      label="I understand, and I am restoring these profiles to correct a mistake."
+      error={error}
+      {...errorFocus(Boolean(error))}
+    />
+  );
+}
+
+type ChargeView = { status: string; fee: string; reason: string | null; chargedAt: { iso: string; text: string } | null; sendAt: { iso: string; text: string } | null; windowOpen: boolean };
+
+/** What the cleanup page says about the charge. Facts from billing/billing.ts: sent `holdHours` after the cleanup finished, once Klaviyo confirmed; a full restore before that voids it. */
+function chargeText(charge: ChargeView, fullyRestored: boolean, holdHours: number) {
+  if (charge.status === "charged") {
+    return (
+      <>
+        Charged {charge.fee} through Shopify
+        {charge.chargedAt ? (
+          <>
+            {" "}
+            on <Time at={charge.chargedAt} />
+          </>
+        ) : null}
+        .{fullyRestored ? " It had already been charged when you restored this cleanup; restoring does not refund it." : ""}
+      </>
+    );
+  }
+  if (charge.status === "not_charged") return NO_CHARGE_LABELS[charge.reason ?? ""] ?? "Not charged.";
+  // Not out yet (pending, or a try that failed).
+  if (fullyRestored) return "Not charged: you restored this cleanup before the charge was sent.";
+  if (charge.status === "failed") return `The charge of ${charge.fee} could not be sent to Shopify yet. TierSaver will try again; you do not need to do anything.`;
+  if (charge.sendAt && charge.windowOpen) {
+    return (
+      <>
+        Estimated charge: {charge.fee}. It is sent to Shopify on <Time at={charge.sendAt} /> ({holdHours} hours after the cleanup finished), once
+        Klaviyo has confirmed the suppressed profiles, unless you restore the whole cleanup first. If Klaviyo confirms none, nothing is charged.
+      </>
+    );
+  }
+  return `Estimated charge: ${charge.fee}. It is sent to Shopify as soon as Klaviyo has confirmed the suppressed profiles. If Klaviyo confirms none, nothing is charged.`;
+}
+
+/** What restoring does to the charge, for the confirmation dialog. */
+function restoreChargeText(charge: ChargeView) {
+  if (charge.status === "charged") return "This cleanup was already charged. Restoring does not refund it.";
+  if (charge.status === "not_charged") return "This cleanup was not charged, and restoring it does not change that.";
+  if (charge.sendAt && charge.windowOpen) {
+    return (
+      <>
+        This cleanup has not been charged yet. If you restore all of it before <Time at={charge.sendAt} />, it is not charged. Restoring only
+        part of a cleanup does not change its charge.
+      </>
+    );
+  }
+  return "This cleanup has not been charged yet, but its charge can be sent to Shopify at any moment. It is not charged only if the whole cleanup is restored before that. Once charged, restoring does not refund it.";
 }
 
 export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);

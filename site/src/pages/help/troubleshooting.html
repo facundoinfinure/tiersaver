@@ -43,7 +43,7 @@ updated: 2026-11-26
   <li><strong>"This simulation is out of date", or "Your rules or protected lists changed after this audit."</strong> You changed the criteria or a protected list after it was computed, or a newer audit replaced it. Run the audit again.</li>
   <li><strong>"This simulation was already used for a cleanup."</strong> A simulation runs once. Run the audit again for a new one.</li>
   <li><strong>The approval is refused.</strong> Tick the box that confirms you have read the notices and accept the terms. If the app says it could not identify your Shopify user, reload the page and try again.</li>
-  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, or this cleanup is much larger than usual. Review the simulation and approve it yourself if it is right.</li>
+  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, or this cleanup would suppress more than 10% of your active profiles or more than three times as many profiles as the last one you approved. Review the simulation and approve it yourself if it is right.</li>
   <li><strong>"The file could not be prepared."</strong> The CSV of candidates is read from Klaviyo at the moment you download it. Try again; Klaviyo has to be connected.</li>
 </ul>
 
@@ -61,6 +61,8 @@ updated: 2026-11-26
   <li><strong>Access to Klaviyo ended, or Klaviyo was disconnected.</strong> Reconnect Klaviyo from the home page, then run a new audit for the profiles that were not reached.</li>
   <li><strong>The simulation was more than {{sim.ttlHours}} hours old when the cleanup started,</strong> or <strong>your rules changed after it was approved.</strong> Run the audit again and approve the new simulation.</li>
   <li><strong>Something went wrong while talking to Klaviyo.</strong> Check the counts on the page, then run a new audit.</li>
+  <li><strong>The cleanup stopped responding.</strong> The app closes it automatically, normally within one to two hours, and its page shows what was really sent. You can restore it, or run a new audit for the profiles it did not reach.</li>
+  <li><strong>You selected "Stop cleanup".</strong> The batch being sent at that moment, up to 100 profiles, still went through. Profiles already sent stay suppressed and can be restored.</li>
 </ul>
 <p>A cleanup that shows "Completed with issues" finished, but some profiles were not processed because of an error. <a href="/help/history">History</a> explains the counts.</p>
 

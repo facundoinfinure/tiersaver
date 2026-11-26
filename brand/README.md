@@ -49,9 +49,8 @@ Se recomendó **C · Dropped T** (la más legible en chico y la única atada al 
 - Falta confirmar contra los requisitos vigentes del App Store el formato del ícono (hoy: 1200 × 1200 px, JPEG o PNG) y las reglas de nombre.
 - El ícono se exporta con esquinas rectas; Shopify aplica su propio recorte.
 - Sin resolver: el concepto del logo ("bajar un escalón") va en sentido contrario al posicionamiento de higiene de lista (`docs/03-MARCA.md`, sección Logo; `docs/12-CUMPLIMIENTO-KLAVIYO.md`, sección 2.2). Revisarlo queda atado a la decisión sobre el nombre; no se cambió nada.
-- `messaging.md` todavía trae como frase central "Klaviyo's own recommended criteria" y una "open decision" sobre el descriptor que ya está decidida. La revisión del 2026-11-26 reemplazó esa frase en el sitio por "the criteria Klaviyo publishes for suppressing unengaged profiles"; falta llevar el cambio a `messaging.md` y a `docs/03-MARCA.md`.
 
-Ya resuelto, no es pendiente: la elección del logo (B) y la aprobación de los mensajes (2026-11-25).
+Ya resuelto, no es pendiente: la elección del logo (B), la aprobación de los mensajes (2026-11-25) y, el 2026-11-26, el reemplazo de "Klaviyo's own recommended criteria" por "the criteria Klaviyo publishes for suppressing unengaged profiles" en `messaging.md` y en `docs/03-MARCA.md` (las reglas de ficha de Klaviyo no permiten su nombre junto a "recommended"). También se sacó de `messaging.md` la "open decision" sobre el descriptor, que ya estaba decidida.
 
 ## Cómo se generó
 

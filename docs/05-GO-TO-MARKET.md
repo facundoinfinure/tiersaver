@@ -83,9 +83,9 @@ Hi [Name],
 
 I read your post on [topic of their article]. You describe the cleanup most Shopify brands skip: suppressing the profiles that never engaged, and doing it again every month.
 
-We built TierSaver to run that routine. It audits the account, finds the profiles that meet Klaviyo's own recommended criteria for suppression, checks each one against Shopify orders, and shows a simulation. Nothing is suppressed until someone approves it. Every run is logged, can be undone, and nothing is deleted.
+We built TierSaver to run that routine. It audits the account, finds the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles, checks each one against Shopify orders, and shows a simulation. Nothing is suppressed until someone approves it. Every cleanup is logged and can be restored from the app, and nothing is deleted.
 
-Would you try it on three client accounts? The audit is free and read-only, and you get a list health report you can forward under your own brand.
+Would you try it on three client accounts? The audit is free and changes no profile, and you get a list health report you can forward under your own brand.
 
 Happy to send access today.
 
@@ -95,11 +95,11 @@ Happy to send access today.
 
 Subject: Re: Your [article title] piece, as a monthly routine
 
-Hi [Name], one detail in case it helps: the audit is read-only. It shows how many profiles on an account meet Klaviyo's own suppression criteria, and which ones stay protected and why. Want me to run one on an account you pick?
+Hi [Name], one detail in case it helps: the audit changes no profile (it adds one segment to the Klaviyo account, which Klaviyo uses to evaluate the criteria). It shows how many profiles on an account meet the criteria Klaviyo publishes for suppressing unengaged profiles, and which ones stay protected and why. Want me to run one on an account you pick?
 
 ### 3 · LinkedIn
 
-Hi [Name], I'm building TierSaver, a Shopify app that keeps Klaviyo lists clean: it suppresses profiles that never engaged, using Klaviyo's own recommended criteria, after a simulation the merchant approves. You manage a lot of Klaviyo accounts, so I'd value your take. Open to a free, read-only audit on one of them?
+Hi [Name], I'm building TierSaver, a Shopify app that keeps Klaviyo lists clean: it suppresses profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles, after a simulation the merchant approves. You manage a lot of Klaviyo accounts, so I'd value your take. Open to a free audit on one of them? It changes no profile.
 
 ### 4 · Mail a prioridad B
 
@@ -109,7 +109,7 @@ Hi [Name],
 
 Quick question: how do you handle profile cleanup across your client accounts today? Most small teams I talk to do it by hand, account by account, when someone remembers.
 
-TierSaver does it every month for Shopify stores: audit, simulation, approval, then suppression of the profiles that meet Klaviyo's own recommended criteria. Buyers are protected with Shopify order data, every run is logged, and nothing is deleted. Pricing is a flat monthly fee by list size, and a month with no cleanup is not charged.
+TierSaver does it every month for Shopify stores: audit, simulation, approval, then suppression of the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles. Buyers are protected with Shopify order data, every cleanup is logged, and nothing is deleted. Pricing is a flat monthly price by list size, and a month with no cleanup is not charged.
 
 For partners we offer either 25% recurring commission or three free months for your clients. Could I show you a 10-minute audit on one of your accounts this week?
 
@@ -121,7 +121,7 @@ Subject: How [Brand] keeps its Klaviyo list clean every month
 
 Hi [Name],
 
-Your team already runs sunset flows, so I won't explain list hygiene. What we add is the routine around suppression: a monthly simulation built on Klaviyo's own recommended criteria, a check against Shopify orders, an approval step, and a log of every run, across the stores you manage.
+Your team already runs sunset flows, so I won't explain list hygiene. What we add is the routine around suppression: a monthly simulation built on the criteria Klaviyo publishes for suppressing unengaged profiles, a check against Shopify orders, an approval step, and a log of every run, across the stores you manage.
 
 [Brand] suppressed [X] profiles that never engaged, with zero suppressed buyers. [Link to case]
 
@@ -131,13 +131,19 @@ If a multi-account view would make your strategists' work easier, I'd like to he
 
 ### 6 · Pedido de reseña
 
-Hi [Name], your first TierSaver cleanup finished: [N] profiles that never engaged were suppressed, and nothing else was touched. If TierSaver earned it, a short review on the Shopify App Store would help other merchants find us: [link]. And if something felt off, reply here first so I can fix it.
+Hi [Name], your first TierSaver cleanup finished: [N] profiles that never engaged were suppressed. If you have a minute, an honest review on the Shopify App Store helps other merchants decide: [link]. Whatever your experience was, say it as it was. For help with the app, write to support@tiersaver.com at any time.
 
-Revisar las reglas de Shopify sobre pedido de reseñas antes de automatizar este mensaje: no se puede incentivar ni condicionar.
+Reglas de este mensaje (el "review gating" está prohibido):
+
+- Se le manda **igual a todos** los merchants que terminaron su primera limpieza, con el mismo texto y en el mismo momento. No se filtra por satisfacción: nada de preguntar antes si están conformes, ni mandarlo solo a quienes les fue bien, ni desviar a los disconformes a un canal privado en vez de la reseña.
+- No se ofrece **nada a cambio**: ni descuento, ni meses sin cargo, ni crédito, ni sorteo, ni prioridad de soporte. Tampoco se pide una reseña positiva ni una cantidad de estrellas.
+- El soporte se ofrece siempre, a todos, y no como alternativa a opinar.
+- [N] sale de la limpieza real de ese merchant. La app no envía mails: este mensaje sale a mano y queda como borrador hasta que Facundo lo apruebe.
+- Releer las reglas vigentes de Shopify sobre pedido de reseñas antes de enviarlo o automatizarlo.
 
 ### 7 · Respuesta en comunidades
 
-Klaviyo's plan is based on your active profiles, whether you email them or not, and suppressed profiles don't count toward it. Klaviyo's help center recommends suppressing (not deleting) profiles that were created over a year ago, were sent emails, and never opened, clicked, visited or purchased, and doing that on an ongoing basis. Klaviyo checks your count shortly before the plan renews, and the count can take up to 72 hours to refresh, so finish the cleanup a few days ahead. If your count drops, you can move to a lower plan in billing settings, or turn on auto-downgrade. Full disclosure, I work on an app that runs this routine, but the steps above work by hand too.
+Klaviyo's plan is based on your active profiles, whether you email them or not, and suppressed profiles don't count toward it. Klaviyo's help center publishes criteria for suppressing (not deleting) unengaged profiles: created over a year ago, sent emails, and never opened, clicked, visited or purchased. It describes this as ongoing maintenance. Klaviyo checks your count shortly before the plan renews, and the count can take up to 72 hours to refresh, so finish the cleanup a few days ahead. If your count drops, you can move to a lower plan in billing settings, or turn on auto-downgrade. Full disclosure, I work on an app that runs this routine, but the steps above work by hand too.
 
 ## Contenido de SEO (Fase 4)
 

@@ -85,14 +85,14 @@ script: list-check
             <p class="label"><span>02</span><span>Simulate</span></p>
             <div class="steps__body">
               <h3>Preview every cleanup</h3>
-              <p>A simulation shows how many profiles would be suppressed and why, and lets you download the full list to check it. Nothing is suppressed until you approve a simulation, and an approval can be used for {{sim.ttlHours}} hours.</p>
+              <p>A simulation shows how many profiles would be suppressed and why, and lets you download the full list to check it. Nothing is suppressed until you approve a simulation, and an approval can be used for {{sim.ttlHours}} hours. Each profile is checked again right before it is suppressed, so a cleanup can suppress fewer profiles than you approved.</p>
             </div>
           </li>
           <li>
             <p class="label"><span>03</span><span>Protect buyers</span></p>
             <div class="steps__body">
               <h3>Keep anyone with recorded interest</h3>
-              <p>A profile is only a candidate if every one of these is true. Purchases are checked against both your Shopify orders and Klaviyo.</p>
+              <p>A profile is only a candidate if every one of these is true. Purchases are checked against both your Shopify orders and Klaviyo. Orders are read every hour and before each audit; if that data is not up to date, every profile is kept.</p>
               <ul class="pill-list" aria-label="Default cleanup criteria">
                 <li class="pill">Created {{criteria.ageDays}}+ days ago</li>
                 <li class="pill">Received {{criteria.emails}}+ emails</li>
@@ -108,14 +108,14 @@ script: list-check
             <p class="label"><span>04</span><span>Suppress</span></p>
             <div class="steps__body">
               <h3>Repeat it monthly, if you choose</h3>
-              <p>You start the first cleanup yourself. The monthly schedule is off by default. If you turn it on, TierSaver runs a new audit every month, a few days before your Klaviyo plan renews, to give Klaviyo's count time to update. Each scheduled cleanup waits for your approval. Automatic mode is a separate opt-in: it only repeats the default criteria, and only after you have approved and run a cleanup yourself.</p>
+              <p>You start the first cleanup yourself. The monthly schedule is off by default. If you turn it on, TierSaver runs a new audit every month, a few days before your Klaviyo plan renews, to give Klaviyo's count time to update. Each scheduled cleanup waits for your approval. Automatic mode is a separate opt-in: it only repeats the default criteria, and only after you have approved and run a cleanup yourself. It still waits for your review when a cleanup does not look like the one you last approved.</p>
             </div>
           </li>
           <li>
             <p class="label"><span>05</span><span>Undo</span></p>
             <div class="steps__body">
               <h3>Correct a cleanup</h3>
-              <p>If a cleanup suppressed someone it should not have, Restore removes the suppression from that cleanup's profiles. Restored profiles are left out of cleanups for the next {{criteria.undoLockDays}} days. <a href="/help/undo">What Restore does, and its limits</a>.</p>
+              <p>If a cleanup suppressed someone it should not have, Restore removes the suppression that cleanup added. Restored profiles are left out of cleanups for the next {{criteria.undoLockDays}} days. <a href="/help/undo">What Restore does, and its limits</a>.</p>
             </div>
           </li>
         </ol>
@@ -184,7 +184,7 @@ script: list-check
           <details>
             <summary>Can a cleanup be reversed?</summary>
             <div>
-              <p>Yes, from the cleanup's page in the app, with the Restore button. It removes the manual suppression from that cleanup's profiles. It needs the app installed and connected to Klaviyo, it does not send the emails those profiles missed in the meantime, and profiles that unsubscribed or bounced stay unsendable in Klaviyo.</p>
+              <p>Yes, from the cleanup's page in the app, with the Restore button. It removes the manual suppression that cleanup added. It needs the app installed and connected to Klaviyo, it does not send the emails those profiles missed in the meantime, and profiles that unsubscribed or bounced stay unsendable in Klaviyo. It leaves alone profiles that were already suppressed before the cleanup and customers whose data was erased on request, and it may not be able to tell its own suppression apart from one you added yourself.</p>
               <p><a href="/help/undo">What Restore does, and its limits</a>.</p>
             </div>
           </details>
@@ -213,13 +213,13 @@ script: list-check
             <summary>What happens if I uninstall?</summary>
             <div>
               <p>Profiles that were suppressed stay suppressed. You can remove the suppression from Klaviyo at any time.</p>
-              <p>TierSaver removes its access tokens when you uninstall and the rest of your store's data when Shopify sends its deletion request. <a href="/help/uninstalling">What happens on uninstall</a>.</p>
+              <p>TierSaver removes its access tokens when you uninstall and the rest of your store's data when Shopify sends its deletion request, or 10 days after the uninstall if that request has not arrived. <a href="/help/uninstalling">What happens on uninstall</a>.</p>
             </div>
           </details>
           <details>
             <summary>What does TierSaver store about my customers?</summary>
             <div>
-              <p>Klaviyo profile IDs and one-way hashes of email addresses, so it can recognize buyers and restore a cleanup. It does not store customer email addresses, names or order contents. Access tokens are encrypted.</p>
+              <p>Klaviyo profile IDs and keyed hashes of email addresses, computed with a key unique to your store, so it can recognize buyers and restore a cleanup. It does not store customer email addresses, names or order contents. Access tokens are encrypted.</p>
               <p><a href="/help/data-and-privacy">Data and privacy</a>.</p>
             </div>
           </details>

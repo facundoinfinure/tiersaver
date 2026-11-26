@@ -6,8 +6,7 @@
 
 - Parent brand: **TierSaver**.
 - Product: **TierSaver: List Hygiene for Klaviyo** (descriptor decided by the owner on 2026-11-25). "for Klaviyo" goes at the end, so a third party's brand is never used as our own name. The Shopify App Store name field is limited to 30 characters, so the listing name is **TierSaver for Klaviyo**, with "list hygiene" in the subtitle.
-- Open decision for the owner, not applied: whether to keep this descriptor, change it to "TierSaver: List Hygiene for Klaviyo", or change the brand. Until then the name stays as it is.
-- "Klaviyo" appears only as descriptive text about compatibility. Never Klaviyo's logo, typeface or colors. Never "official", "certified", "recommended by" or "Klaviyo partner".
+- "Klaviyo" appears only as descriptive text about compatibility. Never Klaviyo's logo, typeface or colors. Never "official", "certified", "recommended by" or "Klaviyo partner", and never "recommended" or "recommends" next to Klaviyo's name: the criteria are "the criteria Klaviyo publishes for suppressing unengaged profiles".
 - In the Shopify App Store, "tier" is often read as a volume discount. The listing subtitle and the first headline on the site must say what the product does, with no ambiguity: list hygiene for Klaviyo.
 
 ## Positioning
@@ -16,15 +15,15 @@ Automatic list hygiene for Klaviyo. TierSaver is not a deliverability tool and n
 
 - **For**: Shopify brands whose Klaviyo lists are full of profiles that never engaged.
 - **Promise**: keep the list clean with no manual work, without touching anyone who buys.
-- **How**: it audits, simulates, checks every profile against Shopify orders, and suppresses the profiles that meet Klaviyo's own recommended criteria, once you approve. It runs monthly and finishes before your plan renews.
-- **Why believe it**: it uses Klaviyo's own criteria by default; nothing is touched without an approved simulation; buyers are protected with Shopify order data; every run is logged and can be undone; nothing is deleted; the price is flat, and a month with no cleanup is not charged.
+- **How**: it audits, simulates, checks every profile against Shopify orders, and suppresses the profiles that meet the criteria Klaviyo publishes for suppressing unengaged profiles, once you approve. It runs monthly and finishes before your plan renews.
+- **Why believe it**: it uses the criteria Klaviyo publishes by default; nothing is touched without an approved simulation; buyers are protected with Shopify order data; every run is logged and can be undone; nothing is deleted; the price is flat, and a month with no cleanup is not charged.
 
 ## Core messages
 
 | Use | Copy |
 | --- | --- |
 | Headline | Automatic list hygiene for Klaviyo. |
-| Subhead | TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria. Every cleanup is simulated first, approved by you and logged. Nothing is deleted. |
+| Subhead | TierSaver keeps your Klaviyo list clean by suppressing profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles. Every cleanup is simulated first, approved by you and logged. Nothing is deleted. |
 | Proof point 1 | Every profile is checked against your Shopify orders before anything changes. |
 | Proof point 2 | Every cleanup is simulated first, approved by you, and can be undone. |
 | Proof point 3 | A flat monthly price by list size. A month with no cleanup is not charged. |
@@ -34,7 +33,7 @@ Two-tone headline treatment: "Automatic list hygiene" is the important part (ink
 
 Supporting lines, to use as written:
 
-- What it does: "Keeps your Klaviyo list clean by suppressing profiles that never engaged, using Klaviyo's own recommended criteria."
+- What it does: "Keeps your Klaviyo list clean by suppressing profiles that never engaged, following the criteria Klaviyo publishes for suppressing unengaged profiles."
 - Scheduling: "Runs monthly and finishes before your plan renews, so Klaviyo's count is up to date."
 - Effect on the plan, as a fact from Klaviyo and never as a headline: "Suppressed profiles don't count toward your Klaviyo plan. If your active profile count drops, you can move to a lower plan in Klaviyo's billing settings."
 - Affiliation: "TierSaver is not affiliated with or endorsed by Klaviyo."
@@ -49,7 +48,7 @@ Use this wording when a page explains who gets suppressed. By default, a profile
 - It has no recorded site visit, product view or started checkout.
 - It never purchased, in your Shopify orders or in Klaviyo.
 
-Profiles with SMS consent, profiles in the lists and segments you mark as protected, and profiles with incomplete data always stay active. A wider mode is opt-in, and its limits cannot be lowered: purchases 365 days, clicks, opens and site activity 182 days, profile age 180 days.
+Profiles with SMS consent, profiles in the lists and segments you mark as protected, and profiles with incomplete data always stay active. A wider mode is opt-in. It is TierSaver's own optional setting: it goes beyond the criteria Klaviyo publishes and suppresses more profiles. Never call it "stricter", which can be read backwards. Its limits cannot be lowered: purchases 365 days, clicks, opens and site activity 182 days, profile age 180 days.
 
 ## Pricing
 
@@ -77,6 +76,8 @@ Prices belong in the pricing section of the listing and on the pricing part of t
 - Suppressing and reactivating in the same promise. TierSaver does not reactivate profiles automatically.
 - Figures, percentages or guarantees about money in the Shopify listing: none, real or estimated. On the site, only as an estimate from the merchant's own data.
 - "official", "certified", "recommended by", "Klaviyo partner", and Klaviyo's logo.
+- "Klaviyo's own recommended criteria", "Klaviyo recommends" or any other pairing of Klaviyo's name with "recommended" (Klaviyo's listing rules). Say "the criteria Klaviyo publishes for suppressing unengaged profiles".
+- "read-only" for the audit. It changes no profile, but it creates one segment in the merchant's Klaviyo account.
 - Comparisons that make Klaviyo look bad, such as "Klaviyo charges you for dead profiles".
 - **delete** for what the app does. The app suppresses; it never deletes profiles.
 - Exclamation marks, urgency ("act now", "last chance"), and growth jargon ("hack", "10x", "skyrocket", "supercharge").
@@ -87,13 +88,13 @@ Prices belong in the pricing section of the listing and on the pricing part of t
 Draft answers for the site and the help center.
 
 **Will I lose customers?**
-By default, TierSaver only suppresses profiles that never opened, clicked, visited or purchased. Every profile is checked against your Shopify orders, and you approve a simulation before anything runs. If something looks wrong afterwards, you can undo the run.
+By default, TierSaver only suppresses profiles that never opened, clicked, visited or purchased. Every profile is checked against your Shopify orders, and you approve a simulation before anything runs. If something looks wrong afterwards, you can restore the cleanup from the app, within the limits the help center describes.
 
 **Is my data deleted?**
 No. TierSaver suppresses profiles; it does not delete them. Their history stays in Klaviyo.
 
 **Doesn't Klaviyo already do this?**
-Klaviyo recommends which profiles to suppress and lets you do it by hand. TierSaver repeats that every month with the same criteria, checks each profile against your Shopify orders, shows you a simulation first, and keeps a log.
+Klaviyo publishes criteria for suppressing unengaged profiles and gives you the tools to do it by hand. TierSaver applies those criteria for you every month, checks each profile against your Shopify orders, shows you a simulation first, and keeps a log.
 
 **What if a suppressed profile buys later?**
 The profile stays suppressed in Klaviyo until the person resubscribes or you remove the suppression by hand. TierSaver does not change that on its own.

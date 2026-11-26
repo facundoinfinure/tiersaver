@@ -5,11 +5,9 @@ import * as schema from "../db/schema";
 
 type Db = DrizzleD1Database<typeof schema>;
 
-/** SHA-256 (hex) of a Shopify customer id, scoped to the shop. */
+/** Keyed hash of a Shopify customer id, with the same per-store key as emails (never a plain SHA-256). */
 export async function hashCustomerId(shop: string, customerId: string | number): Promise<string> {
-  const data = new TextEncoder().encode(`${shop}:${customerId}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  return hashShopEmail(shop, `shopify-customer:${customerId}`);
 }
 
 /**

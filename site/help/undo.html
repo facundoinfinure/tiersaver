@@ -75,7 +75,8 @@
 
 <h2 id="what-restore-does">What Restore does</h2>
 <ul>
-  <li>It removes the manual suppression from the profiles that cleanup suppressed, so they can receive marketing email again.</li>
+  <li>It removes the manual suppression that cleanup added, so those profiles can receive marketing email again.</li>
+  <li>It includes profiles that were sent to Klaviyo without a confirmed answer, because they may have been suppressed.</li>
   <li>It does not change consent. Profiles that unsubscribed, bounced or have an invalid address stay unsendable in Klaviyo.</li>
   <li>It does not touch profiles from other cleanups, or profiles that were never part of a TierSaver cleanup.</li>
 </ul>
@@ -83,9 +84,10 @@
 <h2 id="the-limits-of-restore">The limits of Restore</h2>
 <ul>
   <li><strong>It needs the app installed and connected to Klaviyo.</strong> After you uninstall, remove suppressions in Klaviyo instead.</li>
-  <li><strong>It cannot always tell your own suppressions apart.</strong> Klaviyo records only one kind of manual suppression and does not say who added it. Restore leaves a profile untouched when Klaviyo's dates show that its suppression was already there before the cleanup, or was added again afterwards. When the dates do not settle it, the suppression is removed. So if you manually suppressed one of those same profiles yourself after the cleanup, Restore can lift that too. Check before you restore.</li>
+  <li><strong>It may not tell your own suppressions apart.</strong> Klaviyo records only one kind of manual suppression and does not say who added it. Restore leaves a profile untouched when Klaviyo's dates show that it was already suppressed before the cleanup. Otherwise it removes the suppression the cleanup added, and it may not be able to tell that one apart from a suppression you added yourself to the same profile. Check before you restore.</li>
+  <li><strong>Customers erased on request are not restored.</strong> When a customer asks your store to erase their data, TierSaver removes the link between past cleanups and that customer's Klaviyo profile, so Restore leaves the profile as it is. You can remove its suppression in Klaviyo.</li>
   <li><strong>Emails are not sent later.</strong> Whatever those profiles did not receive while they were suppressed is not sent to them afterwards.</li>
-  <li><strong>The charge.</strong> A cleanup you restore in full within 72 hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. See <a href="/help/pricing">how pricing works</a>.</li>
+  <li><strong>The charge.</strong> A cleanup you restore in full within 72 hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. If a restore is still running when the 72 hours end, the charge waits until it has finished. See <a href="/help/pricing">how pricing works</a>.</li>
   <li><strong>Some profiles may be left as they are.</strong> Each profile is checked again right before the restore, and one that no longer exists in Klaviyo or has no email address cannot be restored. The restore's page shows how many were left untouched and why.</li>
 </ul>
 
@@ -101,7 +103,7 @@
 <p>If your Klaviyo plan has renewed, or may have renewed, since the cleanup, the app asks you to confirm that you are restoring the profiles to correct a mistake. Suppressing profiles before a renewal and restoring them afterwards is against TierSaver's terms.</p>
 
 <h2 id="the-cleanup-log">The cleanup log</h2>
-<p>Each cleanup is recorded: when it started and finished, whether you started it or the schedule did, who approved it, the criteria in effect and how many profiles were suppressed. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what Restore works from. See <a href="/help/history">History</a>.</p>
+<p>Each cleanup is recorded: when it started and finished, whether you started it or the schedule did, who approved it, the criteria in effect and how many profiles were suppressed. For each profile the log keeps the Klaviyo profile ID, a keyed hash of its email address and the reason it was selected. That record is what Restore works from. See <a href="/help/history">History</a>.</p>
 
 <h2 id="sources">Sources</h2>
 <ul class="sources">
