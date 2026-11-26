@@ -441,3 +441,32 @@ Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado 
 - **Problemas encontrados con ese recorrido y corregidos** (Worker `fcaab43b`): sin historial de pedidos la pantalla decía "Your list is already clean" (ahora explica que no se pudo cruzar con los pedidos y que por eso nadie es candidato: es lo que ve hoy un merchant real sin `read_all_orders`); los errores de Settings mostraban nombres internos (`clickDays`); el inicio no avisaba que los números eran anteriores a un cambio de reglas o a la última limpieza; la tabla de jobs no tenía resumen; las tarjetas de Settings no tenían separación.
 - **Sitio publicado como staging** en https://tiersaver-site.tiersaver.workers.dev (cuenta TierSaver, con `X-Robots-Tag: noindex` para `*.workers.dev`; el contenedor de la sesión no llega a ese host, así que la verificación desde afuera queda para Facundo). Las páginas legales siguen como borrador con placeholders: lo que falta definir está en `15-LANZAMIENTO-MATERIALES.md`.
 - Fase 5: borradores de capturas, instrucciones para el revisor y estado del checklist en `15-LANZAMIENTO-MATERIALES.md`.
+
+### 2026-11-26 (auditoría completa con siete revisores y correcciones)
+
+Pedido de Facundo: revisar toda la app (seguridad, privacidad, legales, diseño, flujos, funcionalidades). Los siete informes están en `docs/auditoria-2026-11-26/`. Ninguno encontró un camino que suprima sin simulación aprobada, fugas entre tiendas ni secretos en el repo.
+
+**Hecho y verificado con tests** (app 353 pasan y 1 salteado, núcleo 86, sitio 306; `tsc` limpio):
+
+- Webhooks de desinstalación y privacidad verificados por firma, sin depender de la sesión (antes fallaban con el token de Shopify vencido). Webhooks atrasados de una instalación anterior se ignoran.
+- `customers/data_request` se registra y el merchant descarga los datos desde Settings. `customers/redact` corta el vínculo con el perfil de Klaviyo. Purga de tiendas desinstaladas a los 10 días. Logs de invocación de Cloudflare apagados.
+- Hashes de mail y de id de cliente con clave por tienda (HMAC, secreto `HASH_PEPPER`). No hay camino sin clave.
+- Pedidos leídos cada hora y antes de cada auditoría; dato de más de 6 horas protege a todos; carga inicial reanudable.
+- Corridas: recuperación de corridas colgadas, revalidación de cada perfil antes de enviar, botón "Stop cleanup", lotes de resultado incierto dentro del Restore, frenos del modo automático.
+- Restore: restaura siempre salvo evidencia de más de 24 horas de que la supresión no es nuestra, pedido de borrado, perfil inexistente o sin mail.
+- Cobro: retención de 72 horas (decisión de Facundo), cotización solo contra cargos cobrados, confirmación de Klaviyo guardada, reintentos rotados, espera de un restore en curso.
+- UX: páginas de error dentro de la app, fechas con zona horaria, Home con un aviso y una acción, divulgación del cobro y del modo automático, confirmaciones al restaurar y desconectar, CSV paginado.
+- Sitio: afirmaciones corregidas, reglas de cobro, 8 artículos de ayuda, botón por mail a hello@, borradores legales sin indexar, campos de luz y orbes. Términos y privacidad ampliados, página `/dpa` nueva.
+- Páginas `/` y `/auth/login` de la plantilla reemplazadas (ya no piden el dominio de la tienda).
+
+**Desplegado**: solo el sitio en staging. **La app NO está desplegada**: el secreto `HASH_PEPPER` ya está cargado, pero las migraciones 0006 a 0009 no se aplicaron a la base remota (la 0009 borra los hashes viejos de la tienda de desarrollo y necesita el OK de Facundo). El Worker en producción sigue siendo el `5936e3ab`.
+
+**Sin verificar** (necesita tienda de desarrollo o la cuenta SGKvLG): consulta de pedidos contra Shopify real; semántica de la fecha de supresión de Klaviyo y la lectura de 50 perfiles por lote; barra de guardado, modales y menú dentro del admin; un ciclo completo de limpieza y restore con el código nuevo; que Shopify rechace la renovación del token tras desinstalar.
+
+**Pendiente de código**: aviso dentro de la app para cambios de términos o subencargados; `limits.subrequests` en `wrangler.jsonc` (requiere Workers Paid); una cuenta de Klaviyo por tienda y tiendas de desarrollo solo contra cuentas de prueba (S-02); perfiles confirmados por estado no entran en la confirmación del cargo; detector de ciclos por job (B5); nombre del grupo protegido (L7); alinear "reinstalar no recupera el historial" con el código; `docs/07-LANZAMIENTO.md` conserva el borrador viejo de la ficha.
+
+**Decisiones de Facundo abiertas**: entidad legal y domicilio; qué hacer con quien desinstala dentro de las 72 horas; términos de la API de Klaviyo ("producto sustancialmente similar"); Workers Paid; avisos sin mail para la auditoría programada; `usage:read`; `read_customers`; casillas hello@ y support@; revisión del abogado (memo en `docs/16-LEGALES-PARA-ABOGADO.md`, 43 preguntas).
+
+**Recordatorio**: cuando exista la ficha del App Store, cambiar `AUDIT_CTA_URL` en `site/build/build.mjs` (hoy abre un mail a hello@tiersaver.com) y avisarle a Facundo.
+
+**Nota operativa**: `HASH_PEPPER` se generó al azar y no está guardado en ningún otro lado. Si se pierde o se cambia, todos los hashes dejan de servir: los pedidos se vuelven a leer solos, pero las limpiezas anteriores ya no se pueden restaurar.
