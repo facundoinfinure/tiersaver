@@ -262,7 +262,7 @@ async function revalidateForSuppress(
 
   // (b) Current state in Klaviyo: still in the candidate segment, same address, not suppressed.
   const states = new Map<string, ProfileState>();
-  for (const ids of chunk(remaining, LIMITS.profileIdsPerLookup)) {
+  for (const ids of chunk(remaining, LIMITS.segmentMemberIdsPerLookup)) {
     for (const [id, state] of await getCandidateSegmentMemberStates(client, segmentId, ids)) states.set(id, state);
   }
   // A suppressed profile leaves the segment, so the ones we sent before are looked up directly.

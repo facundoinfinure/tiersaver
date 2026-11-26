@@ -293,8 +293,8 @@ describe("A1 + S-07: every batch is validated again right before it is sent", ()
     expect(outcome).toMatchObject({ status: "completed", submitted: 250 });
     expect(w.fake.requestsTo(/^\/api\/segments$/)).toHaveLength(1);
     expect(w.fake.requestsTo(/^\/api\/accounts$/)).toHaveLength(1);
-    // 3 batches: 2 + 2 + 1 member reads and 3 jobs.
-    expect(w.fake.requestsTo(/\/api\/segments\/[^/]+\/profiles$/)).toHaveLength(5);
+    // 3 batches (100 + 100 + 50) at 20 ids per member read: 5 + 5 + 3 reads, and 3 jobs.
+    expect(w.fake.requestsTo(/\/api\/segments\/[^/]+\/profiles$/)).toHaveLength(13);
     expect(w.fake.jobs).toHaveLength(3);
   });
 });

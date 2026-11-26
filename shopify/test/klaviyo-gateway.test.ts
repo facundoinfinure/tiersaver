@@ -159,8 +159,8 @@ describe("submitting batches", () => {
 
     // Membership of the candidate segment, the email and the suppression state come from the same read.
     const lookups = fake.requestsTo(/^\/api\/segments\/SEGCAND\/profiles$/);
-    expect(lookups).toHaveLength(2); // 50 ids per lookup
-    expect(lookups.every((r) => r.url.searchParams.get("filter")?.startsWith("any(profile_id,["))).toBe(true);
+    expect(lookups).toHaveLength(5); // 20 ids per lookup: the real API accepts no more
+    expect(lookups.every((r) => r.url.searchParams.get("filter")?.startsWith("any(id,["))).toBe(true);
     expect(fake.requestsTo(/^\/api\/profiles$/)).toHaveLength(0);
     const posts = fake.requestsTo(/^\/api\/profile-suppression-bulk-create-jobs$/, "POST");
     expect(posts).toHaveLength(1);

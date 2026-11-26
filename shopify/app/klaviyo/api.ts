@@ -412,10 +412,12 @@ export async function getProfileStates(client: KlaviyoClient, profileIds: readon
 }
 
 /**
- * GET /api/segments/{id}/profiles?filter=any(profile_id,[..]) — which of up to
- * 50 profiles are members of the segment RIGHT NOW, each with its email and
- * email suppressions (spec 2026-10-15, get_profiles_for_segment: `profile_id`:
- * `any`, `equals`; scopes profiles:read + segments:read; 75/s, 700/m).
+ * GET /api/segments/{id}/profiles?filter=any(id,[..]) — which of up to 20
+ * profiles are members of the segment RIGHT NOW, each with its email and email
+ * suppressions (scopes profiles:read + segments:read; 75/s, 700/m).
+ * Checked against the real API on 2026-11-26: the filterable field is `id`
+ * (the spec's `profile_id` is rejected with 400) and at most 20 values are
+ * accepted per filter.
  * A profile absent from the map is not a member any more, or no longer exists.
  * Used by suppress batches: one request answers "still a candidate?" and
  * "which address?" together. Only meaningful for a segment that is active, not
@@ -423,8 +425,8 @@ export async function getProfileStates(client: KlaviyoClient, profileIds: readon
  */
 export async function getCandidateSegmentMemberStates(client: KlaviyoClient, segmentId: string, profileIds: readonly string[]): Promise<Map<string, ProfileState>> {
   if (profileIds.length === 0) return new Map();
-  if (profileIds.length > LIMITS.profileIdsPerLookup) throw new KlaviyoApiError("klaviyo_too_many_profile_ids");
-  return readProfileStates(client, "groupMembers", `/api/segments/${pathId(segmentId)}/profiles`, `any(profile_id,[${profileIds.map(filterString).join(",")}])`, new Set(profileIds));
+  if (profileIds.length > LIMITS.segmentMemberIdsPerLookup) throw new KlaviyoApiError("klaviyo_too_many_profile_ids");
+  return readProfileStates(client, "groupMembers", `/api/segments/${pathId(segmentId)}/profiles`, `any(id,[${profileIds.map(filterString).join(",")}])`, new Set(profileIds));
 }
 
 // ---------------------------------------------------------------------------

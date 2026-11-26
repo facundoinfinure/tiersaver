@@ -532,10 +532,13 @@ export class FakeKlaviyo {
     if (only) all = all.filter((p) => only.has(p.id));
     const filter = q.get("filter");
     if (filter) {
-      // GET /api/profiles filters by `id`; the members of a list or segment are filtered by `profile_id`.
-      const m = filter.match(only ? /^any\(profile_id,\[(.*)\]\)$/ : /^any\(id,\[(.*)\]\)$/);
+      // As the real API behaves (checked 2026-11-26): both endpoints filter by `id`; on the members of a list or
+      // segment `profile_id` is rejected, and at most 20 values are accepted.
+      if (only && /profile_id/.test(filter)) return apiError(400, "invalid", "'profile_id' is not a filterable field for this resource.");
+      const m = filter.match(/^any\(id,\[(.*)\]\)$/);
       if (!m) return apiError(400, "invalid", "unsupported filter");
       const ids = [...m[1]!.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((x) => x[1]!);
+      if (only && ids.length > 20) return apiError(400, "invalid", "Maximum number of filter values is 20");
       all = all.filter((p) => ids.includes(p.id));
     }
     return this.page(req, all, size, 100, (p) => this.profileResource(p, fields, additional.includes("subscriptions")));

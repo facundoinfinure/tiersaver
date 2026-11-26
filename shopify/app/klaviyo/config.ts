@@ -140,10 +140,16 @@ export const LIMITS = {
   /** GET /api/lists and GET /api/segments: page[size] max 10. */
   groupsPageSize: 10,
   /**
-   * Profile ids per `any(id,[...])` lookup. The docs give no maximum for
-   * `any`; 50 ids keep the URL under 2.5 kB. Not verified against the real API.
+   * Profile ids per `any(id,[...])` lookup on GET /api/profiles. 50 ids keep the URL under 2.5 kB; verified
+   * against the real API on 2026-11-26 (50 ids are accepted).
    */
   profileIdsPerLookup: 50,
+  /**
+   * Profile ids per `any(id,[...])` lookup on GET /api/segments/{id}/profiles. The real API answers
+   * "Maximum number of filter values is 20" above this (verified 2026-11-26), and the field is `id`:
+   * `profile_id`, which the published spec lists, is rejected as not filterable.
+   */
+  segmentMemberIdsPerLookup: 20,
   /** One refresh token may be used at most 10 times per minute. */
   refreshesPerMinute: 10,
 } as const;
