@@ -288,7 +288,7 @@ export default function Settings() {
       ) : null}
 
       {/* Inside Shopify, App Bridge shows its save bar for this form when a field changes (data-save-bar); the button below always works. */}
-      <Form method="post" data-save-bar>
+      <Form method="post" data-save-bar preventScrollReset>
         <s-stack gap="base">
         <s-section heading="Who counts as inactive">
           <s-stack gap="base">

@@ -30,18 +30,21 @@ export function Row({ label, value, strong, indent }: { label: ReactNode; value:
 export function useRevealError(token: unknown, active: boolean) {
   useEffect(() => {
     if (!active) return;
-    // Polaris fields render after their attributes are set: wait a frame.
-    const frame = requestAnimationFrame(() => {
+    // After the router has settled its own scrolling for the submission, and the Polaris fields have rendered their errors.
+    const timer = setTimeout(() => {
       const target = document.querySelector<HTMLElement>("[data-error-focus]");
       if (!target) return;
-      target.scrollIntoView({ block: "center", behavior: "auto" });
       try {
         target.focus({ preventScroll: true });
       } catch {
         // Not focusable: being in view is enough.
       }
-    });
-    return () => cancelAnimationFrame(frame);
+      // Polaris form elements are `display: contents`: they have no box of their own to scroll to, their rendered content does.
+      const hasBox = (el: Element | null | undefined): el is Element => Boolean(el && el.getClientRects().length > 0);
+      const box = hasBox(target) ? target : ([...(target.shadowRoot?.querySelectorAll("*") ?? [])].find(hasBox) ?? target.parentElement);
+      box?.scrollIntoView({ block: "center", behavior: "auto" });
+    }, 120);
+    return () => clearTimeout(timer);
   }, [token, active]);
 }
 

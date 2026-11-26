@@ -463,7 +463,7 @@ export default function Simulation() {
             </s-text>
 
             {sim.state === "open" ? (
-              <Form method="post">
+              <Form method="post" preventScrollReset>
                 <input type="hidden" name="intent" value="approve" />
                 <input type="hidden" name="simulationId" value={sim.id} />
                 <s-stack gap="base">
