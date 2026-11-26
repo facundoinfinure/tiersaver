@@ -2,7 +2,7 @@
 
 Fecha: 2026-11-26. Anexo de `docs/16-LEGALES-PARA-ABOGADO.md`. Lo redactó un revisor de políticas de privacidad, no un abogado. No es asesoramiento legal.
 
-Actualizado el 2026-11-26 después de la revisión independiente de privacidad (ver "Qué cambió en la segunda ronda") y otra vez esa tarde, cuando el código cambió (ver "Qué cambió la tarde del 2026-11-26"), las dos al final de la sección 1. Donde un punto de más arriba diga otra cosa, vale lo de la tarde. Las preguntas de este anexo pasaron a la lista única del memo (sección 3).
+**Cómo usar este anexo (última pasada del 2026-11-26).** Es el detalle técnico de respaldo: qué guarda cada tabla, logs y cookies, comprobado en el código. Ya no contiene preguntas: todas pasaron a la tabla "Posiciones ya tomadas" de `docs/16-LEGALES-PARA-ABOGADO.md` (sección 3), y la sección 3 de este anexo queda solo como tabla de equivalencias con la numeración vieja (`docs/16-historial-legales.md`). Hecho nuevo que este anexo no detalla más abajo: el registro `unpaid_cleanups` (hash con clave global del id de cuenta de Klaviyo, fecha y monto; sin tienda ni clientes; sobrevive a la desinstalación y al `shop/redact`; se borra al cobrarse la siguiente limpieza o a los 400 días; `shopify/app/billing/unpaid.ts`). Las políticas internas que este anexo daba por faltantes están redactadas en `docs/17-POLITICAS-INTERNAS.md`.
 
 Qué es: el resultado de contrastar `site/src/pages/privacy.html` con el código de la app, tabla por tabla y log por log. Las respuestas de la sección 1 salen de leer el código; lo que no se pudo comprobar está en la sección 2.
 
@@ -100,9 +100,9 @@ Requisitos de Shopify (datos protegidos, nivel 2) y de Klaviyo que hoy no se cum
 - Si Shopify sigue devolviendo el mail en los pedidos de un cliente cuyo borrado ya se pidió. Si lo hace, la próxima lectura de pedidos volvería a crear su hash.
 - El webhook de pedidos nuevos está desactivado hasta que Shopify apruebe el acceso al mail. Cuando se active, Shopify envía el pedido completo; conviene limitar los campos en la suscripción.
 
-## 3. Preguntas para el abogado
+## 3. Equivalencias con la numeración vieja
 
-Pasaron a la lista única de `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3. Equivalencias (número de este anexo → número de la lista única):
+Ya no hay preguntas abiertas en este anexo. Cada tema tiene una posición tomada en `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3, columna "Ex" (número de este anexo → número de la lista vieja, que es el de esa columna):
 
 | Anexo | Tema | Lista única |
 | --- | --- | --- |
@@ -119,4 +119,4 @@ Pasaron a la lista única de `docs/16-LEGALES-PARA-ABOGADO.md`, sección 3. Equi
 | 11 | Proveedor de los buzones hello@ y support@ | 38 |
 | 12 | Decisiones automatizadas (art. 22 GDPR) | 26 |
 
-Preguntas nuevas de privacidad, también en la lista única: DPA y transferencias (2), contrato de "service provider" de la CCPA (3), prospección (28), Brasil y Argentina (39), avisos dentro de la app que todavía no existen (43). Decisiones del dueño relacionadas (memo, sección 4): inscripción ante la AAIP, representante del art. 27 y políticas internas.
+Otros temas de privacidad con posición tomada en el memo: DPA y transferencias (2, punto 4 de la sección 2), contrato de "service provider" de la CCPA (3), prospección (28), Brasil y Argentina (39), avisos dentro de la app (43), inscripción ante la AAIP (punto 6) y representante del art. 27 (punto 4).
