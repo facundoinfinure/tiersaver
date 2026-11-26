@@ -2,7 +2,26 @@
 
 Escrito el 2026-11-26. Nada de esto se envió a ningún lado. El envío a revisión lo dispara Facundo.
 
-## Capturas
+## Materiales listos para copiar y pegar (`docs/launch/`, 2026-11-26)
+
+Las secciones "Capturas", "Ficha del Shopify App Store" e "Instrucciones de prueba" de este documento quedaron **reemplazadas** por estos archivos. Lo de abajo se conserva como historia de por qué se corrigió cada texto.
+
+| Archivo | Qué tiene |
+| --- | --- |
+| `launch/listing-shopify.md` | Ficha de Shopify campo por campo, con conteo de caracteres, requisitos vigentes citados con URL y fecha, URLs mapeadas a `site/src/pages/` e instrucciones para el revisor con las etiquetas de la UI real |
+| `launch/listing-klaviyo.md` | Ficha del App Marketplace de Klaviyo y datos de la app OAuth, con conteos |
+| `launch/screenshots/2026-11-27/` | `listing/`: imagen destacada y cinco capturas de 1600 × 900 sin precios, con título. `raw/`: la app sin componer. `INDEX.md`: qué muestra cada una. `tools/`: scripts para regenerar todo y el control de frases prohibidas |
+| `launch/video.md` | Guion del recorrido de 60 a 90 segundos y del screencast para el revisor |
+| `launch/video-draft.webm` · `launch/video-frames/` | Borrador mudo de 88 segundos y diez cuadros. Sirve como storyboard, no como pieza final |
+| `launch/press-kit.md` | Qué es, tres puntos, línea del fundador, logos, capturas y respuestas tipo |
+
+Cambios de criterio respecto de lo que dice más abajo:
+
+- **Las capturas del entorno local sí sirven para la ficha.** Shopify pide que no traigan marco de navegador y que muestren la UI real; las de `listing/` son recortes de la app real con datos de ejemplo. Lo que no pueden mostrar es el precio (requisito 4.2.2), y por eso son recortes.
+- **El video de 60 a 90 segundos no va como video destacado de la ficha**: Shopify pide ahí un video promocional de 2 a 3 minutos con 25 % de grabación de pantalla como máximo. En la ficha va la imagen destacada. El screencast para el revisor sí es obligatorio (requisito 4.5.3).
+- Se sacó `sunset flow` de las palabras clave.
+
+## Capturas (reemplazada por `launch/screenshots/2026-11-27/INDEX.md`)
 
 `docs/launch/screenshots/` tiene cinco capturas del recorrido: inicio, auditoría, revisión y aprobación, limpieza terminada y ajustes. **Salen del entorno local** (`shopify/preview/`, datos de ejemplo, sin el marco del admin de Shopify), así que sirven para elegir qué mostrar y para el sitio, **no para la ficha**: Shopify pide capturas reales de la app (`07-LANZAMIENTO.md`). Para la ficha hay que repetirlas en la tienda de desarrollo, a 1600 × 900, con la cuenta de prueba.
 
@@ -10,7 +29,7 @@ Para regenerarlas: `npm run preview:app` en `shopify/` y, en otra terminal, `nod
 
 Cuidado al elegirlas (regla 4.3.3 de Shopify y `12-CUMPLIMIENTO-KLAVIYO.md` 3.2): ninguna captura de la ficha puede mostrar cifras como promesa. Las de auditoría y revisión muestran números del merchant; en la ficha conviene acompañarlas con un título que hable del control ("Review every profile before anything changes"), no del resultado.
 
-## Ficha del Shopify App Store (borrador corregido el 2026-11-26)
+## Ficha del Shopify App Store (reemplazada por `launch/listing-shopify.md`; borrador corregido el 2026-11-26)
 
 Los campos Introduction, Details y Features de acá son los mismos que ahora tiene `docs/07-LANZAMIENTO.md` (sección "Ficha"), que se actualizó el 2026-11-26 junto con el cambio de precio. Qué se corrigió respecto del borrador del 2026-11-25 y por qué:
 
@@ -39,7 +58,9 @@ Los campos Introduction, Details y Features de acá son los mismos que ahora tie
 
 Los límites de caracteres (100 y 500) y el requisito 4.2 hay que releerlos en la documentación vigente de Shopify antes de cargar la ficha. Nada de esto se cargó ni se envió.
 
-## Instrucciones de prueba para el revisor de Shopify (borrador, en inglés)
+## Instrucciones de prueba para el revisor de Shopify (reemplazadas por `launch/listing-shopify.md`, sección 7)
+
+Este borrador nombra botones que ya no se llaman así ("Check jobs in Klaviyo", "Start cleanup", "Download the candidate list (CSV)", "Restore"). No copiarlo: usar el de `launch/listing-shopify.md`.
 
 ```
 TierSaver for Klaviyo keeps a merchant's Klaviyo list clean by suppressing profiles that never engaged,
@@ -90,8 +111,8 @@ Pendiente para que estas instrucciones sean verdad: credenciales de una cuenta d
 | Cobro en modo test | **Sin probar contra Shopify** (espera la distribución pública). Probado con Shopify simulado (`shopify/test/plan.test.ts`): aprobar el plan en la primera limpieza, rechazarlo, dos limpiezas en el mismo mes, lista que sube o baja de tramo, cancelar, plan congelado, tienda de desarrollo |
 | Webhooks de cumplimiento con HMAC | Cumple (smoke test en cada despliegue) |
 | Scopes mínimos | `read_orders` hoy; `read_all_orders` y datos protegidos por pedir |
-| Capturas reales | Borradores del entorno local; faltan las reales |
-| Video | Sin hacer |
+| Capturas reales | Listas en `launch/screenshots/2026-11-27/listing/` (entorno local, datos de ejemplo, sin precios). Opcional: repetirlas dentro del admin |
+| Video | Guion listo (`launch/video.md`) y borrador mudo (`launch/video-draft.webm`). Falta grabar el screencast del revisor en la tienda de desarrollo |
 | Privacidad y términos publicados | Términos, privacidad y DPA publicados como borrador en el staging, con cartel de borrador y sin indexar; esperan el visto bueno del abogado (`16-LEGALES-PARA-ABOGADO.md`) |
 | Mail y URL de soporte | Las casillas no existen todavía |
 | Monitoreo de errores | Logs de Workers activos; sin alertas |

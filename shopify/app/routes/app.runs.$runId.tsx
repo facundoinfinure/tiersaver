@@ -489,8 +489,8 @@ export default function Run() {
                     <s-stack gap="base">
                       <s-paragraph>They can receive marketing email again and count toward your Klaviyo plan again.</s-paragraph>
                       <s-paragraph>
-                        TierSaver will not suppress them again for {number(restoreLockDays)} days. Klaviyo's help center also says that a
-                        profile that was unsuppressed cannot be suppressed by hand again until 90 days after its last suppression.
+                        TierSaver will not suppress them again for {number(restoreLockDays)} days. Klaviyo's own suppression
+                        suggestions also leave out profiles that had a suppression added in the last 90 days.
                       </s-paragraph>
                       <s-paragraph>
                         Only the suppression TierSaver added is removed: profiles that unsubscribed or bounced stay as they are. A

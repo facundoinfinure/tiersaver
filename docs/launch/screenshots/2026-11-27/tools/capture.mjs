@@ -57,7 +57,7 @@ const sim = await box(sec("Simulation"));
 const pay = await box('text="What you pay"');
 console.log({ bya, cand, sim, pay });
 await full("02-review-before-you-approve");
-await view("02-review-before-you-approve", Math.round(bya.y - 16));
+await view("02-review-before-you-approve", (await page.evaluate(() => document.documentElement.scrollHeight)) - 900);
 await view("02b-review-simulation", 0);
 await crop("02-review", { x: cand.x, y: cand.y, width: cand.width, height: pay.y - 14 - cand.y });
 

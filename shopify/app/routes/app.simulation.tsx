@@ -513,8 +513,8 @@ export default function Simulation() {
               <s-unordered-list>
                 <s-list-item>Profiles are suppressed, never deleted. You can restore the profiles of a cleanup from its page in History.</s-list-item>
                 <s-list-item>
-                  A profile you restore is left out of TierSaver cleanups for {data.restoreLockDays} days. Klaviyo's help center also says that
-                  unsuppressing a profile blocks suppressing it again for 90 days.
+                  A profile you restore is left out of TierSaver cleanups for {data.restoreLockDays} days. Klaviyo's own suppression
+                  suggestions also leave out profiles that had a suppression added in the last 90 days.
                 </s-list-item>
               </s-unordered-list>
               <s-link href={legal.articles.undo} target="_blank">
