@@ -288,7 +288,9 @@ export function HomeScreen({
                   Last audit <Time at={result!.finishedAt} />.
                   {needsNewAudit
                     ? historyPending
-                      ? " Your Shopify order history is still being read; run the audit again later."
+                      ? view.orderHistory === "loading"
+                        ? " Your Shopify order history is still being read; run the audit again later."
+                        : " Part of your Shopify order history is not available yet; see below."
                       : simulation?.state === "expired"
                         ? " Its simulation expired. Run the audit again to review a current one."
                         : simulation?.state === "superseded"
