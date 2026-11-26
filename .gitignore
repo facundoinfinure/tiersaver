@@ -7,6 +7,8 @@ node_modules/
 coverage/
 dist/
 build/
+# site/build/ holds the site generator scripts (source, not output).
+!site/build/
 .react-router/
 .shopify/
 .shopify.lock
