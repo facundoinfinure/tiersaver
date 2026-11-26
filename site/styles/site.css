@@ -79,13 +79,21 @@ mark.placeholder {
   width: auto;
   height: 1.75rem;
 }
+/* Small screens: the links sit on their own row under the logo and the button, scrolling sideways if needed. */
+.site-header__inner {
+  flex-wrap: wrap;
+}
 .site-nav {
-  display: none;
-  margin-left: auto;
+  order: 3;
+  flex-basis: 100%;
+  overflow-x: auto;
+  margin-left: 0;
+  padding-block: 0.25rem;
 }
 .site-nav ul {
   display: flex;
   gap: 1.75rem;
+  white-space: nowrap;
   padding: 0;
   list-style: none;
 }
@@ -104,8 +112,15 @@ mark.placeholder {
   white-space: nowrap;
 }
 @media (min-width: 62rem) {
+  .site-header__inner {
+    flex-wrap: nowrap;
+  }
   .site-nav {
-    display: block;
+    order: 0;
+    flex-basis: auto;
+    overflow-x: visible;
+    margin-left: auto;
+    padding-block: 0;
   }
   .site-header__cta {
     margin-left: 0;
