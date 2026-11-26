@@ -524,3 +524,9 @@ Pedido de Facundo: que el abogado no tenga que contestar 43 preguntas.
 - **Sin verificar** (solo se ve en el formulario del Partner Dashboard): límite del subtítulo, largo de search terms, title tag, meta description, nombres de plan y árbol de categorías.
 - **Observado, sin corregir**: en Settings la tarjeta de "Save settings" queda pegada a "Plan"; `site/src/pages/help/undo.html` dice "Undo this cleanup" y la app dice "Restore this cleanup".
 - **Pendiente (Facundo)**: grabar el screencast del revisor en la tienda de desarrollo; voz en off y versión final del video; credenciales de Klaviyo de prueba sin 2FA; decidir si la ficha lleva un plan Free; Settings URL y OAuth installation URL para Klaviyo; casillas hello@ y support@.
+
+### 2026-11-27: plan mensual desplegado
+
+- Facundo aprobó la migración 0012 (tabla `shop_plans`, aditiva). Aplicada en D1 remoto y app desplegada (Worker `cd72532a`): plan mensual, aviso dentro de la app y textos corregidos. Responde 200 en `/` y rechaza con 401 el webhook de suscripciones con firma inválida.
+- Pendiente de Facundo: `shopify app deploy` para registrar el webhook `app_subscriptions/update` (hasta entonces la app no se entera de cancelaciones por webhook; igual consulta el estado del plan a Shopify antes de cada limpieza).
+- Workers Paid (verificado en developers.cloudflare.com el 2026-11-27): se contrata en el dashboard, página "Workers plans" (https://dash.cloudflare.com/?to=/:account/workers/plans); mínimo US$ 5 por mes, renovación mensual automática, sin reembolso del mes en curso.
