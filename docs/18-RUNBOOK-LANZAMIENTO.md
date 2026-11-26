@@ -162,6 +162,9 @@ Sesión de Claude (con el OK de Facundo donde se crean recursos):
 
 ## 4. Día D (dominio listo; primer día posible: sábado 2026-12-05)
 
+- [ ] Partner Dashboard → ficha → Contact information: cambiar "Merchant review email" y "App submission email" a hello@tiersaver.com (hoy tienen la casilla de Infinure).
+- [ ] Cargar en "App testing information" el usuario de Klaviyo para el revisor (sin 2FA) y la descripción de `docs/launch/listing-shopify.md`.
+
 Nadie debe estar usando la app mientras se despliega (`STATUS.md`, página "200").
 
 | Hora | Paso | Quién |
