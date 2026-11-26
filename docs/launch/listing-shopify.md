@@ -44,14 +44,14 @@ TierSaver for Klaviyo
 
 **Demo store URL**: dejar vacío por ahora. Si se arma una tienda de demostración, el link va directo a la página de la app.
 
-**Screenshots** (cinco, 1600 × 900, en este orden) y su alt text:
+**Screenshots** (cinco, 1600 × 900, en este orden) y su alt text (el formulario limita el alt text a 64 caracteres; visto en el formulario el 2026-11-27):
 
 - Feature image: `screenshots/2026-11-27/listing/00-feature-image.png` · alt (137 caracteres): `TierSaver for Klaviyo: the list audit card with example data, next to the line 'Suppress profiles that never engaged. After you approve.'`
-- Screenshot 1: `screenshots/2026-11-27/listing/01-audit.png` · alt (127 caracteres): `The list audit in TierSaver: active profiles, profiles that meet the criteria, and the profiles kept active, with example data.`
-- Screenshot 2: `screenshots/2026-11-27/listing/02-review-and-approve.png` · alt (95 caracteres): `The review screen: download the candidate list and read what suppressing does before approving.`
-- Screenshot 3: `screenshots/2026-11-27/listing/03-cleanup-running.png` · alt (92 caracteres): `A cleanup in progress, with the count of profiles sent to Klaviyo and a Stop cleanup button.`
-- Screenshot 4: `screenshots/2026-11-27/listing/04-cleanup-log-and-restore.png` · alt (76 caracteres): `A completed cleanup: who approved it, the rule used, and the Restore button.`
-- Screenshot 5: `screenshots/2026-11-27/listing/05-settings.png` · alt (90 caracteres): `Settings: the inactivity criteria, protected lists and segments, and the monthly schedule.`
+- Screenshot 1: `screenshots/2026-11-27/listing/01-audit.png` · alt (61 caracteres): `List audit with example data: profiles that meet the criteria`
+- Screenshot 2: `screenshots/2026-11-27/listing/02-review-and-approve.png` · alt (60 caracteres): `Review screen: download candidates and read before approving`
+- Screenshot 3: `screenshots/2026-11-27/listing/03-cleanup-running.png` · alt (49 caracteres): `A cleanup in progress, with a Stop cleanup button`
+- Screenshot 4: `screenshots/2026-11-27/listing/04-cleanup-log-and-restore.png` · alt (56 caracteres): `Completed cleanup: who approved it, the rule and Restore`
+- Screenshot 5: `screenshots/2026-11-27/listing/05-settings.png` · alt (59 caracteres): `Settings: inactivity criteria, protected lists and schedule`
 
 Las cinco de `listing/` no muestran precios (requisito 4.2.2). Las de `raw/` sí muestran el plan y **no van en la ficha**. Detalle en `screenshots/2026-11-27/INDEX.md`.
 
