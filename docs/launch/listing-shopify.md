@@ -176,6 +176,36 @@ Términos, privacidad y DPA adoptados por el dueño sin revisión externa el 202
 
 ## 7. Revisión: instrucciones de prueba
 
+**Versión para el formulario (el campo admite 2800 caracteres, visto el 2026-11-27): 2522 caracteres.** Etiquetas comparadas con `shopify/app/routes/` y `shopify/app/components/` el 2026-11-27. Reemplaza al texto largo de abajo, que queda como referencia (su nota sobre la desinstalación está desactualizada: los datos se borran al desinstalar).
+
+```
+TierSaver for Klaviyo suppresses Klaviyo profiles that never engaged, after the merchant reviews and approves a simulation. Nothing is deleted, cleanups can be restored, and the app sends no email.
+
+Availability: not offered to stores in the EU/EEA, the UK or Switzerland. Please use a development store with a US, Canadian or Australian address. In those regions the home page explains it is not available and nothing can be connected, audited or charged.
+
+You need: the Klaviyo test account in "Test account" above (no 2FA).
+
+Steps
+1. Open the app. Home shows "Get started" with four steps.
+2. Click "Connect Klaviyo" and approve on Klaviyo's screen. You return with "Klaviyo is connected. Nothing has changed in your Klaviyo account."
+3. Click "Run the free audit". It changes no profile and takes a minute or two. It creates one segment, "TierSaver: long-term inactive profiles (managed, do not edit)", and nothing else.
+4. Click "Review and approve" (or "Review cleanup" in the menu). The page has "Simulation", "Check the candidates" and "Before you approve".
+5. In "Check the candidates", click "Download candidates (CSV)".
+6. In "Before you approve", tick the box that starts "I have read the notices above" and click "Approve and start plan". Approve the monthly plan on Shopify's screen (test charge on a development store).
+7. Click "Start cleanup: suppress N profiles". The "Cleanup" page shows "In progress" and "Stop cleanup". Profiles are checked again right before sending, so fewer may be suppressed than approved.
+8. When "Completed", click "Restore N profiles" and confirm with "Restore profiles". If Klaviyo is still applying the cleanup, try again a minute later.
+9. "History" lists cleanups and restores. "Settings" has the criteria, protected lists, monthly schedule, automatic cleanups (off by default), "Plan" (with "Cancel plan") and "Customer data requests".
+10. On Home, "Disconnect Klaviyo" then "Disconnect" removes the app's access to Klaviyo.
+
+Notes
+- By default only profiles that never purchased are suppressed, checked against the store's full order history (read_all_orders). While the history is not fully read, those profiles stay active and the audit says so.
+- No charge per cleanup. A cleanup starts only with an active plan that covers the list size. Restoring does not refund the month.
+- Uninstalling deletes the store's data from our systems right away. Suppressed profiles stay suppressed in Klaviyo.
+
+Screencast: see the Screencast URL field. Support: support@tiersaver.com.
+```
+
+
 Texto para el campo de instrucciones (3821 caracteres; límite sin verificar). Cada etiqueta entre comillas se comparó con el código de `shopify/app/routes/` y `shopify/app/components/` y con las capturas del 2026-11-26.
 
 ```
