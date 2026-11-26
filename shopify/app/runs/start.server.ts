@@ -16,10 +16,24 @@ export async function startSuppressionRun(args: {
 }): Promise<CreateRunResult> {
   const created = await createSuppressionRun(db, args);
   if (!created.ok) return created;
-
-  const instance = await env.SUPPRESSION_RUN.create({ id: created.runId, params: { runId: created.runId } });
-  await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, created.runId));
+  await launchRun(created.runId);
   return created;
+}
+
+/**
+ * Starts the Workflow of a run that already exists. If the Workflow cannot be created right now the run stays
+ * `queued`, and the hourly recovery (runs/recovery.ts) starts it again with the same id or closes it: a run
+ * row is never left behind without an owner.
+ */
+export async function launchRun(runId: string): Promise<boolean> {
+  try {
+    const instance = await env.SUPPRESSION_RUN.create({ id: runId, params: { runId } });
+    await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, runId));
+    return true;
+  } catch (error) {
+    console.error(`run launch failed: ${error instanceof Error ? error.name : "error"}`);
+    return false;
+  }
 }
 
 /** Creates the undo of a cleanup and hands it to the same Workflow. Not gated by SUPPRESSION_ENABLED. */
@@ -31,8 +45,6 @@ export async function startUndoRun(args: {
 }): Promise<CreateUndoResult> {
   const created = await createUndoRun(db, args);
   if (!created.ok) return created;
-
-  const instance = await env.SUPPRESSION_RUN.create({ id: created.runId, params: { runId: created.runId } });
-  await db.update(schema.runs).set({ workflowInstanceId: instance.id }).where(eq(schema.runs.id, created.runId));
+  await launchRun(created.runId);
   return created;
 }

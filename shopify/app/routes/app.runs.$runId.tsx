@@ -8,8 +8,9 @@ import { flags } from "../components/home-screen";
 import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
-import { CHARGE_HOLD_HOURS, STATUS_LABELS } from "../runs/labels";
+import { CHARGE_HOLD_HOURS, OTHER_SKIP_LABEL, SKIP_REASON_LABELS, STATUS_LABELS } from "../runs/labels";
 import { confirmRunJobs } from "../runs/confirm";
+import { requestStopRun } from "../runs/engine";
 import { startUndoRun } from "../runs/start.server";
 import { checkRunJobs, loadRunDetail, type JobsCheck } from "../runs/view.server";
 import { authenticate } from "../shopify.server";
@@ -41,7 +42,15 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
     }
   }
 
+  if (intent === "stop") {
+    const result = await requestStopRun(db, { shop: session.shop, runId, requestedBy: sessionActor(sessionToken) });
+    return result.ok ? {} : { error: result.reason };
+  }
+
   if (intent === "undo") {
+    // The run id comes from the URL: it must be this shop's before anything is read for it or sent to Klaviyo.
+    const owned = await loadRunDetail(session.shop, runId);
+    if (!owned) return { error: "not_found" };
     // Klaviyo applies bulk jobs in the background and in no guaranteed order. Restoring while the cleanup's own
     // jobs are still being applied could leave profiles suppressed after a "successful" restore, so wait for them.
     // If Klaviyo cannot be asked, the restore is not held back: undo must stay available.
@@ -49,12 +58,9 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const connection = await getConnection(db, session.shop);
       if (connection?.status === "connected") {
         const client = createKlaviyoClient({ db, env }, session.shop, { subrequestBudget: 40 });
-        const jobs = await confirmRunJobs(db, client, runId, 35);
+        const jobs = await confirmRunJobs(db, client, runId, 35, session.shop);
         if (jobs && !jobs.done) return { error: "klaviyo_still_processing" };
-        if (!jobs) {
-          const detail = await loadRunDetail(session.shop, runId);
-          if (detail?.run.finishedAt && Date.now() - Date.parse(detail.run.finishedAt) < 10 * 60_000) return { error: "klaviyo_still_processing" };
-        }
+        if (!jobs && owned.run.finishedAt && Date.now() - Date.parse(owned.run.finishedAt) < 10 * 60_000) return { error: "klaviyo_still_processing" };
       }
     } catch {
       // See above.
@@ -79,7 +85,8 @@ const ERRORS: Record<string, string> = {
   nothing_to_restore: "There is nothing left to restore from this cleanup.",
   undo_in_progress: "A restore of this cleanup is already in progress.",
   still_running: "This cleanup is still running. You can restore it once it has finished.",
-  not_a_cleanup: "Only a cleanup can be restored.",
+  not_a_cleanup: "Only a cleanup can be stopped or restored.",
+  already_finished: "This cleanup had already finished, so there was nothing to stop.",
   not_found: "This cleanup no longer exists.",
 };
 
@@ -91,6 +98,13 @@ const RUN_ERRORS: Record<string, string> = {
   klaviyo_disconnected: "Klaviyo was disconnected.",
   simulation_expired: "The simulation was more than 24 hours old when the cleanup started.",
   simulation_superseded: "Your rules changed after the simulation was approved.",
+  run_stalled: "The cleanup stopped responding and was closed. The counts below are what was actually sent to Klaviyo.",
+  run_never_started: "The cleanup could not be started. Nothing was changed in Klaviyo.",
+  candidate_segment_missing: "TierSaver's segment in Klaviyo could not be found, so the profiles could not be checked again.",
+  candidate_segment_changed: "TierSaver's segment in Klaviyo was edited or deactivated, so the profiles could not be checked again. Run a new audit.",
+  candidate_segment_processing: "Klaviyo was still updating TierSaver's segment, so the profiles could not be checked again. Run a new audit.",
+  candidate_segment_unavailable: "The profiles could not be checked again in Klaviyo. Run a new audit.",
+  klaviyo_account_changed: "The connected Klaviyo account changed.",
 };
 
 const NO_CHARGE: Record<string, string> = {
@@ -105,7 +119,7 @@ const number = (n: number) => n.toLocaleString("en-US");
 const dateTime = (iso: string) => new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 
 export default function Run() {
-  const { run, progress, undo, undoRuns, charge, jobCount } = useLoaderData<typeof loader>();
+  const { run, progress, skipReasons, stop, undo, undoRuns, charge, jobCount } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>() as ActionData | undefined;
   const busy = useNavigation().state !== "idle";
   const running = run.status === "queued" || run.status === "running";
@@ -142,9 +156,36 @@ export default function Run() {
             </s-text>
           </s-stack>
           {running ? (
-            <s-banner tone="info" heading={isUndo ? "Restore in progress" : "Cleanup in progress"}>
-              {number(done)} of {number(run.total)} profiles sent to Klaviyo so far. You can leave this page.
+            <s-banner tone="info" heading={run.stopping ? "Stopping this cleanup" : isUndo ? "Restore in progress" : "Cleanup in progress"}>
+              {run.stopping
+                ? `No more profiles will be sent. ${number(done)} of ${number(run.total)} were sent to Klaviyo before you stopped it. You can restore them once the cleanup has closed, usually within a few minutes.`
+                : `${number(done)} of ${number(run.total)} profiles sent to Klaviyo so far. You can leave this page.`}
             </s-banner>
+          ) : null}
+          {stop?.canStop ? (
+            <Form method="post">
+              <input type="hidden" name="intent" value="stop" />
+              <s-button tone="critical" commandFor="stop-cleanup" command="--show" {...flags({ disabled: busy })}>
+                Stop cleanup
+              </s-button>
+              <s-modal id="stop-cleanup" heading="Stop this cleanup?">
+                <s-stack gap="base">
+                  <s-paragraph>
+                    TierSaver stops sending profiles to Klaviyo. Profiles it has not reached stay as they are. The batch being sent
+                    right now (up to 100 profiles) still goes through.
+                  </s-paragraph>
+                  <s-paragraph>
+                    Profiles already sent stay suppressed. Once the cleanup has closed you can restore them from this page.
+                  </s-paragraph>
+                </s-stack>
+                <s-button slot="primary-action" type="submit" variant="primary" tone="critical" {...flags({ disabled: busy })}>
+                  Stop cleanup
+                </s-button>
+                <s-button slot="secondary-actions" commandFor="stop-cleanup" command="--hide">
+                  Keep running
+                </s-button>
+              </s-modal>
+            </Form>
           ) : null}
           {run.error ? (
             <s-banner tone="warning" heading="This run stopped early">
@@ -166,9 +207,27 @@ export default function Run() {
                 <s-table-cell>{number(done)}</s-table-cell>
               </s-table-row>
               <s-table-row>
-                <s-table-cell>Left untouched: no longer in Klaviyo, no email address, or the address changed since the simulation</s-table-cell>
+                <s-table-cell>
+                  Left untouched: checked again right before sending and no longer {isUndo ? "eligible to be restored" : "a candidate"}
+                </s-table-cell>
                 <s-table-cell>{number(running ? (progress.skipped ?? 0) : run.skipped)}</s-table-cell>
               </s-table-row>
+              {skipReasons.map((s) => (
+                <s-table-row key={s.reason}>
+                  <s-table-cell>
+                    <s-text color="subdued">– {SKIP_REASON_LABELS[s.reason] ?? OTHER_SKIP_LABEL}</s-text>
+                  </s-table-cell>
+                  <s-table-cell>{number(s.count)}</s-table-cell>
+                </s-table-row>
+              ))}
+              {!running && run.unknown > 0 ? (
+                <s-table-row>
+                  <s-table-cell>
+                    Sent, but Klaviyo's answer was lost: they may have been {verb}.{isUndo ? "" : " Undo includes them."}
+                  </s-table-cell>
+                  <s-table-cell>{number(run.unknown)}</s-table-cell>
+                </s-table-row>
+              ) : null}
               {(running ? (progress.failed ?? 0) : run.failed) > 0 ? (
                 <s-table-row>
                   <s-table-cell>Not processed because of an error</s-table-cell>
@@ -285,8 +344,9 @@ export default function Run() {
                 <s-stack gap="base">
                   <s-paragraph>
                     Undo is for correcting a mistake. It removes the suppression from the {number(undo.restorable)} profiles this
-                    cleanup suppressed, so they can receive marketing email again and count toward your Klaviyo plan again.
-                    Restored profiles are left out of TierSaver cleanups for 365 days.
+                    cleanup suppressed{run.unknown > 0 ? " or may have suppressed" : ""}, so they can receive marketing email again and count
+                    toward your Klaviyo plan again. Restored profiles are left out of TierSaver cleanups for 365 days. A profile
+                    that Klaviyo shows as suppressed since before this cleanup, or suppressed again after it, is left as it is.
                   </s-paragraph>
                   {needsConfirmation ? (
                     <s-banner tone="warning" heading={needsConfirmation === "yes" ? "Your Klaviyo plan has renewed since this cleanup" : "Your Klaviyo plan may have renewed since this cleanup"}>

@@ -26,6 +26,8 @@ export interface AuditView {
     restoreLocked: number;
     /** Profiles kept active only because the Shopify order history could not vouch for them yet. */
     unverifiedPurchases: number;
+    /** True when the order data could not be brought up to date for this audit (never read, or read too long ago). */
+    purchaseDataStale: boolean;
   } | null;
 }
 
@@ -86,6 +88,7 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
       restoreLocked: summary.protectedByReason?.recently_reactivated ?? 0,
       // Not "your list is clean": we simply cannot tell yet who purchased. The home screen says why (app/components/home-screen.tsx).
       unverifiedPurchases: summary.protectedByReason?.insufficient_purchase_history ?? 0,
+      purchaseDataStale: summary.purchaseDataStale === true,
     };
   }
 

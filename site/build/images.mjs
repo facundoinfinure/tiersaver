@@ -5,6 +5,8 @@
  *   node build/images.mjs --out <dir>   write somewhere else (to compare first)
  *
  *   favicon-32.png        32 x 32    from site/assets/favicon.svg (transparent corners)
+ *   (site/favicon.ico is that same PNG inside an ICO container, for clients that ask for /favicon.ico
+ *   without reading the page. It is not regenerated here: rebuild it if favicon-32.png changes.)
  *   apple-touch-icon.png  180 x 180  from brand/logo/final/app-icon.svg (full bleed)
  *   og-image.png          1200 x 630 social card composed here from the logo,
  *                                    the mark, the site fonts and the brand colors

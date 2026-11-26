@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Permissions TierSaver asks for</title>
+  <meta name="description" content="The access TierSaver requests in Shopify and in Klaviyo, what each permission is used for, the one segment it creates and how to remove its access.">
+  <link rel="canonical" href="https://tiersaver.com/help/permissions">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Permissions TierSaver asks for">
+  <meta property="og:description" content="The access TierSaver requests in Shopify and in Klaviyo, what each permission is used for, the one segment it creates and how to remove its access.">
+  <meta property="og:url" content="https://tiersaver.com/help/permissions">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Permissions","item":"https://tiersaver.com/help/permissions"}]}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Permissions</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Permissions TierSaver asks for, and why</h1>
+          <p class="lead">TierSaver asks for the access it uses and nothing more. This page lists every permission and what the app does with it.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
+        </header>
+        <div class="prose">
+<h2 id="in-shopify">In Shopify</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Shopify permissions">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row"><code>read_orders</code></th><td>Reading your orders, to find which email addresses have bought from your store. A profile matched to an order is kept active. TierSaver stores a one-way hash of the address and the date of the last order, not the order itself.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>TierSaver does not change anything in your store: it has no write permission in Shopify. With this permission alone Shopify only returns recent orders. As long as TierSaver cannot check a profile against enough of your order history, that profile is kept active.</p>
+<p>Charges are created through Shopify's own billing, which you approve separately. See <a href="/help/billing">billing and charges</a>.</p>
+
+<h2 id="in-klaviyo">In Klaviyo</h2>
+<p>You approve these on Klaviyo's own screen when you connect. Klaviyo names them as below.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Klaviyo permissions">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row"><code>accounts:read</code></th><td>Identifying which Klaviyo account is connected. Klaviyo requires it for every connected app.</td></tr>
+      <tr><th scope="row"><code>profiles:read</code></th><td>Reading the profiles that meet the criteria and the members of the lists and segments you protect, and reading a profile's email address at the moment it is suppressed or included in your CSV download.</td></tr>
+      <tr><th scope="row"><code>profiles:write</code></th><td>Suppressing profiles in a cleanup you approved. Klaviyo requires it, together with <code>subscriptions:write</code>, for bulk suppression. TierSaver does not edit or delete profiles.</td></tr>
+      <tr><th scope="row"><code>subscriptions:write</code></th><td>Suppressing profiles in a cleanup, and removing that suppression when you restore one.</td></tr>
+      <tr><th scope="row"><code>subscriptions:read</code></th><td>Checking the status of the suppression jobs Klaviyo runs for a cleanup or a restore.</td></tr>
+      <tr><th scope="row"><code>lists:read</code></th><td>Listing your lists so you can mark some as protected, and reading their members.</td></tr>
+      <tr><th scope="row"><code>segments:read</code></th><td>Listing your segments so you can mark some as protected, and reading the members of TierSaver's own segment.</td></tr>
+      <tr><th scope="row"><code>segments:write</code></th><td>Creating and maintaining the one segment described below. No other segment is created, changed or deleted.</td></tr>
+      <tr><th scope="row"><code>metrics:read</code></th><td>Finding the metrics in your account that record opens, clicks, purchases and site activity.</td></tr>
+      <tr><th scope="row"><code>usage:read</code></th><td>Reading Klaviyo's own count of your active profiles and the date your billing period ends, which the monthly schedule can use as your renewal day. It only adds information: no cleanup and no charge depends on it.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="what-it-does-not-ask-for">What it does not ask for</h2>
+<p>The lists above are complete. TierSaver has no access to your campaigns, flows or templates, cannot send messages, and does not read your events.</p>
+
+<h2 id="the-one-segment-it-creates">The one segment it creates</h2>
+<p>The audit creates a segment in your Klaviyo account named "TierSaver: long-term inactive profiles (managed, do not edit)". It holds the criteria Klaviyo publishes for suppressing unengaged profiles, and Klaviyo itself evaluates it. Do not edit or delete it while you use the app: an audit cannot run on a segment that was changed, and the next audit restores it.</p>
+
+<h2 id="how-to-remove-access">How to remove access</h2>
+<ul>
+  <li><strong>Klaviyo only:</strong> on the app's home page, under "Klaviyo connection", select "Disconnect Klaviyo". The app asks Klaviyo to revoke its access and deletes its stored tokens.</li>
+  <li><strong>Everything:</strong> uninstall the app in Shopify. That also revokes the Klaviyo access.</li>
+</ul>
+<p>In both cases suppressed profiles stay suppressed. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions" aria-current="page">Permissions</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
+        </div>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

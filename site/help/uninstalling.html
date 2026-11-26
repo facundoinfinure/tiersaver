@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>What happens when you uninstall · TierSaver</title>
-  <meta name="description" content="When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted immediately and the rest of your store's data is deleted when Shopify sends its deletion request.">
+  <title>What happens when you uninstall or disconnect · TierSaver</title>
+  <meta name="description" content="When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted at once and the rest of your store's data follows.">
   <link rel="canonical" href="https://tiersaver.com/help/uninstalling">
   <meta name="theme-color" content="#eeeeec">
   <meta property="og:site_name" content="TierSaver">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="What happens when you uninstall">
-  <meta property="og:description" content="When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted immediately and the rest of your store's data is deleted when Shopify sends its deletion request.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="What happens when you uninstall or disconnect">
+  <meta property="og:description" content="When you uninstall TierSaver, suppressed profiles stay suppressed in Klaviyo, access tokens are deleted at once and the rest of your store's data follows.">
   <meta property="og:url" content="https://tiersaver.com/help/uninstalling">
   <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -25,6 +26,7 @@
   <link rel="stylesheet" href="/styles/tokens.css">
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Uninstalling and disconnecting","item":"https://tiersaver.com/help/uninstalling"}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -42,7 +44,7 @@
           <li><a href="/help/" aria-current="page">Help</a></li>
         </ul>
       </nav>
-      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
     </div>
   </header>
 
@@ -51,39 +53,49 @@
       <ol>
           <li><a href="/">Home</a></li>
           <li><a href="/help/">Help center</a></li>
-          <li aria-current="page">What happens on uninstall</li>
+          <li aria-current="page">Uninstalling and disconnecting</li>
       </ol>
     </nav>
     <div class="doc__grid">
       <article class="doc__article">
         <header class="doc__header">
           <p class="label">Help center</p>
-          <h1>What happens when you uninstall</h1>
+          <h1>What happens when you uninstall or disconnect</h1>
           <p class="lead">Uninstalling stops TierSaver. It does not change your Klaviyo list.</p>
-          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
         </header>
         <div class="prose">
-<h2>Your Klaviyo list</h2>
+<h2 id="your-klaviyo-list">Your Klaviyo list</h2>
 <p>Profiles that were suppressed stay suppressed. TierSaver does not restore anyone when you uninstall. You can remove suppressions from Klaviyo at any time: Klaviyo lets you do it one profile at a time, or in bulk for a list or segment.</p>
-<p>If a run needs correcting, <a href="/help/undo">undo it</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its run log is deleted.</p>
-<p>Monthly cleanups stop. Nothing further is suppressed.</p>
+<p>If a cleanup needs correcting, <a href="/help/undo">restore it</a> before you uninstall. After uninstalling, the app no longer has access to your Klaviyo account and its cleanup log is deleted.</p>
+<p>The monthly schedule stops. Nothing further is suppressed.</p>
+<p>The segment TierSaver created in your Klaviyo account, "TierSaver: long-term inactive profiles (managed, do not edit)", is not removed by the app. You can delete it in Klaviyo once you no longer use TierSaver.</p>
 
-<h2>Your data</h2>
+<h2 id="your-data">Your data</h2>
 <ul>
-  <li><strong>Immediately:</strong> TierSaver deletes its access tokens for your Shopify store and your Klaviyo account. From that moment it cannot read or change anything.</li>
-  <li><strong>When Shopify sends its shop deletion request:</strong> TierSaver deletes everything else it stored for your store, including settings, audits, simulations, run logs and hashed purchase records. Shopify sends that request 48 hours after an app is uninstalled.</li>
+  <li><strong>Immediately:</strong> TierSaver asks Klaviyo to revoke its access and deletes its access tokens for your Shopify store and your Klaviyo account. From that moment it cannot read or change anything.</li>
+  <li><strong>When Shopify sends its shop deletion request:</strong> TierSaver deletes everything else it stored for your store, including settings, audits, simulations, cleanup logs and hashed purchase records. Shopify sends that request 48 hours after an app is uninstalled.</li>
 </ul>
 <p>What is stored in the first place is listed in <a href="/help/data-and-privacy">data and privacy</a>.</p>
 
-<h2>Billing</h2>
+<h2 id="billing">Billing</h2>
 <p>Charges go through Shopify. After you uninstall, TierSaver creates no further charges.</p>
 
-<h2>If only the Klaviyo connection is lost</h2>
-<p>If TierSaver's access to Klaviyo expires or is withdrawn while the app is still installed, the app shows Klaviyo as disconnected, stops all cleanups and does nothing until you reconnect. Profiles already suppressed stay as they are.</p>
+<h2 id="disconnecting-klaviyo-without-uninstalling">Disconnecting Klaviyo without uninstalling</h2>
+<p>On the app's home page, under "Klaviyo connection", the "Disconnect Klaviyo" button removes TierSaver's access to your Klaviyo account: the app asks Klaviyo to revoke it and deletes the tokens it stored.</p>
+<ul>
+  <li>Suppressed profiles stay suppressed and nothing is deleted in Klaviyo.</li>
+  <li>Your settings and your cleanup history stay in the app.</li>
+  <li>Audits, cleanups, restores and the monthly schedule do not run while Klaviyo is disconnected.</li>
+  <li>To connect again, select "Connect Klaviyo" on the home page and approve access in Klaviyo.</li>
+</ul>
 
-<h2>Sources</h2>
+<h2 id="if-the-klaviyo-connection-is-lost">If the Klaviyo connection is lost</h2>
+<p>If TierSaver's access to Klaviyo expires or is removed in Klaviyo while the app is still installed, the home page shows "Reconnect Klaviyo" and cleanups are paused until you connect again. Profiles already suppressed stay as they are.</p>
+
+<h2 id="sources">Sources</h2>
 <ul class="sources">
-  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read November 26, 2026)</li>
 </ul>
         </div>
       </article>
@@ -91,15 +103,23 @@
         <nav aria-label="Help center">
           <p class="label">Help center</p>
           <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/how-the-audit-works">How the audit works</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
             <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
             <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/uninstalling" aria-current="page">What happens on uninstall</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling" aria-current="page">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
         </nav>
       </aside>
@@ -112,46 +132,52 @@
         <div class="site-footer__brand">
           <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
           <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
         </div>
-        <div class="site-footer__col">
-          <h2 class="label">Product</h2>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
           <ul>
             <li><a href="/#how-it-works">How it works</a></li>
             <li><a href="/#list-check">List health check</a></li>
             <li><a href="/#pricing">Pricing</a></li>
             <li><a href="/#faq">Questions</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Help center</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
           <ul>
             <li><a href="/help/">All help articles</a></li>
-            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
-            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
             <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Guides</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
           <ul>
             <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
             <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
             <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Legal</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
           <ul>
             <li><a href="/privacy">Privacy policy (draft)</a></li>
             <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
           </ul>
-        </div>
+        </nav>
       </div>
       <div class="site-footer__bottom">
         <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
-        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
         <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
       </div>
     </div>

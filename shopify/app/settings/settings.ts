@@ -64,15 +64,44 @@ export interface SettingsInput {
   mode: "approval" | "automatic";
 }
 
-export type SaveSettingsResult = { ok: true; versionBumped: boolean; version: number } | { ok: false; errors: string[] };
+/** Form fields a validation error can belong to. The settings screen shows the message next to the field. */
+export type SettingsField = "purchaseDays" | "clickDays" | "openDays" | "siteActivityDays" | "newProfileDays" | "minEmailsReceived" | "protectedGroup" | "billingDay" | "leadDays" | "automatic";
 
-export async function saveSettings(db: Db, args: { shop: string; actor: string; input: SettingsInput; now?: Date }): Promise<SaveSettingsResult> {
+export type SaveSettingsResult =
+  | { ok: true; versionBumped: boolean; version: number; /** True when this save switched automatic cleanups on. */ automaticTurnedOn: boolean }
+  | { ok: false; errors: string[]; /** The same problems by field, each saying how to fix it. */ fieldErrors: Partial<Record<SettingsField, string>> };
+
+const RULE_FIELDS = ["purchaseDays", "clickDays", "openDays", "siteActivityDays", "newProfileDays", "minEmailsReceived"] as const;
+const WINDOW_FIELDS: readonly string[] = ["purchaseDays", "clickDays", "openDays", "siteActivityDays"];
+
+/** Next to the field: what to type, with the limits from RULE_LIMITS. */
+function ruleFieldMessage(key: (typeof RULE_FIELDS)[number]): string {
+  const { min, max } = RULE_LIMITS[key];
+  return `Enter a whole number between ${min} and ${max}${WINDOW_FIELDS.includes(key) ? ', or leave it empty for "ever"' : ""}.`;
+}
+
+export async function saveSettings(
+  db: Db,
+  args: {
+    shop: string;
+    actor: string;
+    input: SettingsInput;
+    now?: Date;
+    /**
+     * Turning automatic cleanups on authorises recurring cleanups and charges. The version of the terms shown
+     * next to the control (app/legal.ts) and the price shown there are recorded with who turned it on and when.
+     */
+    termsVersion?: string;
+    priceShown?: string | null;
+  },
+): Promise<SaveSettingsResult> {
   const now = args.now ?? new Date();
   const { input } = args;
   const current = await db.query.settings.findFirst({ where: eq(schema.settings.shop, args.shop) });
-  if (!current) return { ok: false, errors: ["Settings are not available for this shop."] };
+  if (!current) return { ok: false, errors: ["Settings are not available for this shop."], fieldErrors: {} };
 
   const errors: string[] = [];
+  const fieldErrors: Partial<Record<SettingsField, string>> = {};
   const requested: Partial<RuleSettings> =
     input.ruleMode === "recommended"
       ? { ...DEFAULT_RULE_SETTINGS }
@@ -87,25 +116,38 @@ export async function saveSettings(db: Db, args: { shop: string; actor: string; 
         };
   const validated = validateRuleSettings(requested);
   errors.push(...validated.errors);
+  for (const key of RULE_FIELDS) if (validated.errors.some((e) => e.startsWith(`${key} `))) fieldErrors[key] = ruleFieldMessage(key);
   // The restore lock is not editable: 365 days, as decided (guardrail 5).
   const rules: RuleSettings = { ...validated.settings, reactivationLockDays: Math.max(current.reactivationLockDays, RULE_LIMITS.reactivationLockDays.min) };
 
   const groups = [...new Set(input.protectedGroupIds)];
-  if (groups.some((g) => !GROUP_REF.test(g))) errors.push("A protected list or segment is not valid.");
-  if (groups.length > MAX_PROTECTED_GROUPS) errors.push(`You can protect up to ${MAX_PROTECTED_GROUPS} lists and segments.`);
+  if (groups.some((g) => !GROUP_REF.test(g))) {
+    errors.push("A protected list or segment is not valid.");
+    fieldErrors.protectedGroup = "One of these lists or segments is not valid. Reload the page and choose again.";
+  }
+  if (groups.length > MAX_PROTECTED_GROUPS) {
+    errors.push(`You can protect up to ${MAX_PROTECTED_GROUPS} lists and segments.`);
+    fieldErrors.protectedGroup = `You chose ${groups.length}. Untick some so that no more than ${MAX_PROTECTED_GROUPS} are protected.`;
+  }
 
   if (input.billingDay !== null && (!Number.isInteger(input.billingDay) || input.billingDay < 1 || input.billingDay > 31)) {
     errors.push("The renewal day must be a day of the month between 1 and 31.");
+    fieldErrors.billingDay = "Enter a day of the month between 1 and 31, or leave it empty.";
   }
   if (!Number.isInteger(input.leadDays) || input.leadDays < LEAD_DAYS_LIMITS.min || input.leadDays > LEAD_DAYS_LIMITS.max) {
     errors.push(`The cleanup must be scheduled between ${LEAD_DAYS_LIMITS.min} and ${LEAD_DAYS_LIMITS.max} days before the renewal.`);
+    fieldErrors.leadDays = `Enter a whole number between ${LEAD_DAYS_LIMITS.min} and ${LEAD_DAYS_LIMITS.max}.`;
   }
   if (input.mode !== "approval" && input.mode !== "automatic") errors.push("Unknown run mode.");
   if (input.mode === "automatic" && !isKlaviyoRecommended(rules)) {
-    errors.push("Automatic cleanups are only available with Klaviyo's recommended criteria. Switch back to them, or keep approving each cleanup yourself.");
+    errors.push("Automatic cleanups are only available with Klaviyo's published criteria. Switch back to them, or keep approving each cleanup yourself.");
+    fieldErrors.automatic = "Not available with wider windows. Untick the wider windows above, or untick this box.";
   }
-  if (input.mode === "automatic" && !input.scheduleEnabled) errors.push("Automatic cleanups need the monthly schedule to be on.");
-  if (errors.length > 0) return { ok: false, errors };
+  if (input.mode === "automatic" && !input.scheduleEnabled) {
+    errors.push("Automatic cleanups need the monthly schedule to be on.");
+    fieldErrors.automatic ??= 'Tick "Run the audit every month" above, or untick this box.';
+  }
+  if (errors.length > 0) return { ok: false, errors, fieldErrors };
 
   const before = rulesOf(current);
   const sortedGroups = [...groups].sort();
@@ -119,6 +161,8 @@ export async function saveSettings(db: Db, args: { shop: string; actor: string; 
   if (rulesChanged) changed.push("rules");
   if (billingDayChanged || input.leadDays !== current.leadDays || input.scheduleEnabled !== current.scheduleEnabled) changed.push("schedule");
   if (input.mode !== current.mode) changed.push("mode");
+
+  const automaticTurnedOn = input.mode === "automatic" && current.mode !== "automatic";
 
   await db.batch([
     db
@@ -150,6 +194,19 @@ export async function saveSettings(db: Db, args: { shop: string; actor: string; 
       action: "settings.updated",
       detail: { changed, version, rules, protectedGroups: sortedGroups.length, billingDay: input.billingDay, leadDays: input.leadDays, scheduleEnabled: input.scheduleEnabled, mode: input.mode },
     }),
+    // The authorisation of recurring cleanups and charges, on its own line of the trail: who, when, which terms, which price was on screen.
+    ...(automaticTurnedOn || (input.mode !== "automatic" && current.mode === "automatic")
+      ? [
+          db.insert(schema.eventsLog).values({
+            id: crypto.randomUUID(),
+            shop: args.shop,
+            at: now,
+            actor: args.actor,
+            action: automaticTurnedOn ? "automatic_mode.enabled" : "automatic_mode.disabled",
+            detail: automaticTurnedOn ? { termsVersion: args.termsVersion ?? null, priceShown: args.priceShown ?? null, settingsVersion: version } : { settingsVersion: version },
+          }),
+        ]
+      : []),
   ]);
-  return { ok: true, versionBumped: rulesChanged, version };
+  return { ok: true, versionBumped: rulesChanged, version, automaticTurnedOn };
 }

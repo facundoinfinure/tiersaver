@@ -39,6 +39,36 @@ export default {
         } catch (error) {
           console.error(`housekeeping failed: ${error instanceof Error ? error.name : "error"}`);
         }
+        // ---- run recovery: runs whose Workflow died are started again (queued) or closed honestly -----------
+        // Never sends anything to Klaviyo itself. See app/runs/recovery.ts.
+        try {
+          const { instanceStateOf, recoverStalledRuns } = await import("../app/runs/recovery");
+          const recovered = await recoverStalledRuns({
+            db,
+            instanceState: async (runId) => {
+              try {
+                return instanceStateOf((await (await env.SUPPRESSION_RUN.get(runId)).status()).status);
+              } catch (error) {
+                // Only a clear "no such instance" counts as missing; anything else is asked again next tick.
+                return error instanceof Error && /not[_ .]?found|does not exist/i.test(error.message) ? "missing" : "unknown";
+              }
+            },
+            launch: async (runId) => {
+              try {
+                const instance = await env.SUPPRESSION_RUN.create({ id: runId, params: { runId } });
+                await env.DB.prepare("UPDATE runs SET workflow_instance_id = ?1 WHERE id = ?2").bind(instance.id, runId).run();
+                return true;
+              } catch {
+                return false;
+              }
+            },
+            terminate: async (runId) => (await env.SUPPRESSION_RUN.get(runId)).terminate(),
+          });
+          if (recovered.checked > 0) console.log(`run recovery: ${recovered.relaunched.length} restarted, ${recovered.closed.length} closed of ${recovered.checked} stalled`);
+        } catch (error) {
+          console.error(`run recovery failed: ${error instanceof Error ? error.name : "error"}`);
+        }
+        // ---- end run recovery -----------------------------------------------------------------------------
         // ---- purchase freshness: start (or resume) the orders read of every shop that is due --------------
         // The reading itself happens in the orders Workflow, page by page; here it is one `create` per shop.
         try {

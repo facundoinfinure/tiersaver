@@ -3,7 +3,7 @@ import { db, schema } from "../db.server";
 import { getSuppressionJob, type SuppressionJob } from "../klaviyo/api";
 import type { KlaviyoClient } from "../klaviyo/client";
 import { NO_JOB_ID } from "./gateway.server";
-import { renewalSince } from "./engine";
+import { MAYBE_CHANGED_SQL, renewalSince } from "./engine";
 
 /** What the history and run screens show. Ids, counts and dates only: no profile data. */
 export interface RunListItem {
@@ -17,7 +17,11 @@ export interface RunListItem {
   submitted: number;
   skipped: number;
   failed: number;
+  /** Sent to Klaviyo without a confirmed outcome: possibly suppressed (or restored). Included in undo. */
+  unknown: number;
   error: string | null;
+  /** "Stop cleanup" was pressed and the run has not closed yet. */
+  stopping: boolean;
 }
 
 type RunRow = typeof schema.runs.$inferSelect;
@@ -33,7 +37,9 @@ const toItem = (r: RunRow): RunListItem => ({
   submitted: r.processedCount,
   skipped: r.skippedCount,
   failed: r.failedCount,
+  unknown: r.unknownCount,
   error: r.lastError,
+  stopping: Boolean(r.stopRequestedAt) && (r.status === "queued" || r.status === "running"),
 });
 
 export async function listRuns(shop: string, limit = 30): Promise<RunListItem[]> {
@@ -45,6 +51,10 @@ export interface RunDetail {
   run: RunListItem & { createdBy: string; undoOfRunId: string | null };
   /** Live progress while the run is going: profiles by state. */
   progress: Record<string, number>;
+  /** Why profiles were left untouched, most frequent first. Codes are translated with SKIP_REASON_LABELS. */
+  skipReasons: { reason: string; count: number }[];
+  /** Cleanups only. `canStop`: the "Stop cleanup" action is available. `requestedAt`: it was pressed. */
+  stop: { canStop: boolean; requestedAt: string | null; requestedBy: string | null } | null;
   /** Suppress runs: how many profiles an undo would restore, and whether it needs the renewal confirmation. */
   undo: { restorable: number; restored: number; renewal: "yes" | "no" | "unknown"; inProgress: boolean } | null;
   undoRuns: RunListItem[];
@@ -65,6 +75,16 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
   const progress: Record<string, number> = {};
   for (const c of counts) progress[c.status] = c.n;
 
+  const skipRows = await db
+    .select({ reason: sql<string>`COALESCE(${schema.runProfiles.errorCode}, 'skipped')`, n: sql<number>`COUNT(*)` })
+    .from(schema.runProfiles)
+    .where(and(eq(schema.runProfiles.runId, runId), eq(schema.runProfiles.status, "skipped")))
+    .groupBy(sql`COALESCE(${schema.runProfiles.errorCode}, 'skipped')`);
+  const skipReasons = skipRows.map((r) => ({ reason: r.reason, count: r.n })).sort((a, b) => b.count - a.count);
+  const open = run.status === "queued" || run.status === "running";
+  const stop: RunDetail["stop"] =
+    run.kind === "suppress" ? { canStop: open && !run.stopRequestedAt, requestedAt: run.stopRequestedAt?.toISOString() ?? null, requestedBy: run.stopRequestedBy } : null;
+
   const [jobs] = await db
     .select({ n: sql<number>`COUNT(DISTINCT ${schema.runProfiles.klaviyoJobId})` })
     .from(schema.runProfiles)
@@ -74,8 +94,12 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
   let undoRuns: RunListItem[] = [];
   let charge: RunDetail["charge"] = null;
   if (run.kind === "suppress") {
-    const submitted = counts.find((c) => c.status === "submitted");
-    const restored = submitted?.restored ?? 0;
+    // Everything the cleanup may have changed in Klaviyo: accepted, or sent without a confirmed outcome.
+    const [changed] = await db
+      .select({ n: sql<number>`COUNT(*)`, restored: sql<number>`COALESCE(SUM(CASE WHEN ${schema.runProfiles.reactivatedAt} IS NOT NULL THEN 1 ELSE 0 END), 0)` })
+      .from(schema.runProfiles)
+      .where(and(eq(schema.runProfiles.runId, runId), sql.raw(MAYBE_CHANGED_SQL)));
+    const restored = changed?.restored ?? 0;
     const [settings, audits, children, chargeRow] = await Promise.all([
       db.query.settings.findFirst({ where: eq(schema.settings.shop, shop), columns: { billingDay: true } }),
       db.query.audits.findMany({ where: eq(schema.audits.shop, shop), columns: { periodEnd: true }, orderBy: desc(schema.audits.createdAt), limit: 24 }),
@@ -84,7 +108,7 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
     ]);
     undoRuns = children.map(toItem);
     undo = {
-      restorable: (submitted?.n ?? 0) - restored,
+      restorable: (changed?.n ?? 0) - restored,
       restored,
       renewal: renewalSince(run.finishedAt ?? run.createdAt, now, {
         periodEnds: audits.flatMap((a) => (a.periodEnd ? [a.periodEnd] : [])),
@@ -97,7 +121,7 @@ export async function loadRunDetail(shop: string, runId: string, now = new Date(
       : null;
   }
 
-  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, undo, undoRuns, charge, jobCount: jobs?.n ?? 0 };
+  return { run: { ...toItem(run), createdBy: run.createdBy, undoOfRunId: run.undoOfRunId }, progress, skipReasons, stop, undo, undoRuns, charge, jobCount: jobs?.n ?? 0 };
 }
 
 /** Jobs read from Klaviyo per request: one page of the run's jobs, inside a Worker invocation's subrequest budget. */

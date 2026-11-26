@@ -154,7 +154,7 @@ export function planOrdersPass(
     return { kind: "backfill", queryFrom: visibleFrom, coversSince: provable, restart: true };
   }
   // Freshness first: the end of coverage is what protects recent buyers.
-  if (now.getTime() - until.getTime() >= SYNC_MIN_INTERVAL_MS) {
+  if (now.getTime() - until.getTime() >= SYNC_MIN_INTERVAL_MS + SYNC_SETTLE_MS) {
     return { kind: "incremental", queryFrom: new Date(until.getTime() - SYNC_OVERLAP_MS), coversSince: null, restart: false };
   }
   // read_all_orders was granted after the first backfill: extend coverage to the whole history.

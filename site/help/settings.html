@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings: criteria, protected lists, schedule · TierSaver</title>
+  <meta name="description" content="What each option on TierSaver's Settings page does: the cleanup criteria, protected lists and segments, the monthly schedule and automatic mode.">
+  <link rel="canonical" href="https://tiersaver.com/help/settings">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Settings: criteria, protected lists, schedule">
+  <meta property="og:description" content="What each option on TierSaver's Settings page does: the cleanup criteria, protected lists and segments, the monthly schedule and automatic mode.">
+  <meta property="og:url" content="https://tiersaver.com/help/settings">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Settings","item":"https://tiersaver.com/help/settings"}]}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Settings</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Settings: criteria, protected lists and the monthly schedule</h1>
+          <p class="lead">The Settings page has three sections. The defaults are the cautious choice in each one.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
+        </header>
+        <div class="prose">
+<h2 id="who-counts-as-inactive">Who counts as inactive</h2>
+<p>By default TierSaver uses the criteria Klaviyo publishes for suppressing unengaged profiles: a profile created at least 365 days ago that was sent 5 or more emails in about 72 weeks and never opened, clicked, visited your site or purchased. Profiles with SMS consent, in a protected list or segment, or restored in the last 365 days are always kept active.</p>
+<p>Ticking the wider-windows box replaces "never" with time windows. This is TierSaver's own, stricter setting and goes beyond the criteria Klaviyo publishes. It shows these fields:</p>
+<ul>
+  <li><strong>Purchased, clicked, opened, was on your site in the last (days).</strong> One field each. A profile with that activity inside the window is kept active. Leave a field empty for "ever". The shortest windows allowed are 365 days for purchases and 182 days for the others.</li>
+  <li><strong>Created or subscribed in the last (days).</strong> Newer profiles are kept active. Between 180 and 1095 days.</li>
+  <li><strong>Emails a profile must have received.</strong> Between 5 and 50. Nobody is inactive if you never wrote to them.</li>
+  <li><strong>Ignore opens that Klaviyo flags as automatic</strong> (Apple Mail Privacy Protection). Off by default: every open keeps a profile active.</li>
+</ul>
+<p>Automatic cleanups are not available with wider windows. See <a href="/help/cleanup-criteria">cleanup criteria</a> for the reasoning.</p>
+
+<h2 id="protected-lists-and-segments">Protected lists and segments</h2>
+<p>Profiles in a protected list or segment are never suppressed, whatever their activity. Tick the lists and segments you want to protect.</p>
+<ul>
+  <li>You can protect up to 20 lists and segments.</li>
+  <li>The page shows the first 50 lists and the first 50 segments of your Klaviyo account.</li>
+  <li>If a protected list or segment cannot be read during an audit, every profile is kept active.</li>
+  <li>A protected list or segment that Klaviyo no longer returns stays in your settings, marked as not found, and stays protected until you untick it.</li>
+  <li>Klaviyo has to be connected to choose lists and segments.</li>
+</ul>
+
+<h2 id="monthly-schedule">Monthly schedule</h2>
+<p>Off by default. See <a href="/help/monthly-schedule-and-your-klaviyo-plan">the monthly schedule and your Klaviyo plan</a> for how the day is chosen.</p>
+<ul>
+  <li><strong>Run the audit every month.</strong> Turns the schedule on or off. Turning it off takes effect at once and does not undo anything that already ran.</li>
+  <li><strong>Day of the month your Klaviyo plan renews.</strong> A day from 1 to 31. Leave it empty to use the day Klaviyo reported in your last audit, when one is available.</li>
+  <li><strong>Days before the renewal to run.</strong> Between 4 and 14. The default is 5.</li>
+  <li><strong>Run the scheduled cleanup automatically, without waiting for my approval.</strong> Off by default. With it off, each scheduled audit waits for your approval for 24 hours.</li>
+</ul>
+
+<h2 id="automatic-mode">Automatic mode</h2>
+<p>Automatic mode lets the scheduled cleanup start without a separate approval each month. The app only accepts it when all of these hold:</p>
+<ul>
+  <li>the monthly schedule is on;</li>
+  <li>you use the default criteria, not wider windows;</li>
+  <li>you have already approved and run at least one cleanup yourself. Until then, scheduled simulations keep waiting for your approval.</li>
+</ul>
+<p>Even then, an automatic cleanup waits for your review when it does not look like the one you last approved: see <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>Each automatic cleanup is charged like any other, under the rules in <a href="/help/pricing">how pricing works</a>, and is listed under <a href="/help/history">History</a>. The app does not send email about it. To stop it, untick the box or turn the schedule off.</p>
+
+<h2 id="when-you-change-a-setting">When you change a setting</h2>
+<p>Changes apply when you confirm them with the button at the bottom of the page. If you change the criteria or the protected lists and segments, simulations that have not run yet are discarded: run the audit again before the next cleanup. Changing only the schedule does not discard them. If a value is outside its limits, the page says which one and nothing is changed.</p>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings" aria-current="page">Settings</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
+        </div>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

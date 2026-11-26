@@ -5,6 +5,8 @@ import { KLAVIYO_REQUIRED_SCOPES, KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import { createKlaviyoClient, saveConnection, type ConnectionDeps } from "../app/klaviyo/connection.server";
 import { FakeKlaviyo, type FakeProfile } from "../app/klaviyo/testing/fake-klaviyo";
 import { createScan, executeScan, type ScanDeps, type ScanSteps, type ScanSummary } from "../app/scans/engine";
+import { advanceOrdersSync, ordersAccessFromScopes } from "../app/orders/sync";
+import { FakeShopifyOrders } from "./fake-shopify-orders";
 import { Crash, FakeSteps, db, schema, uniqueShop } from "./helpers";
 
 const ENCRYPTION_KEY = btoa(String.fromCharCode(...Array.from({ length: 32 }, (_, i) => (i * 7 + 3) % 256)));
@@ -66,6 +68,9 @@ async function world(opts: {
   usage?: { used: number; max: number } | null;
   protectedGroupIds?: string[];
   purchasesCoveredSince?: Date | null;
+  /** When the shop's orders were last read completely. Default: just now (current data). */
+  purchasesCoveredUntil?: Date | null;
+  syncPurchases?: (shop: string) => ReturnType<NonNullable<ScanDeps["syncPurchases"]>>;
   seededAccountId?: string | null;
   metrics?: typeof NATIVE_METRICS;
   limits?: ScanDeps["limits"];
@@ -85,6 +90,7 @@ async function world(opts: {
   await db.insert(schema.shops).values({
     shop,
     purchasesCoveredSince: opts.purchasesCoveredSince === undefined ? new Date("2000-01-01T00:00:00Z") : opts.purchasesCoveredSince,
+    purchasesCoveredUntil: opts.purchasesCoveredUntil === undefined ? new Date(T0) : opts.purchasesCoveredUntil,
   });
   await db.insert(schema.settings).values({ shop, protectedGroupIds: opts.protectedGroupIds ?? [] });
 
@@ -125,6 +131,7 @@ async function world(opts: {
     nonRetryable: (code) => new NonRetryableError(code),
     now: () => new Date(T0),
     seededAccountId: opts.seededAccountId ?? null,
+    syncPurchases: opts.syncPurchases,
     limits: opts.limits,
   };
   const created = await createScan(deps.db, { shop, createdBy: "user:7", now: new Date(T0) });
@@ -467,5 +474,120 @@ describe("scan: cycle detector (guardrail 6)", () => {
     const w = await world({ profiles: fakeProfiles(20) });
     await w.run();
     expect((await results(w)).simulation?.candidateCount).toBe(20);
+  });
+});
+
+describe("scan: Shopify purchase data must be current (C1)", () => {
+  const HOUR = 3_600_000;
+  const reasonsOf = async (w: World) => (await results(w)).summary?.protectedByReason;
+
+  /** A scan wired to the real orders sync, reading a fake Shopify. */
+  function shopify(orders: FakeShopifyOrders["orders"]) {
+    const fake = new FakeShopifyOrders();
+    fake.now = () => T0;
+    fake.readAllOrders = true;
+    fake.orders = orders;
+    const access = ordersAccessFromScopes(fake.graphql, "read_orders,read_all_orders");
+    return { fake, sync: (shop: string) => advanceOrdersSync(db, access, { shop, maxPages: 4, now: () => new Date(T0) }) };
+  }
+
+  it("a buyer who ordered after the install-time backfill is not a candidate: the scan reads the new orders first", async () => {
+    // Installed 300 days ago; the backfill ran then and nothing has read orders since (no orders/create webhook).
+    const { fake, sync } = shopify([
+      { email: "P3@shop.test", processedAt: iso(120) },
+      { email: "p9@shop.test", processedAt: iso(2) },
+      { email: "someone-else@shop.test", processedAt: iso(50) },
+    ]);
+    const w = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil: new Date(T0 - 300 * DAY), syncPurchases: sync });
+
+    expect(await w.run()).toMatchObject({ status: "completed", candidates: 38 });
+    const r = await results(w);
+    expect(r.summary).toMatchObject({ protectedByReason: { recent_purchase: 2 } });
+    expect(r.summary?.purchaseDataStale).toBeUndefined();
+    const ids = new Set(r.candidates.map((c) => c.profileId));
+    expect(ids.has("P00003")).toBe(false);
+    expect(ids.has("P00009")).toBe(false);
+    // Read by update date from the end of the old coverage, and the simulation records how current the data was.
+    expect(fake.calls[0]!.variables.query).toMatch(/^updated_at:>=/);
+    expect(w.steps.executed).toContain("purchases sync 0");
+    expect(w.steps.executed.indexOf("purchases coverage")).toBeLessThan(w.steps.executed.indexOf("evaluate 0"));
+    expect(r.simulation?.coverage).toMatchObject({ purchasesSince: "2000-01-01T00:00:00.000Z", purchasesUntil: new Date(T0 - 5 * 60_000).toISOString() });
+  });
+
+  it("order data that was not refreshed protects everyone, however far back it reaches", async () => {
+    for (const purchasesCoveredUntil of [null, new Date(T0 - 300 * DAY), new Date(T0 - 7 * HOUR)]) {
+      const w = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil });
+      // The one buyer the stale data does know about keeps the more specific reason.
+      await db.insert(schema.purchaseHashes).values({ shop: w.shop, emailHash: await hashEmail("p7@shop.test"), lastOrderAt: new Date(T0 - 900 * DAY) });
+      expect(await w.run()).toMatchObject({ status: "completed", candidates: 0 });
+      expect(await reasonsOf(w)).toEqual({ insufficient_purchase_history: 39, recent_purchase: 1 });
+      expect((await results(w)).summary).toMatchObject({ purchaseDataStale: true });
+    }
+  });
+
+  it("stale data protects in the wider mode as well (a purchase window is not proof without current data)", async () => {
+    const w = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil: new Date(T0 - 305 * DAY) });
+    await db.update(schema.settings).set({ purchaseDays: 365, clickDays: 365, openDays: 365, siteActivityDays: 365 }).where(eq(schema.settings.shop, w.shop));
+    expect(await w.run()).toMatchObject({ status: "completed", candidates: 0 });
+    expect(await reasonsOf(w)).toEqual({ insufficient_purchase_history: 40 });
+  });
+
+  it("when Shopify cannot be read during the scan: data read within the last hours still counts, older data protects everyone", async () => {
+    const failing = async () => {
+      throw new Error("shopify_graphql_error");
+    };
+    const recent = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil: new Date(T0 - 2 * HOUR), syncPurchases: failing });
+    expect(await recent.run()).toMatchObject({ status: "completed", candidates: 40 });
+
+    const old = await world({ profiles: fakeProfiles(40), purchasesCoveredUntil: new Date(T0 - 2 * DAY), syncPurchases: failing });
+    expect(await old.run()).toMatchObject({ status: "completed", candidates: 0 });
+    expect(await reasonsOf(old)).toEqual({ insufficient_purchase_history: 40 });
+  });
+
+  it("a backlog too large to read inside the scan protects everyone; the scan does not wait forever", async () => {
+    let calls = 0;
+    const w = await world({
+      profiles: fakeProfiles(40),
+      purchasesCoveredUntil: new Date(T0 - 30 * DAY),
+      limits: { maxPurchaseSyncSteps: 3 },
+      syncPurchases: async () => {
+        calls++;
+        return { status: "more" as const };
+      },
+    });
+    expect(await w.run()).toMatchObject({ status: "completed", candidates: 0 });
+    expect(calls).toBe(3);
+    expect(await reasonsOf(w)).toEqual({ insufficient_purchase_history: 40 });
+  });
+
+  it("a first backfill that has not finished leaves no coverage, so nobody is a candidate", async () => {
+    const { fake, sync } = shopify(Array.from({ length: 30 }, (_, i) => ({ email: `b${i}@shop.test`, processedAt: iso(i + 1) })));
+    fake.pageSize = 1;
+    const w = await world({ profiles: fakeProfiles(40), purchasesCoveredSince: null, purchasesCoveredUntil: null, limits: { maxPurchaseSyncSteps: 2 }, syncPurchases: sync });
+    expect(await w.run()).toMatchObject({ status: "completed", candidates: 0 });
+    expect(fake.calls).toHaveLength(8);
+    expect(await reasonsOf(w)).toEqual({ insufficient_purchase_history: 40 });
+  });
+
+  it("the seeded test account has no Shopify orders behind it and is not read", async () => {
+    let calls = 0;
+    const seeded = fakeProfiles(20).map((p) => ({ ...p, created: iso(0), emailConsent: "NEVER_SUBSCRIBED", emailConsentTimestamp: null, properties: { ts_seed_created_at: iso(500) } }));
+    const w = await world({
+      profiles: seeded,
+      metrics: [
+        { id: "A_RECV", name: "Received Email", integration: { name: "API", category: "API" } },
+        { id: "A_OPEN", name: "Opened Email", integration: { name: "API", category: "API" } },
+        { id: "A_CLICK", name: "Clicked Email", integration: { name: "API", category: "API" } },
+      ],
+      seededAccountId: "ACC001",
+      purchasesCoveredSince: null,
+      purchasesCoveredUntil: null,
+      syncPurchases: async () => {
+        calls++;
+        return { status: "fresh" as const };
+      },
+    });
+    expect(await w.run()).toMatchObject({ status: "completed", candidates: 20 });
+    expect(calls).toBe(0);
   });
 });

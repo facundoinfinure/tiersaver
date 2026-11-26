@@ -21,7 +21,7 @@ const daysAgo = (n: number) => new Date(NOW.getTime() - n * DAY);
  * vouches for its whole engagement history, and our Shopify order data reaches
  * back to before the profile existed.
  */
-const FULL: DataCoverage = candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000) });
+const FULL: DataCoverage = candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000), shopifyOrdersUntil: NOW });
 
 /** The opt-in wider mode: dated windows instead of "ever". */
 const WINDOWED = { ...DEFAULT_RULE_SETTINGS, purchaseDays: 365, clickDays: 182, openDays: 182, siteActivityDays: 182 };
@@ -166,17 +166,18 @@ describe("emails received and the candidate segment", () => {
   });
 
   it("segment coverage reaches the beginning of history, but purchases still need Shopify's order data", () => {
-    expect(candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000) })).toEqual({
+    expect(candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(3000), shopifyOrdersUntil: NOW })).toEqual({
       engagementSince: new Date(0),
       purchasesSince: daysAgo(3000),
+      purchasesUntil: NOW,
       siteActivitySince: new Date(0),
     });
     // Order data missing, or younger than the profile: under the "ever" rule we cannot say "never bought".
     expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: null })))).toEqual(["insufficient_purchase_history"]);
-    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(60) })))).toEqual(["insufficient_purchase_history"]);
+    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(60), shopifyOrdersUntil: NOW })))).toEqual(["insufficient_purchase_history"]);
     // The profile's age for the rules is the later of creation (800 days) and consent (790 days).
-    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(789) })))).toEqual(["insufficient_purchase_history"]);
-    expect(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(791) })).kind).toBe("candidate");
+    expect(reasons(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(789), shopifyOrdersUntil: NOW })))).toEqual(["insufficient_purchase_history"]);
+    expect(decide(profile(), KNOWN, candidateSegmentCoverage({ shopifyOrdersSince: daysAgo(791), shopifyOrdersUntil: NOW })).kind).toBe("candidate");
   });
 });
 
@@ -346,17 +347,18 @@ describe("buildDataCoverage (events path)", () => {
     unattributed: 0,
     ...overrides,
   });
-  const full = { open: scan(180), click: scan(180), purchase: scan(365), shopifyOrdersSince: daysAgo(365), checkout: scan(180), activeOnSite: scan(180) };
+  const full = { open: scan(180), click: scan(180), purchase: scan(365), shopifyOrdersSince: daysAgo(365), shopifyOrdersUntil: NOW, checkout: scan(180), activeOnSite: scan(180) };
 
   it("reports how far back each window reaches when every scan is complete", () => {
     expect(buildDataCoverage(full)).toEqual({
       engagementSince: daysAgo(180),
       purchasesSince: daysAgo(365),
+      purchasesUntil: NOW,
       siteActivitySince: daysAgo(180),
     });
     // The shorter of two windows limits the coverage.
     expect(buildDataCoverage({ ...full, open: scan(90) }).engagementSince).toEqual(daysAgo(90));
-    expect(buildDataCoverage({ ...full, shopifyOrdersSince: daysAgo(60) }).purchasesSince).toEqual(daysAgo(60));
+    expect(buildDataCoverage({ ...full, shopifyOrdersSince: daysAgo(60), shopifyOrdersUntil: NOW }).purchasesSince).toEqual(daysAgo(60));
   });
 
   it.each([
@@ -388,7 +390,7 @@ describe("buildDataCoverage (events path)", () => {
   });
 
   it("windows shorter than the rule protect too (60 days of Shopify orders against a 365-day rule)", () => {
-    const coverage = buildDataCoverage({ ...full, shopifyOrdersSince: daysAgo(60) });
+    const coverage = buildDataCoverage({ ...full, shopifyOrdersSince: daysAgo(60), shopifyOrdersUntil: NOW });
     expect(reasons(decide(profile(), COUNTED, coverage, WINDOWED))).toContain("insufficient_purchase_history");
     const shortEngagement = buildDataCoverage({ ...full, open: scan(30), click: scan(30) });
     expect(reasons(decide(profile(), COUNTED, shortEngagement, WINDOWED))).toContain("insufficient_engagement_history");
@@ -402,7 +404,7 @@ describe("buildDataCoverage (events path)", () => {
   });
 
   it("windowed scans satisfy the wider mode but never the default 'ever' rules", () => {
-    const wide = buildDataCoverage({ ...full, open: scan(400), click: scan(400), purchase: scan(400), shopifyOrdersSince: daysAgo(400) });
+    const wide = buildDataCoverage({ ...full, open: scan(400), click: scan(400), purchase: scan(400), shopifyOrdersSince: daysAgo(400), shopifyOrdersUntil: NOW });
     expect(decide(profile(), COUNTED, wide, WINDOWED).kind).toBe("candidate");
     // The profile is 800 days old and the scans cover 400: "never opened" cannot be claimed.
     const strict = decide(profile(), COUNTED, wide);

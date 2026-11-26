@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The monthly schedule and your Klaviyo plan · TierSaver</title>
-  <meta name="description" content="TierSaver runs once a month and finishes before your Klaviyo plan renews, so Klaviyo's profile count is up to date. What Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.">
+  <meta name="description" content="The monthly schedule is off by default. When it runs, what Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.">
   <link rel="canonical" href="https://tiersaver.com/help/monthly-schedule-and-your-klaviyo-plan">
   <meta name="theme-color" content="#eeeeec">
   <meta property="og:site_name" content="TierSaver">
   <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
   <meta property="og:title" content="The monthly schedule and your Klaviyo plan">
-  <meta property="og:description" content="TierSaver runs once a month and finishes before your Klaviyo plan renews, so Klaviyo's profile count is up to date. What Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.">
+  <meta property="og:description" content="The monthly schedule is off by default. When it runs, what Klaviyo says about suppressed profiles and plan sizes, and what stays your decision.">
   <meta property="og:url" content="https://tiersaver.com/help/monthly-schedule-and-your-klaviyo-plan">
   <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -25,6 +26,7 @@
   <link rel="stylesheet" href="/styles/tokens.css">
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Monthly schedule and your Klaviyo plan","item":"https://tiersaver.com/help/monthly-schedule-and-your-klaviyo-plan"}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -42,7 +44,7 @@
           <li><a href="/help/" aria-current="page">Help</a></li>
         </ul>
       </nav>
-      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
     </div>
   </header>
 
@@ -59,33 +61,36 @@
         <header class="doc__header">
           <p class="label">Help center</p>
           <h1>The monthly schedule and your Klaviyo plan</h1>
-          <p class="lead">TierSaver runs once a month and finishes before your Klaviyo plan renews, so Klaviyo's count of your active profiles is up to date.</p>
-          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+          <p class="lead">The monthly schedule is off by default. If you turn it on, TierSaver runs an audit once a month, a few days before your Klaviyo plan renews.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
         </header>
         <div class="prose">
-<h2>When cleanups run</h2>
+<h2 id="when-the-monthly-audit-runs">When the monthly audit runs</h2>
 <p>List hygiene works best as a routine. New profiles go quiet every month, and Klaviyo's bulk suppression applies only to the current members of a list or segment, so it does not repeat by itself.</p>
-<p>After your first manual cleanup, TierSaver runs once a month. By default it runs 5 days before your plan's renewal date, because Klaviyo says the profile count shown in billing may take up to 72 hours to refresh after a large cleanup. Dates follow your store's time zone.</p>
-<p>You tell TierSaver your renewal day during setup. In Klaviyo it is shown under Billing, on the Overview tab.</p>
-<p>Before each monthly cleanup you get a new simulation in the app, waiting for your approval for 24 hours. See <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>The schedule is off until you turn it on in <a href="/help/settings">Settings</a>. With it on, TierSaver runs an audit once a month. By default the audit runs 5 days before your plan's renewal date, because Klaviyo says the profile count shown in billing may take up to 72 hours to refresh after a large cleanup. You can set between 4 and 14 days. Dates follow your store's time zone.</p>
+<p>You can enter your renewal day in Settings. In Klaviyo it is shown under Billing, on the Overview tab. If you leave it empty, TierSaver uses the day Klaviyo reported in your last audit, when one is available.</p>
+<p>Each scheduled audit produces a simulation in the app, which waits for your approval for 24 hours. The app does not send email, so open the app around that day. Nothing is suppressed unless you approve, or you have turned on automatic mode. See <a href="/help/simulation-and-approval">simulation and approval</a>.</p>
+<p>The schedule only runs while the app is installed and connected to Klaviyo.</p>
 
-<h2>What Klaviyo says about suppressed profiles and plans</h2>
+<h2 id="what-klaviyo-says-about-suppressed-profiles-and-plans">What Klaviyo says about suppressed profiles and plans</h2>
 <p>These are Klaviyo's own statements, from its help center:</p>
 <ul>
   <li>Suppressed profiles do not count toward your email plan's active profile count.</li>
+  <li>On Klaviyo's Advanced KDP plan, billing is based on total profiles, and suppressed profiles can still count.</li>
   <li>Your plan has to cover the number of active profiles you have at the end of your billing cycle.</li>
   <li>A plan does not automatically move down just because you have fewer profiles. You can choose a smaller plan yourself after your count updates, or enable auto-downgrade based on profiles.</li>
   <li>With auto-downgrade enabled, Klaviyo checks your active profile count shortly before your billing cycle renews, and an eligible change takes effect for the next cycle.</li>
 </ul>
 
-<h2>What TierSaver does and does not do</h2>
+<h2 id="what-tiersaver-does-and-does-not-do">What TierSaver does and does not do</h2>
 <ul>
-  <li>It <strong>does</strong> show you, as a reference, which Klaviyo plan size your active profile count corresponds to.</li>
+  <li>It <strong>does</strong> show your active profile count, before and after a cleanup.</li>
+  <li>It <strong>does not</strong> show your Klaviyo plan or what you pay Klaviyo.</li>
   <li>It <strong>does not</strong> change your Klaviyo plan, your billing settings or your auto-downgrade preference. Those are yours to decide, in Klaviyo.</li>
   <li>It <strong>does not</strong> promise any effect on your Klaviyo plan or invoice.</li>
 </ul>
 
-<h2>If you want Klaviyo to adjust your plan size automatically</h2>
+<h2 id="if-you-want-klaviyo-to-adjust-your-plan-size-automatically">If you want Klaviyo to adjust your plan size automatically</h2>
 <p>These are Klaviyo's steps as published on the date below. You need to be an Owner or Admin with billing permissions.</p>
 <ol>
   <li>Select your account name in the lower left, then go to Billing, then Preferences.</li>
@@ -97,12 +102,12 @@
 </div>
 <p>Klaviyo also notes that a plan change takes effect in the next billing cycle, that the smaller plan must cover your active profile count, and that changing plans does not change your renewal date.</p>
 
-<h2>Sources</h2>
+<h2 id="sources">Sources</h2>
 <ul class="sources">
-  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
-  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read 2026-11-25)</li>
-  <li>Klaviyo Help Center, "How to choose your upgrade preference". <a href="https://help.klaviyo.com/hc/en-us/articles/4405883690651" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/4405883690651</a> (read 2026-11-25)</li>
-  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "How to choose your upgrade preference". <a href="https://help.klaviyo.com/hc/en-us/articles/4405883690651" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/4405883690651</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read November 26, 2026)</li>
 </ul>
         </div>
       </article>
@@ -110,15 +115,23 @@
         <nav aria-label="Help center">
           <p class="label">Help center</p>
           <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/how-the-audit-works">How the audit works</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
             <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
             <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan" aria-current="page">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/uninstalling">What happens on uninstall</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
         </nav>
       </aside>
@@ -131,46 +144,52 @@
         <div class="site-footer__brand">
           <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
           <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
         </div>
-        <div class="site-footer__col">
-          <h2 class="label">Product</h2>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
           <ul>
             <li><a href="/#how-it-works">How it works</a></li>
             <li><a href="/#list-check">List health check</a></li>
             <li><a href="/#pricing">Pricing</a></li>
             <li><a href="/#faq">Questions</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Help center</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
           <ul>
             <li><a href="/help/">All help articles</a></li>
-            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
-            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
             <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Guides</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
           <ul>
             <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
             <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
             <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Legal</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
           <ul>
             <li><a href="/privacy">Privacy policy (draft)</a></li>
             <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
           </ul>
-        </div>
+        </nav>
       </div>
       <div class="site-footer__bottom">
         <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
-        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
         <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { saveConnection } from "../app/klaviyo/connection.server";
 import { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
 import { createSuppressionRun, executeRun, type BatchRequest } from "../app/runs/engine";
 import { NO_JOB_ID, createSuppressionGateway, type GatewayEnv } from "../app/runs/gateway.server";
-import { FakeSteps, db, profileStatuses, schema, seedSimulation } from "./helpers";
+import { FakeSteps, db, installCandidateSegment, profileStatuses, schema, seedSimulation } from "./helpers";
 
 const ENCRYPTION_KEY = btoa(String.fromCharCode(...Array.from({ length: 32 }, (_, i) => (i * 11 + 5) % 256)));
 const emailOf = (profileId: string) => `${profileId.toLowerCase()}@customers-of-merchant.test`;
@@ -29,6 +29,8 @@ async function setup(opts: { candidates?: number; enabled?: string | null; conne
   }
   const created = await createSuppressionRun(db, { shop, simulationId, createdBy: "user:1" });
   if (!created.ok) throw new Error(created.reason);
+  // What the scan left in Klaviyo: TierSaver's managed segment, with every candidate as a member.
+  const segment = await installCandidateSegment(fake, shop, profileIds);
 
   const gatewayEnv: GatewayEnv = {
     DB: env.DB,
@@ -58,7 +60,7 @@ async function setup(opts: { candidates?: number; enabled?: string | null; conne
     batchIndex,
     profileIds: profileIds.slice(batchIndex * 100, batchIndex * 100 + 100),
   });
-  return { fake, shop, profileIds, runId: created.runId, gateway, gatewayEnv, batch, tokens };
+  return { fake, shop, simulationId, segment, profileIds, runId: created.runId, gateway, gatewayEnv, batch, tokens };
 }
 
 async function rejection(p: Promise<unknown>): Promise<Error> {
@@ -153,11 +155,13 @@ describe("submitting batches", () => {
   it("resolves ids to emails at call time and suppresses exactly the batch, 100 emails in one job", async () => {
     const { fake, gateway, batch, profileIds } = await setup();
     const result = await gateway.submitBatch(batch(0));
-    expect(result).toEqual({ jobId: "JOB0001", skippedProfileIds: [] });
+    expect(result).toEqual({ jobId: "JOB0001", skippedProfileIds: [], skipReasons: {} });
 
-    const lookups = fake.requestsTo(/^\/api\/profiles$/);
+    // Membership of the candidate segment, the email and the suppression state come from the same read.
+    const lookups = fake.requestsTo(/^\/api\/segments\/SEGCAND\/profiles$/);
     expect(lookups).toHaveLength(2); // 50 ids per lookup
-    expect(lookups.every((r) => r.url.searchParams.get("fields[profile]") === "email")).toBe(true);
+    expect(lookups.every((r) => r.url.searchParams.get("filter")?.startsWith("any(profile_id,["))).toBe(true);
+    expect(fake.requestsTo(/^\/api\/profiles$/)).toHaveLength(0);
     const posts = fake.requestsTo(/^\/api\/profile-suppression-bulk-create-jobs$/, "POST");
     expect(posts).toHaveLength(1);
     expect(fake.jobs[0]).toMatchObject({ kind: "suppress" });
@@ -189,6 +193,7 @@ describe("submitting batches", () => {
 
     const result = await gateway.submitBatch(batch(0));
     expect([...(result.skippedProfileIds ?? [])].sort()).toEqual([gone, noEmail, changed].sort());
+    expect(result.skipReasons).toEqual({ [gone]: "not_in_candidate_segment", [noEmail]: "no_email", [changed]: "email_changed" });
     expect([...fake.jobs[0]!.emails].sort()).toEqual(rest.map(emailOf).sort());
     expect(fake.suppressed.has("someone-else@customers-of-merchant.test")).toBe(false);
 
@@ -214,17 +219,26 @@ describe("submitting batches", () => {
     expect(fake.requests.filter((r) => r.method !== "GET")).toHaveLength(0);
   });
 
-  it("is safe to call twice with the same batch", async () => {
-    const { fake, gateway, batch, profileIds } = await setup({ candidates: 40 });
-    const first = await gateway.submitBatch(batch(0));
+  it("is safe to call twice with the same batch: what Klaviyo already applied is not sent again", async () => {
+    const { fake, gateway, batch, profileIds, runId } = await setup({ candidates: 40 });
+    // The engine stamps the rows right before the request leaves.
+    const beforeSend = async () => void (await db.update(schema.runProfiles).set({ attemptedAt: new Date() }).where(eq(schema.runProfiles.runId, runId)));
+    const first = await gateway.submitBatch({ ...batch(0), beforeSend });
+    expect(first.skippedProfileIds).toEqual([]);
     const state = [...fake.suppressed].sort();
-    const second = await gateway.submitBatch(batch(0));
-    expect(second.skippedProfileIds).toEqual(first.skippedProfileIds);
+
+    // The answer was lost and the batch is tried again. Klaviyo shows every profile suppressed since our request.
+    const second = await gateway.submitBatch({ ...batch(0), maybeSentProfileIds: profileIds });
+    expect(second.skippedProfileIds).toEqual([]);
+    expect([...(second.confirmedProfileIds ?? [])].sort()).toEqual([...profileIds].sort());
+    expect(second.jobId).toBe(NO_JOB_ID);
+    expect(fake.jobs).toHaveLength(1);
     expect([...fake.suppressed].sort()).toEqual(state);
-    expect(fake.suppressed.size).toBe(40);
-    // Same emails both times, nothing extra.
-    expect([...fake.jobs[1]!.emails].sort()).toEqual([...fake.jobs[0]!.emails].sort());
-    expect(fake.profiles.size).toBe(profileIds.length);
+
+    // Without that knowledge the same profiles are simply "already suppressed": nobody is sent twice either way.
+    const third = await gateway.submitBatch(batch(0));
+    expect(Object.values(third.skipReasons ?? {})).toEqual(Array(40).fill("already_suppressed"));
+    expect(fake.jobs).toHaveLength(1);
   });
 
   it("turns rate limits and outages into retryable errors, and a rejected request into a final one", async () => {
@@ -238,7 +252,7 @@ describe("submitting batches", () => {
     const rejected = await rejection(gateway.submitBatch(batch(0)));
     expect(rejected).toMatchObject({ name: "NonRetryableError", message: "klaviyo_400_invalid" });
 
-    fake.failNext(/^\/api\/profiles$/, () => FakeKlaviyo.clientError(403, "permission_denied"));
+    fake.failNext(/^\/api\/segments\/[^/]+\/profiles$/, () => FakeKlaviyo.clientError(403, "permission_denied"));
     expect(await rejection(gateway.submitBatch(batch(0)))).toMatchObject({ name: "NonRetryableError", message: "klaviyo_403_permission_denied" });
     expect(fake.suppressed.size).toBe(0);
 
@@ -299,9 +313,11 @@ describe("a whole run through the real engine", () => {
       },
     };
     const outcome = await executeRun({ db, gateway: flaky, step: new FakeSteps() }, runId);
-    expect(outcome).toMatchObject({ status: "completed", submitted: 130 });
-    expect(fake.jobs).toHaveLength(3);
+    expect(outcome).toMatchObject({ status: "completed", submitted: 130, unknown: 0 });
+    // The retry found batch 0 applied (suppressed since our request) and did not create a second job for it.
+    expect(fake.jobs).toHaveLength(2);
     expect(fake.suppressed.size).toBe(130);
+    expect(await profileStatuses(runId)).toEqual({ submitted: 130 });
   });
 
   it("with an allowed account set, refuses to suppress for any other Klaviyo account but still undoes", async () => {

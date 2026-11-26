@@ -24,7 +24,7 @@ updated: 2026-11-26
       <tr><th scope="row">Completed</th><td>Every batch was sent to Klaviyo.</td></tr>
       <tr><th scope="row">Completed with issues</th><td>It finished, but some profiles were not processed because of an error. The counts show how many.</td></tr>
       <tr><th scope="row">Did not run</th><td>It could not run. The page gives the reason.</td></tr>
-      <tr><th scope="row">Cancelled</th><td>It was stopped before it finished.</td></tr>
+      <tr><th scope="row">Cancelled</th><td>It was stopped before it finished. Profiles already sent stay suppressed and can be restored; the rest were not touched.</td></tr>
     </tbody>
   </table>
 </div>
@@ -34,10 +34,14 @@ updated: 2026-11-26
 <ul>
   <li><strong>In this cleanup.</strong> The profiles in the simulation you approved.</li>
   <li><strong>Sent to Klaviyo to be suppressed.</strong> What TierSaver submitted. Klaviyo then applies it in the background.</li>
-  <li><strong>Left untouched.</strong> Profiles that were no longer in Klaviyo, had no email address, or whose address had changed since the simulation.</li>
+  <li><strong>Left untouched.</strong> Profiles that were checked again right before sending and were no longer candidates, with the reason for each group: for example an order placed after the simulation, a changed email address, or a profile that is already suppressed or no longer exists in Klaviyo.</li>
+  <li><strong>Sent, but Klaviyo's answer was lost.</strong> Shown only when there are any. Those profiles may have been suppressed, and a restore includes them.</li>
   <li><strong>Not processed because of an error.</strong> Shown only when there are any.</li>
   <li><strong>Restored later.</strong> Shown when part or all of the cleanup was restored.</li>
 </ul>
+
+<h2>Stopping a cleanup</h2>
+<p>While a cleanup is in progress its page has a "Stop cleanup" button. TierSaver then stops sending profiles to Klaviyo; the batch being sent at that moment still goes through. Profiles already sent stay suppressed, and you can restore them from the same page once the cleanup has closed.</p>
 
 <h2>The charge</h2>
 <p>A cleanup's page states what happened with its charge: an estimated charge that has not been sent to Shopify yet, the amount charged and when, or the reason nothing was charged. See <a href="/help/billing">billing and charges</a>.</p>

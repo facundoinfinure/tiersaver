@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Undo: correcting a run · TierSaver</title>
-  <meta name="description" content="Undo restores exactly the profiles a TierSaver run suppressed. It exists to correct mistakes. Restored profiles are not eligible for cleanup again for 365 days.">
+  <title>Undo: restoring a cleanup · TierSaver</title>
+  <meta name="description" content="Restore removes the manual suppression from the profiles one TierSaver cleanup suppressed. What it does, its limits, and the 365 days that follow.">
   <link rel="canonical" href="https://tiersaver.com/help/undo">
   <meta name="theme-color" content="#eeeeec">
   <meta property="og:site_name" content="TierSaver">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Undo: correcting a run">
-  <meta property="og:description" content="Undo restores exactly the profiles a TierSaver run suppressed. It exists to correct mistakes. Restored profiles are not eligible for cleanup again for 365 days.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Undo: restoring a cleanup">
+  <meta property="og:description" content="Restore removes the manual suppression from the profiles one TierSaver cleanup suppressed. What it does, its limits, and the 365 days that follow.">
   <meta property="og:url" content="https://tiersaver.com/help/undo">
   <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -25,6 +26,7 @@
   <link rel="stylesheet" href="/styles/tokens.css">
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Undo","item":"https://tiersaver.com/help/undo"}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -42,7 +44,7 @@
           <li><a href="/help/" aria-current="page">Help</a></li>
         </ul>
       </nav>
-      <a class="button button--small site-header__cta" href="#" data-todo="app-store-url">Run my free list audit</a>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
     </div>
   </header>
 
@@ -58,38 +60,55 @@
       <article class="doc__article">
         <header class="doc__header">
           <p class="label">Help center</p>
-          <h1>Undo: correcting a run</h1>
-          <p class="lead">Every run can be undone. Undo exists to correct a mistake: it restores exactly the profiles that run suppressed, and nothing else.</p>
-          <p class="label doc__updated"><span>Last updated</span><span>2026-11-25</span></p>
+          <h1>Undo: restoring a cleanup</h1>
+          <p class="lead">A cleanup can be restored from the app. Undo exists to correct a mistake: it removes the suppression from the profiles of that cleanup.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
         </header>
         <div class="prose">
-<h2>The run log</h2>
-<p>Each cleanup is recorded: when it ran, whether you started it or the schedule did, who approved it, the criteria in effect, how many profiles were suppressed and how it ended. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what makes undo exact.</p>
+<h2 id="how-to-restore-a-cleanup">How to restore a cleanup</h2>
+<ol>
+  <li>Open TierSaver and go to History.</li>
+  <li>Open the cleanup you want to correct.</li>
+  <li>In the section "Undo this cleanup", select the Restore button.</li>
+</ol>
+<p>Restore becomes available once the cleanup has finished and Klaviyo has finished applying it. If you try too early, the app asks you to try again in a minute or two. The restore then appears in History as its own entry.</p>
 
-<h2>What undo does</h2>
+<h2 id="what-restore-does">What Restore does</h2>
 <ul>
-  <li>It removes the suppression from the profiles of one run.</li>
-  <li>It does not touch profiles that were suppressed by you, by Klaviyo or by another run.</li>
-  <li>It does not change consent. A profile that had unsubscribed before stays unsubscribed.</li>
+  <li>It removes the manual suppression from the profiles that cleanup suppressed, so they can receive marketing email again.</li>
+  <li>It does not change consent. Profiles that unsubscribed, bounced or have an invalid address stay unsendable in Klaviyo.</li>
+  <li>It does not touch profiles from other cleanups, or profiles that were never part of a TierSaver cleanup.</li>
 </ul>
-<p>After an undo, the set of profiles suppressed by TierSaver is what it was before that run.</p>
 
-<h2>What happens to restored profiles</h2>
+<h2 id="the-limits-of-restore">The limits of Restore</h2>
+<ul>
+  <li><strong>It needs the app installed and connected to Klaviyo.</strong> After you uninstall, remove suppressions in Klaviyo instead.</li>
+  <li><strong>It cannot always tell your own suppressions apart.</strong> Klaviyo records only one kind of manual suppression and does not say who added it. Restore leaves a profile untouched when Klaviyo's dates show that its suppression was already there before the cleanup, or was added again afterwards. When the dates do not settle it, the suppression is removed. So if you manually suppressed one of those same profiles yourself after the cleanup, Restore can lift that too. Check before you restore.</li>
+  <li><strong>Emails are not sent later.</strong> Whatever those profiles did not receive while they were suppressed is not sent to them afterwards.</li>
+  <li><strong>The charge.</strong> A cleanup you restore in full within 72 hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. See <a href="/help/pricing">how pricing works</a>.</li>
+  <li><strong>Some profiles may be left as they are.</strong> Each profile is checked again right before the restore, and one that no longer exists in Klaviyo or has no email address cannot be restored. The restore's page shows how many were left untouched and why.</li>
+</ul>
+
+<h2 id="what-happens-to-restored-profiles">What happens to restored profiles</h2>
 <ul>
   <li><strong>They count as active profiles again.</strong> Klaviyo's displayed count may take up to 72 hours to refresh after a large change.</li>
-  <li><strong>TierSaver leaves them alone for 365 days.</strong> A restored profile is not eligible for any cleanup during that time. If you undo a run, you are telling TierSaver those profiles should stay.</li>
+  <li><strong>TierSaver leaves them alone for 365 days.</strong> A restored profile is left out of every cleanup during that time. If you restore a cleanup, you are telling TierSaver those profiles should stay.</li>
   <li><strong>Klaviyo has its own waiting period.</strong> Its help center says that once a profile is suppressed and then unsuppressed, it cannot be manually suppressed again until 90 days after the previous suppression. The rule is not active during the first 30 days after a new Klaviyo account is created.</li>
 </ul>
 
-<h2>What undo is not for</h2>
-<p>Undo is not a way to suppress profiles for a while and bring them back later. Suppression is a decision to stop emailing someone. If you expect to email a group again, protect it instead: mark the list or segment as protected in the <a href="/help/cleanup-criteria">cleanup criteria</a> and it will never be selected.</p>
-<p>If an undo is requested for a run that is more than one plan renewal old, the app asks you to confirm.</p>
+<h2 id="what-undo-is-not-for">What undo is not for</h2>
+<p>Undo is not a way to suppress profiles for a while and bring them back later. Suppression is a decision to stop emailing someone. If you expect to email a group again, protect it instead: mark the list or segment as protected in <a href="/help/settings">Settings</a> and it will not be selected.</p>
+<p>If your Klaviyo plan has renewed, or may have renewed, since the cleanup, the app asks you to confirm that you are restoring the profiles to correct a mistake. Suppressing profiles before a renewal and restoring them afterwards is against TierSaver's terms.</p>
 
-<h2>Sources</h2>
+<h2 id="the-cleanup-log">The cleanup log</h2>
+<p>Each cleanup is recorded: when it started and finished, whether you started it or the schedule did, who approved it, the criteria in effect and how many profiles were suppressed. For each profile the log keeps the Klaviyo profile ID and the reason it was selected. That record is what Restore works from. See <a href="/help/history">History</a>.</p>
+
+<h2 id="sources">Sources</h2>
 <ul class="sources">
-  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read 2026-11-25)</li>
-  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read 2026-11-25)</li>
-  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read 2026-11-25)</li>
+  <li>Klaviyo Help Center, "How to manage email suppressions and delete profiles in bulk". <a href="https://help.klaviyo.com/hc/en-us/articles/24312135764251" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24312135764251</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "Understanding active profile management in Klaviyo". <a href="https://help.klaviyo.com/hc/en-us/articles/24263920096027" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/24263920096027</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "Understanding suppressed email profiles". <a href="https://help.klaviyo.com/hc/en-us/articles/115005246108" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115005246108</a> (read November 26, 2026)</li>
+  <li>Klaviyo Help Center, "How Klaviyo billing works". <a href="https://help.klaviyo.com/hc/en-us/articles/115000976672" rel="noopener noreferrer">https://help.klaviyo.com/hc/en-us/articles/115000976672</a> (read November 26, 2026)</li>
 </ul>
         </div>
       </article>
@@ -97,15 +116,23 @@
         <nav aria-label="Help center">
           <p class="label">Help center</p>
           <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/how-the-audit-works">How the audit works</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
             <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
             <li><a href="/help/undo" aria-current="page">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
             <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
             <li><a href="/help/pricing">How pricing works</a></li>
-            <li><a href="/help/uninstalling">What happens on uninstall</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
             <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
         </nav>
       </aside>
@@ -118,46 +145,52 @@
         <div class="site-footer__brand">
           <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
           <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
         </div>
-        <div class="site-footer__col">
-          <h2 class="label">Product</h2>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
           <ul>
             <li><a href="/#how-it-works">How it works</a></li>
             <li><a href="/#list-check">List health check</a></li>
             <li><a href="/#pricing">Pricing</a></li>
             <li><a href="/#faq">Questions</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Help center</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
           <ul>
             <li><a href="/help/">All help articles</a></li>
-            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
             <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
             <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
-            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
             <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Guides</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
           <ul>
             <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
             <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
             <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
           </ul>
-        </div>
-        <div class="site-footer__col">
-          <h2 class="label">Legal</h2>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
           <ul>
             <li><a href="/privacy">Privacy policy (draft)</a></li>
             <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
           </ul>
-        </div>
+        </nav>
       </div>
       <div class="site-footer__bottom">
         <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
-        <p class="small text-muted">Klaviyo plan sizes and list prices mentioned on this site were read on 2026-11-25 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
         <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
       </div>
     </div>

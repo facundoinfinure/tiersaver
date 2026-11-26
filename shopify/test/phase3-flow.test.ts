@@ -165,7 +165,8 @@ describe("undo", () => {
     const outcome = await executeRun({ db, gateway: createSuppressionGateway(gatewayEnv, shop, { fetch: fake.fetch, sleep: async () => {} }), step: new FakeSteps() }, undo.runId);
     expect(outcome).toMatchObject({ status: "completed", submitted: 2 });
     expect(fake.requests.some((r) => r.url.pathname.includes("profile-suppression-bulk-delete-jobs"))).toBe(true);
-    expect(fake.requests.some((r) => r.url.pathname.includes("profile-suppression-bulk-create-jobs"))).toBe(false);
+    // The cleanup's own jobs may be READ (when did they finish?); nothing is ever suppressed by an undo.
+    expect(fake.requests.some((r) => r.method !== "GET" && r.url.pathname.includes("profile-suppression-bulk-create-jobs"))).toBe(false);
   });
 
   it("renewalSince", () => {
@@ -282,7 +283,7 @@ describe("automatic mode", () => {
   it("runs only in automatic mode, with recommended rules, for a scheduled simulation", async () => {
     const { shop } = await finishedCleanup(2); // approved by user:1 and completed
     const simulationId = crypto.randomUUID();
-    const base = { id: simulationId, shop, origin: "scheduled" as const, settingsVersion: 1, ruleSettings: {}, coverage: {}, summary: {}, evaluatedCount: 5, candidateCount: 2, protectedCount: 3, skippedCount: 0, activeProfiles: 10, priceTableId: "t" };
+    const base = { id: simulationId, shop, origin: "scheduled" as const, settingsVersion: 1, ruleSettings: {}, coverage: {}, summary: {}, evaluatedCount: 5, candidateCount: 2, protectedCount: 3, skippedCount: 0, activeProfiles: 100, priceTableId: "t" };
     await db.insert(schema.simulations).values(base);
 
     expect(await decideAutomatic(db, { shop, simulationId })).toEqual({ run: false, reason: "mode_is_approval" });

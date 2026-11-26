@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History: reading a cleanup's page · TierSaver</title>
+  <meta name="description" content="How to read TierSaver's History page and the page of each cleanup: statuses, profile counts, the charge, Klaviyo's jobs and the Restore button.">
+  <link rel="canonical" href="https://tiersaver.com/help/history">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="History: reading a cleanup's page">
+  <meta property="og:description" content="How to read TierSaver's History page and the page of each cleanup: statuses, profile counts, the charge, Klaviyo's jobs and the Restore button.">
+  <meta property="og:url" content="https://tiersaver.com/help/history">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"History","item":"https://tiersaver.com/help/history"}]}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">History</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>History: reading a cleanup's page</h1>
+          <p class="lead">Every cleanup and every restore is listed under History, with what it changed. Nothing in a list hygiene routine should be a mystery afterwards.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
+        </header>
+        <div class="prose">
+<h2 id="the-history-page">The History page</h2>
+<p>History lists your most recent cleanups and restores, newest first. Each row shows when it started, whether it is a cleanup or a restore, whether the monthly schedule started it, its status, and how many profiles were sent to Klaviyo out of the total. "Details" opens its page.</p>
+
+<h2 id="statuses">Statuses</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Statuses of a cleanup or restore">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">Status</th><th scope="col">Meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Queued</th><td>It has been started and is waiting to begin.</td></tr>
+      <tr><th scope="row">In progress</th><td>Profiles are being sent to Klaviyo in batches. The page updates by itself; you can leave it.</td></tr>
+      <tr><th scope="row">Completed</th><td>Every batch was sent to Klaviyo.</td></tr>
+      <tr><th scope="row">Completed with issues</th><td>It finished, but some profiles were not processed because of an error. The counts show how many.</td></tr>
+      <tr><th scope="row">Did not run</th><td>It could not run. The page gives the reason.</td></tr>
+      <tr><th scope="row">Cancelled</th><td>It was stopped before it finished. Profiles already sent stay suppressed and can be restored; the rest were not touched.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>If a cleanup or restore stopped early, a notice on its page gives the reason, and the profiles it did not reach were left untouched. The reasons are listed in <a href="/help/troubleshooting">troubleshooting</a>.</p>
+
+<h2 id="the-counts">The counts</h2>
+<ul>
+  <li><strong>In this cleanup.</strong> The profiles in the simulation you approved.</li>
+  <li><strong>Sent to Klaviyo to be suppressed.</strong> What TierSaver submitted. Klaviyo then applies it in the background.</li>
+  <li><strong>Left untouched.</strong> Profiles that were checked again right before sending and were no longer candidates, with the reason for each group: for example an order placed after the simulation, a changed email address, or a profile that is already suppressed or no longer exists in Klaviyo.</li>
+  <li><strong>Sent, but Klaviyo's answer was lost.</strong> Shown only when there are any. Those profiles may have been suppressed, and a restore includes them.</li>
+  <li><strong>Not processed because of an error.</strong> Shown only when there are any.</li>
+  <li><strong>Restored later.</strong> Shown when part or all of the cleanup was restored.</li>
+</ul>
+
+<h2 id="stopping-a-cleanup">Stopping a cleanup</h2>
+<p>While a cleanup is in progress its page has a "Stop cleanup" button. TierSaver then stops sending profiles to Klaviyo; the batch being sent at that moment still goes through. Profiles already sent stay suppressed, and you can restore them from the same page once the cleanup has closed.</p>
+
+<h2 id="the-charge">The charge</h2>
+<p>A cleanup's page states what happened with its charge: an estimated charge that has not been sent to Shopify yet, the amount charged and when, or the reason nothing was charged. See <a href="/help/billing">billing and charges</a>.</p>
+
+<h2 id="klaviyo-jobs">Klaviyo jobs</h2>
+<p>Klaviyo processes each batch as a background job. "Check jobs in Klaviyo" asks Klaviyo what it reports for them: the status of each job, how many profiles it processed and how many Klaviyo skipped. For a large cleanup the jobs are checked a page at a time. A job that Klaviyo can no longer return is counted as one that could not be read.</p>
+<p>The profile count Klaviyo shows in your account can take up to 72 hours to update after a cleanup.</p>
+
+<h2 id="restore">Restore</h2>
+<p>The section "Undo this cleanup" has the Restore button and links to any restore already made from that cleanup. See <a href="/help/undo">undo</a> for what Restore does and its limits.</p>
+
+<h2 id="how-long-history-is-kept">How long history is kept</h2>
+<p>History stays while the app is installed. It is deleted with the rest of your store's data after you uninstall. See <a href="/help/uninstalling">uninstalling and disconnecting</a>.</p>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history" aria-current="page">History</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
+        </div>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

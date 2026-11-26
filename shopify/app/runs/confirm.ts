@@ -27,11 +27,19 @@ export interface JobsPage {
 }
 
 /** Reads one page of a run's jobs from Klaviyo, in a stable order. One request per job. */
-export async function confirmJobsPage(db: Db, client: KlaviyoClient, args: { runId: string; offset: number; limit: number }): Promise<JobsPage> {
+export async function confirmJobsPage(db: Db, client: KlaviyoClient, args: { runId: string; offset: number; limit: number; shop?: string }): Promise<JobsPage> {
   const rows = await db
     .selectDistinct({ jobId: schema.runProfiles.klaviyoJobId })
     .from(schema.runProfiles)
-    .where(and(eq(schema.runProfiles.runId, args.runId), eq(schema.runProfiles.status, "submitted"), sql`${schema.runProfiles.klaviyoJobId} IS NOT NULL AND ${schema.runProfiles.klaviyoJobId} <> ${NO_JOB}`))
+    .where(
+      and(
+        eq(schema.runProfiles.runId, args.runId),
+        // Callers that take the run id from a request pass the session's shop: another shop's jobs are never read.
+        args.shop === undefined ? undefined : eq(schema.runProfiles.shop, args.shop),
+        eq(schema.runProfiles.status, "submitted"),
+        sql`${schema.runProfiles.klaviyoJobId} IS NOT NULL AND ${schema.runProfiles.klaviyoJobId} <> ${NO_JOB}`,
+      ),
+    )
     .orderBy(schema.runProfiles.klaviyoJobId);
   const ids = rows.flatMap((r) => (r.jobId ? [r.jobId] : []));
   let complete = true;
@@ -56,8 +64,8 @@ export interface JobsConfirmation {
 }
 
 /** All jobs of a run in one go, for runs small enough for a single invocation. Null when there are more than `maxJobs`. */
-export async function confirmRunJobs(db: Db, client: KlaviyoClient, runId: string, maxJobs = 40): Promise<JobsConfirmation | null> {
-  const page = await confirmJobsPage(db, client, { runId, offset: 0, limit: maxJobs });
+export async function confirmRunJobs(db: Db, client: KlaviyoClient, runId: string, maxJobs = 40, shop?: string): Promise<JobsConfirmation | null> {
+  const page = await confirmJobsPage(db, client, { runId, offset: 0, limit: maxJobs, shop });
   if (page.jobs > maxJobs) return null;
   return { done: page.complete, suppressed: page.suppressed };
 }

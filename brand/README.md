@@ -8,8 +8,9 @@ Fuente de verdad: `docs/03-MARCA.md`. Si algo de acá lo contradice, gana ese do
 
 | Archivo | Qué es |
 | --- | --- |
-| `options.png` | Hoja de contacto con las tres opciones lado a lado: tamaño grande, 32 px y 16 px, sobre fondo claro (#eeeeec), blanco y superficie oscura (#101010), más el ícono de app. Empezá por acá. |
-| `logo/option-a/`, `option-b/`, `option-c/` | Una carpeta por opción, con los mismos archivos en cada una (ver abajo). |
+| `options.png` | Hoja de contacto con las tres opciones lado a lado: tamaño grande, 32 px y 16 px, sobre fondo claro (#eeeeec), blanco y superficie oscura (#101010), más el ícono de app. Archivo de la decisión. |
+| `logo/final/` | Los archivos a usar: copia de `option-b/`, la opción elegida. |
+| `logo/option-a/`, `option-b/`, `option-c/` | Una carpeta por opción, con los mismos archivos en cada una (ver abajo). Archivo de la decisión. |
 | `tokens.css` | Tokens de color, tipografía y radios como custom properties de CSS. |
 | `tokens.json` | Los mismos tokens en JSON, con el uso de cada uno. |
 | `messaging.md` | Guía de mensajes en inglés (titular, subtítulo, pruebas, CTA, voz, objeciones, palabras prohibidas). Revisada y aprobada el 2026-11-25. |
@@ -38,23 +39,19 @@ Un bloque macizo de dos niveles con un punto apoyado en el nivel de abajo. Es la
 
 La T de TierSaver con el brazo derecho un escalón más abajo. Es la única que ata la marca al nombre, y la idea de "bajar un tramo" queda en la letra misma. Sobre oscuro, el brazo caído va en el acento cálido y el gesto se entiende solo. Es la que mejor aguanta 16 px. Riesgo: al lado de la palabra "TierSaver" hay dos T seguidas; en el logo horizontal se ve bien, pero conviene mirarlo.
 
-## Recomendación
+## Recomendación original y decisión
 
-**C · Dropped T.** Motivos:
-
-1. Es la más legible en chico (favicon, lista de apps de Shopify, pestaña del navegador).
-2. Es la única propia: una T con el brazo caído no se confunde con un ícono genérico, y sirve igual para futuros "TierSaver for …".
-3. Cuenta la idea (bajar un escalón) sin dibujar gráficos de precios ni flechas hacia abajo, que empujarían la lectura hacia "pagá menos" y no hacia higiene de lista.
-
-Segunda opción: **A**, si se prefiere un símbolo abstracto en vez de una inicial.
+Se recomendó **C · Dropped T** (la más legible en chico y la única atada al nombre) y, como segunda opción, **A**. **Facundo eligió B · Lower Step el 2026-11-25.** La recomendación queda acá solo como historia de la decisión; lo que vale es B, y los archivos a usar son los de `logo/final/`.
 
 ## Pendiente y sin verificar
 
-- **Elegir logo** (Facundo). Recién ahí se aplica en `site/`, en la app y en la ficha.
-- **Aprobar los mensajes** de `messaging.md`.
-- No se hizo búsqueda de marcas registradas ni de parecidos con logos existentes. Las tres evitan a propósito la bolsa de Shopify y la bandera de Klaviyo, pero falta un chequeo formal antes de publicar.
+- No se hizo búsqueda de marcas registradas ni de parecidos con logos existentes. Las tres opciones evitan a propósito la bolsa de Shopify y la bandera de Klaviyo, pero falta un chequeo formal antes de publicar.
 - Falta confirmar contra los requisitos vigentes del App Store el formato del ícono (hoy: 1200 × 1200 px, JPEG o PNG) y las reglas de nombre.
 - El ícono se exporta con esquinas rectas; Shopify aplica su propio recorte.
+- Sin resolver: el concepto del logo ("bajar un escalón") va en sentido contrario al posicionamiento de higiene de lista (`docs/03-MARCA.md`, sección Logo; `docs/12-CUMPLIMIENTO-KLAVIYO.md`, sección 2.2). Revisarlo queda atado a la decisión sobre el nombre; no se cambió nada.
+- `messaging.md` todavía trae como frase central "Klaviyo's own recommended criteria" y una "open decision" sobre el descriptor que ya está decidida. La revisión del 2026-11-26 reemplazó esa frase en el sitio por "the criteria Klaviyo publishes for suppressing unengaged profiles"; falta llevar el cambio a `messaging.md` y a `docs/03-MARCA.md`.
+
+Ya resuelto, no es pendiente: la elección del logo (B) y la aprobación de los mensajes (2026-11-25).
 
 ## Cómo se generó
 

@@ -3,15 +3,7 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { hashCustomerId, redactCustomer } from "../app/data/privacy";
-import {
-  backfillOrdersPage,
-  backfillSince,
-  ensureShop,
-  markPurchasesCovered,
-  ORDERS_PAGE_SIZE,
-  recordPurchases,
-  type AdminGraphql,
-} from "../app/orders/purchases";
+import { ensureShop, ORDERS_PAGE_SIZE, recordPurchases } from "../app/orders/purchases";
 import { db, schema, uniqueShop } from "./helpers";
 
 async function rows(shop: string) {
@@ -93,43 +85,19 @@ describe("recordPurchases", () => {
   });
 });
 
-describe("orders backfill", () => {
-  it("pages through orders since the cutoff and reports completion", async () => {
+describe("recordPurchases: the customer's email", () => {
+  it("an order without its own email still protects the customer it belongs to (point of sale)", async () => {
     const shop = uniqueShop();
     await ensureShop(db, shop);
-    const since = new Date("2026-09-26T00:00:00Z");
-    const calls: Record<string, unknown>[] = [];
-    const pages = [
-      { nodes: [{ email: "a@example.com", processedAt: "2026-10-01T00:00:00Z", test: false, customer: { id: "gid://shopify/Customer/1" } }], pageInfo: { hasNextPage: true, endCursor: "c1" } },
-      { nodes: [{ email: "b@example.com", processedAt: "2026-10-02T00:00:00Z", test: false, customer: null }, { email: null, processedAt: "2026-10-03T00:00:00Z", test: false, customer: null }], pageInfo: { hasNextPage: false, endCursor: "c2" } },
-    ];
-    const graphql: AdminGraphql = async <T>(_q: string, variables: Record<string, unknown>) => {
-      calls.push(variables);
-      return { orders: pages[calls.length - 1] } as T;
-    };
-
-    const first = await backfillOrdersPage(db, graphql, { shop, since, cursor: null });
-    expect(first).toEqual({ cursor: "c1", done: false, orders: 1, buyers: 1 });
-    const second = await backfillOrdersPage(db, graphql, { shop, since, cursor: first.cursor });
-    expect(second).toEqual({ cursor: null, done: true, orders: 2, buyers: 1 });
-
-    expect(calls[0]).toEqual({ first: 250, after: null, query: "processed_at:>='2026-09-26T00:00:00.000Z'" });
-    expect(calls[1]).toMatchObject({ after: "c1" });
-    expect(await rows(shop)).toHaveLength(2);
-  });
-
-  it("coverage reaches 60 days without read_all_orders, and only moves earlier", async () => {
-    const shop = uniqueShop();
-    await ensureShop(db, shop);
-    const now = new Date("2026-11-25T00:00:00Z");
-    const short = backfillSince(false, now);
-    expect(short.toISOString()).toBe("2026-09-26T00:00:00.000Z");
-    await markPurchasesCovered(db, shop, short, false);
-    const full = backfillSince(true, now);
-    await markPurchasesCovered(db, shop, full, true);
-    await markPurchasesCovered(db, shop, short, true);
-    const row = await db.query.shops.findFirst({ where: eq(schema.shops.shop, shop) });
-    expect(row?.purchasesCoveredSince?.toISOString()).toBe(full.toISOString());
-    expect(row?.readAllOrdersGranted).toBe(true);
+    await recordPurchases(db, shop, [
+      { email: null, customerEmail: "Pos@Example.com", customerId: "gid://shopify/Customer/5", processedAt: "2026-11-01T00:00:00Z" },
+      { email: "gift@example.com", customerEmail: "buyer@example.com", customerId: 6, processedAt: "2026-11-02T00:00:00Z" },
+      { email: null, customerEmail: null, processedAt: "2026-11-03T00:00:00Z" },
+    ]);
+    const stored = await rows(shop);
+    expect(stored.map((r) => r.emailHash).sort()).toEqual(
+      [await hashEmail("pos@example.com"), await hashEmail("gift@example.com"), await hashEmail("buyer@example.com")].sort(),
+    );
+    expect(stored.every((r) => r.customerIdHash !== null)).toBe(true);
   });
 });

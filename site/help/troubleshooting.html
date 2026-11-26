@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Troubleshooting · TierSaver</title>
+  <meta name="description" content="What TierSaver's messages mean and what to do: Klaviyo connection problems, audits that cannot finish, expired simulations and cleanups that stop.">
+  <link rel="canonical" href="https://tiersaver.com/help/troubleshooting">
+  <meta name="theme-color" content="#eeeeec">
+  <meta property="og:site_name" content="TierSaver">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Troubleshooting">
+  <meta property="og:description" content="What TierSaver's messages mean and what to do: Klaviyo connection problems, audits that cannot finish, expired simulations and cleanups that stop.">
+  <meta property="og:url" content="https://tiersaver.com/help/troubleshooting">
+  <meta property="og:image" content="https://tiersaver.com/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TierSaver. Automatic list hygiene for Klaviyo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/inter-tight-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tiersaver.com/"},{"@type":"ListItem","position":2,"name":"Help center","item":"https://tiersaver.com/help/"},{"@type":"ListItem","position":3,"name":"Troubleshooting","item":"https://tiersaver.com/help/troubleshooting"}]}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-header__logo" href="/" aria-label="TierSaver home">
+        <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#list-check">List check</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/help/" aria-current="page">Help</a></li>
+        </ul>
+      </nav>
+      <a class="button button--small site-header__cta" href="mailto:hello@tiersaver.com?subject=Free%20list%20audit">Run my free list audit</a>
+    </div>
+  </header>
+
+  <main id="main" class="container doc">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/help/">Help center</a></li>
+          <li aria-current="page">Troubleshooting</li>
+      </ol>
+    </nav>
+    <div class="doc__grid">
+      <article class="doc__article">
+        <header class="doc__header">
+          <p class="label">Help center</p>
+          <h1>Troubleshooting</h1>
+          <p class="lead">The messages the app can show, grouped by where you see them. In every case below, nothing is suppressed that you did not approve.</p>
+          <p class="label doc__updated"><span>Last updated</span><span>November 26, 2026</span></p>
+        </header>
+        <div class="prose">
+<h2 id="connecting-klaviyo">Connecting Klaviyo</h2>
+<ul>
+  <li><strong>"Klaviyo was not connected because the request was declined on Klaviyo."</strong> The request was declined on Klaviyo's screen. Select "Connect Klaviyo" again and approve the access. What it asks for is in <a href="/help/permissions">permissions</a>.</li>
+  <li><strong>"Klaviyo could not be connected. Please try again."</strong> The connection did not complete. Start again from "Connect Klaviyo"; the link the app gives you is valid for ten minutes, so do it in one go. If it keeps failing, <a href="/help/contact">contact support</a>.</li>
+  <li><strong>"Reconnect Klaviyo".</strong> TierSaver's access to your Klaviyo account has ended or was removed in Klaviyo. Cleanups are paused until you connect again with "Reconnect Klaviyo" on the home page. Nothing else changes.</li>
+</ul>
+
+<h2 id="the-audit">The audit</h2>
+<p>When the app says "The last audit could not finish", it adds the reason. Nothing was changed.</p>
+<ul>
+  <li><strong>Access to Klaviyo has ended.</strong> Reconnect Klaviyo and run the audit again.</li>
+  <li><strong>The TierSaver segment in Klaviyo was edited, or deactivated.</strong> Run the audit again; it restores the segment. Leave the segment named "TierSaver: long-term inactive profiles (managed, do not edit)" as it is.</li>
+  <li><strong>Klaviyo is still preparing the data.</strong> Run the audit again in a few minutes.</li>
+  <li><strong>The list is larger than the audit can read right now.</strong> <a href="/help/contact">Write to support</a>.</li>
+  <li><strong>Any other case.</strong> Something went wrong while reading from Klaviyo. Run the audit again.</li>
+</ul>
+<p>If your Klaviyo account has two segments with TierSaver's name, the app cannot tell which one is its own and uses neither. Delete the copy in Klaviyo and run the audit again.</p>
+
+<h2 id="the-audit-found-nobody-to-suppress">The audit found nobody to suppress</h2>
+<ul>
+  <li><strong>"Your list is already clean."</strong> No profile matches the cleanup criteria. There is nothing to suppress and nothing to charge.</li>
+  <li><strong>Profiles could not be checked against your store's full order history.</strong> They were kept active. This happens while your Shopify order history is still being read, or when Shopify has not shared the whole history with the app. A profile is only suppressed once it can be checked against your orders. If the app says the history is still being read, run the audit again later.</li>
+  <li><strong>Your Klaviyo account has no record of delivered emails, opens or clicks yet.</strong> Without that data no profile can be called inactive.</li>
+  <li><strong>A protected list or segment could not be read.</strong> Every profile was kept active. Run the audit again later.</li>
+</ul>
+<p>The section "Kept active even though they meet the criteria" shows how many profiles were kept for each reason.</p>
+
+<h2 id="simulations">Simulations</h2>
+<ul>
+  <li><strong>"This simulation has expired."</strong> A simulation can be approved and run for 24 hours. Run the audit again from the home page.</li>
+  <li><strong>"This simulation is out of date", or "Your rules or protected lists changed after this audit."</strong> You changed the criteria or a protected list after it was computed, or a newer audit replaced it. Run the audit again.</li>
+  <li><strong>"This simulation was already used for a cleanup."</strong> A simulation runs once. Run the audit again for a new one.</li>
+  <li><strong>The approval is refused.</strong> Tick the box that confirms you have read the notices and accept the terms. If the app says it could not identify your Shopify user, reload the page and try again.</li>
+  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, or this cleanup is much larger than usual. Review the simulation and approve it yourself if it is right.</li>
+  <li><strong>"The file could not be prepared."</strong> The CSV of candidates is read from Klaviyo at the moment you download it. Try again; Klaviyo has to be connected.</li>
+</ul>
+
+<h2 id="starting-a-cleanup">Starting a cleanup</h2>
+<ul>
+  <li><strong>"Accept the TierSaver pricing in Shopify before starting the cleanup."</strong> Select "Review pricing in Shopify" and accept. See <a href="/help/billing">billing and charges</a>.</li>
+  <li><strong>"Shopify billing could not be reached."</strong> Nothing was changed. Try again.</li>
+  <li><strong>"Connect Klaviyo before starting a cleanup."</strong> The connection was lost after you approved. Reconnect and start again while the simulation is still valid.</li>
+  <li><strong>"Cleanups are not switched on for this installation yet."</strong> The installation can audit and simulate but cannot suppress profiles yet. Nothing was changed in Klaviyo. <a href="/help/contact">Contact support</a>.</li>
+</ul>
+
+<h2 id="a-cleanup-stopped-early">A cleanup stopped early</h2>
+<p>The cleanup's page shows "This run stopped early" with the reason. Profiles it did not reach were left untouched.</p>
+<ul>
+  <li><strong>Access to Klaviyo ended, or Klaviyo was disconnected.</strong> Reconnect Klaviyo from the home page, then run a new audit for the profiles that were not reached.</li>
+  <li><strong>The simulation was more than 24 hours old when the cleanup started,</strong> or <strong>your rules changed after it was approved.</strong> Run the audit again and approve the new simulation.</li>
+  <li><strong>Something went wrong while talking to Klaviyo.</strong> Check the counts on the page, then run a new audit.</li>
+</ul>
+<p>A cleanup that shows "Completed with issues" finished, but some profiles were not processed because of an error. <a href="/help/history">History</a> explains the counts.</p>
+
+<h2 id="restoring">Restoring</h2>
+<ul>
+  <li><strong>"Klaviyo is still applying this cleanup."</strong> Try the restore again in a minute or two.</li>
+  <li><strong>"This cleanup is still running."</strong> You can restore it once it has finished.</li>
+  <li><strong>"A restore of this cleanup is already in progress."</strong> Wait for it to finish.</li>
+  <li><strong>"There is nothing left to restore from this cleanup."</strong> Its profiles were already restored.</li>
+  <li><strong>"Klaviyo is not connected."</strong> Reconnect it from the home page first.</li>
+</ul>
+
+<h2 id="klaviyo-s-profile-count-has-not-changed">Klaviyo's profile count has not changed</h2>
+<p>Klaviyo applies a cleanup in the background, and the count it shows can take up to 72 hours to update. On the cleanup's page, "Check jobs in Klaviyo" shows what Klaviyo reports so far. Your Klaviyo plan does not change automatically unless you enabled auto-downgrade in Klaviyo.</p>
+
+<h2 id="settings">Settings</h2>
+<ul>
+  <li><strong>"Your lists and segments could not be read from Klaviyo right now."</strong> The ones you already protect are still protected. Open Settings again later.</li>
+  <li><strong>A warning at the top of Settings after you confirm your changes.</strong> Nothing was changed. The warning lists what to correct, for example a window shorter than the allowed minimum, or automatic mode without the schedule on.</li>
+</ul>
+
+<h2 id="profiles-from-an-earlier-cleanup-are-active-again">"Profiles from an earlier cleanup are active again"</h2>
+<p>See <a href="/help/after-a-cleanup">what changes after a cleanup</a>.</p>
+
+<h2 id="what-to-send-to-support">What to send to support</h2>
+<p>Your store's myshopify.com address, the message you see, and the date of the audit or cleanup. Do not send customer email addresses, passwords or API keys. <a href="/help/contact">Contact support</a>.</p>
+        </div>
+      </article>
+      <aside class="doc__aside">
+        <nav aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/how-the-audit-works">How the audit works</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/what-suppress-means">What suppressing means</a></li>
+            <li><a href="/help/after-a-cleanup">After a cleanup</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/history">History</a></li>
+            <li><a href="/help/monthly-schedule-and-your-klaviyo-plan">Monthly schedule and your Klaviyo plan</a></li>
+            <li><a href="/help/settings">Settings</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/billing">Billing and charges</a></li>
+            <li><a href="/help/uninstalling">Uninstalling and disconnecting</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+            <li><a href="/help/troubleshooting" aria-current="page">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <img src="/assets/logo.svg" alt="TierSaver" width="133" height="32">
+          <p class="text-muted small">Automatic list hygiene for Klaviyo, for Shopify brands.</p>
+          <p class="text-muted small">Support: <a href="mailto:support@tiersaver.com">support@tiersaver.com</a><br>Everything else: <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a></p>
+        </div>
+        <nav class="site-footer__col" aria-label="Product">
+          <p class="label">Product</p>
+          <ul>
+            <li><a href="/#how-it-works">How it works</a></li>
+            <li><a href="/#list-check">List health check</a></li>
+            <li><a href="/#pricing">Pricing</a></li>
+            <li><a href="/#faq">Questions</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Help center">
+          <p class="label">Help center</p>
+          <ul>
+            <li><a href="/help/">All help articles</a></li>
+            <li><a href="/help/getting-started">Getting started</a></li>
+            <li><a href="/help/permissions">Permissions</a></li>
+            <li><a href="/help/cleanup-criteria">Cleanup criteria</a></li>
+            <li><a href="/help/simulation-and-approval">Simulation and approval</a></li>
+            <li><a href="/help/undo">Undo</a></li>
+            <li><a href="/help/pricing">How pricing works</a></li>
+            <li><a href="/help/troubleshooting">Troubleshooting</a></li>
+            <li><a href="/help/contact">Contact support</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Guides">
+          <p class="label">Guides</p>
+          <ul>
+            <li><a href="/guides/klaviyo-list-hygiene">Klaviyo list hygiene by hand</a></li>
+            <li><a href="/guides/how-klaviyo-counts-active-profiles">How Klaviyo counts active profiles</a></li>
+            <li><a href="/guides/suppress-vs-delete-vs-unsubscribe">Suppress, delete or unsubscribe</a></li>
+          </ul>
+        </nav>
+        <nav class="site-footer__col" aria-label="Legal">
+          <p class="label">Legal</p>
+          <ul>
+            <li><a href="/privacy">Privacy policy (draft)</a></li>
+            <li><a href="/terms">Terms of service (draft)</a></li>
+            <li><a href="/dpa">Data processing addendum (draft)</a></li>
+            <li><a href="/help/data-and-privacy">Data and privacy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <p class="small text-muted">TierSaver is an independent product. It is not affiliated with, endorsed by or sponsored by Klaviyo, Inc. or Shopify Inc. Klaviyo and Shopify are trademarks of their respective owners and are used here only to describe what TierSaver works with.</p>
+        <p class="small text-muted">Klaviyo plan sizes mentioned on this site were read on November 25, 2026 and may have changed. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+        <p class="small text-muted">© 2026 Digital Solvers LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

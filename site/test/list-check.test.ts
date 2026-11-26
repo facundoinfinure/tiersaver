@@ -11,6 +11,8 @@ import {
   check,
   criteriaCount,
   describe as describeResult,
+  FIELD_MESSAGES,
+  fieldErrors,
   formatUsd,
   largestPublishedPlan,
   largestTierSaverPlan,
@@ -38,7 +40,12 @@ describe("Klaviyo plan sizes come from core's price table", () => {
         it(`${plan}: ${active} active, ${meeting} meet the criteria`, () => {
           const table = CURRENT_PRICE_TABLES[plan === "marketing" ? "email_sms" : "email"];
           const r = check({ activeProfiles: active, meetingCriteria: meeting, unit: "profiles", plan });
-          const after = active - Math.min(meeting, active);
+          if (meeting > active) {
+            // More profiles than the list holds is reported as a mistake, never clamped in silence.
+            expect(r.valid).toBe(false);
+            return;
+          }
+          const after = active - meeting;
           expect(r.valid).toBe(true);
           expect(r.profilesAfter).toBe(after);
           expect(r.profilesSuppressed).toBe(active - after);
@@ -76,7 +83,7 @@ describe("TierSaver's flat price by list size comes from core's FLAT_PRICE_TIERS
 
   it("the check returns core's own tier objects: no copy of the table, no second lookup", () => {
     for (const active of [0, 1, 8_000, 10_000, 10_001, 12_500, 25_000, 25_001, 75_000, 75_001, 150_000, 150_001, 400_000]) {
-      const r = check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan: "email" });
+      const r = check({ activeProfiles: active, meetingCriteria: 0, unit: "profiles", plan: "email" });
       expect(r.tierSaverPlan).toBe(flatTierFor(active));
       if (r.tierSaverPlan) expect(FLAT_PRICE_TIERS).toContain(r.tierSaverPlan);
     }
@@ -125,12 +132,25 @@ describe("what the check never does", () => {
     const r = check(DEFAULT_EXAMPLE);
     for (const key of Object.keys(r)) expect(key).not.toMatch(/saving|fee|keep|diff|delta/i);
     const view = describeResult(r);
-    // $275 and $150 are shown as list prices; their difference must not appear anywhere.
     const text = Object.values(view).join(" ");
-    expect(text).toContain("$275/mo list price");
-    expect(text).toContain("$150/mo list price");
-    expect(text).not.toContain("$125");
     expect(text).not.toMatch(/sav(e|ing)|you keep|cheaper|less/i);
+  });
+
+  it("shows Klaviyo plan sizes only: the one amount in the result is TierSaver's own price", () => {
+    const tierSaverPrices = new Set(FLAT_PRICE_TIERS.map((t) => `$${t.monthlyCents / 100}/month`));
+    for (const plan of ["email", "marketing", "free"] as const) {
+      for (const active of [240, 8_000, 12_500, 50_000, 150_000, 180_000, 1_000_000]) {
+        const view = describeResult(check({ activeProfiles: active, meetingCriteria: 1, unit: "profiles", plan }));
+        const amounts = Object.values(view).join(" ").match(/[$][0-9,.]+[/]month/g) ?? [];
+        for (const amount of amounts) expect(tierSaverPrices.has(amount), `${plan} ${active}: ${amount}`).toBe(true);
+        expect(Object.values(view).join(" ").match(/[$]/g)?.length ?? 0).toBe(amounts.length);
+        expect(view.klaviyoBefore).not.toMatch(/[$]|price|[/]mo/i);
+        expect(view.klaviyoAfter).not.toMatch(/[$]|price|[/]mo/i);
+      }
+    }
+    const view = describeResult(check(DEFAULT_EXAMPLE));
+    expect(view.klaviyoBefore).toBe("Up to 12,500 profiles");
+    expect(view.klaviyoAfter).toBe("Up to 10,000 profiles");
   });
 });
 
@@ -139,8 +159,8 @@ describe("honest cases", () => {
     const view = describeResult(check({ activeProfiles: 180_000, meetingCriteria: 10_000, unit: "profiles", plan: "email" }));
     expect(view.figure).toBe("170,000");
     expect(view.tierSaverPrice).toBe("Contact us");
-    expect(view.klaviyoBefore).toMatch(/custom pricing/);
-    expect(view.klaviyoAfter).toMatch(/custom pricing/);
+    expect(view.klaviyoBefore).toBe("Above 150,000 profiles: no plan size is published");
+    expect(view.klaviyoAfter).toBe("Above 150,000 profiles: no plan size is published");
   });
 
   it("free Klaviyo plan: no plan size is shown", () => {
@@ -162,11 +182,40 @@ describe("honest cases", () => {
       { activeProfiles: Number.NaN, meetingCriteria: 10, unit: "profiles", plan: "email" },
       { activeProfiles: 1_000, meetingCriteria: -1, unit: "profiles", plan: "email" },
       { activeProfiles: 1_000, meetingCriteria: 101, unit: "percent", plan: "email" },
+      { activeProfiles: 5_000, meetingCriteria: 6_000, unit: "profiles", plan: "email" },
     ] satisfies CheckInput[]) {
       const r = check(input);
       expect(r.valid).toBe(false);
       expect(describeResult(r).figure).toBe("Check the numbers");
     }
+  });
+});
+
+describe("wording and field messages", () => {
+  const view = (activeProfiles: number, meetingCriteria: number) =>
+    describeResult(check({ activeProfiles, meetingCriteria, unit: "profiles", plan: "email" }));
+
+  it("agrees in number when exactly one profile is involved", () => {
+    const one = view(10_001, 1);
+    expect(one.message).toBe(
+      "1 of 10,001 profiles meets the cleanup criteria. It would be suppressed only after you approve a simulation. Nothing is deleted.",
+    );
+    expect(one.leaving).toBe("1 meets the cleanup criteria");
+    expect(one.staying).toBe("10,000 stay active");
+    expect(view(2, 1).staying).toBe("1 stays active");
+    const many = view(10_000, 2_500);
+    expect(many.message).toContain("2,500 of 10,000 profiles meet the cleanup criteria. They would be suppressed only after you approve");
+    expect(many.leaving).toBe("2,500 meet the cleanup criteria");
+  });
+
+  it("says which field is wrong and why", () => {
+    expect(fieldErrors("12,500", "2,500", "profiles")).toEqual({ active: null, criteria: null });
+    expect(fieldErrors("abc", "2,500", "profiles")).toEqual({ active: FIELD_MESSAGES.wholeNumber, criteria: null });
+    expect(fieldErrors("5,000", "6,000", "profiles")).toEqual({ active: null, criteria: FIELD_MESSAGES.tooLarge });
+    expect(fieldErrors("5,000", "x", "profiles")).toEqual({ active: null, criteria: FIELD_MESSAGES.wholeNumber });
+    expect(fieldErrors("5,000", "101", "percent")).toEqual({ active: null, criteria: FIELD_MESSAGES.percent });
+    expect(fieldErrors("5,000", "12.5", "percent")).toEqual({ active: null, criteria: null });
+    expect(fieldErrors("", "", "percent")).toEqual({ active: FIELD_MESSAGES.wholeNumber, criteria: FIELD_MESSAGES.percent });
   });
 });
 
@@ -206,8 +255,8 @@ describe("default example rendered into the pages", () => {
     expect(data["check.tierSaverPlan"]).toBe(view.tierSaverPlan);
     expect(data["plans.defaultExamplePrice"]).toBe("$29");
     expect(data["plans.smallExamplePrice"]).toBe("$15");
-    expect(data["check.klaviyoBefore"]).toBe("Up to 12,500 profiles ($275/mo list price)");
-    expect(data["check.klaviyoAfter"]).toBe("Up to 10,000 profiles ($150/mo list price)");
+    expect(data["check.klaviyoBefore"]).toBe("Up to 12,500 profiles");
+    expect(data["check.klaviyoAfter"]).toBe("Up to 10,000 profiles");
     expect(data["check.keptPercent"]).toBe("80");
   });
 });

@@ -92,14 +92,18 @@ mark.placeholder {
 }
 .site-nav ul {
   display: flex;
-  gap: 1.75rem;
+  justify-content: space-between;
+  gap: clamp(0.5rem, 3vw, 1.75rem);
   white-space: nowrap;
   padding: 0;
   list-style: none;
 }
 .site-nav a {
+  /* Block padding gives the link a 24px touch target (WCAG 2.2, 2.5.8). */
+  display: inline-block;
+  padding-block: 0.25rem;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   text-decoration: none;
 }
 .site-nav a:hover,
@@ -121,6 +125,13 @@ mark.placeholder {
     overflow-x: visible;
     margin-left: auto;
     padding-block: 0;
+  }
+  .site-nav ul {
+    justify-content: flex-start;
+    gap: 1.75rem;
+  }
+  .site-nav a {
+    font-size: 0.9375rem;
   }
   .site-header__cta {
     margin-left: 0;
@@ -258,6 +269,14 @@ mark.placeholder {
 .proof .grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
+@media (min-width: 40rem) and (max-width: 61.99rem) {
+  .proof .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .proof .card {
+    min-height: 0;
+  }
+}
 .proof .card {
   display: flex;
   flex-direction: column;
@@ -380,6 +399,11 @@ mark.placeholder {
 .field__hint {
   margin-top: 0.5rem;
   color: var(--muted);
+  font-size: 0.875rem;
+}
+.field__error {
+  margin-top: 0.5rem;
+  color: var(--alert);
   font-size: 0.875rem;
 }
 .field__row {
@@ -592,17 +616,24 @@ mark.placeholder {
   height: 1.75rem;
   margin-bottom: 0.75rem;
 }
-.site-footer__col h2 {
+.site-footer__col .label {
+  display: block;
   margin-bottom: 0.875rem;
+}
+.site-footer__brand p + p {
+  margin-top: 0.75rem;
 }
 .site-footer__col ul {
   padding: 0;
   list-style: none;
 }
 .site-footer__col li + li {
-  margin-top: 0.5rem;
+  margin-top: 0.125rem;
 }
 .site-footer__col a {
+  /* Block padding gives the link a 24px touch target (WCAG 2.2, 2.5.8). */
+  display: inline-block;
+  padding-block: 0.1875rem;
   color: var(--ink-2);
   font-size: 0.9375rem;
   text-decoration: none;
@@ -787,7 +818,13 @@ mark.placeholder {
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-tile);
-  background: var(--surface-1);
+  /* Edge shading that appears only on the side with more content to scroll to. */
+  background:
+    linear-gradient(to right, var(--surface-1) 30%, transparent) 0 0 / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--surface-1) 30%, transparent) 100% 0 / 2.5rem 100% no-repeat local,
+    linear-gradient(to right, rgba(20, 20, 20, 0.14), transparent) 0 0 / 0.75rem 100% no-repeat scroll,
+    linear-gradient(to left, rgba(20, 20, 20, 0.14), transparent) 100% 0 / 0.75rem 100% no-repeat scroll,
+    var(--surface-1);
 }
 .table-scroll--tall {
   max-height: 28rem;
@@ -824,6 +861,14 @@ mark.placeholder {
   top: 0;
   background: var(--surface-1);
   box-shadow: inset 0 -1px 0 var(--line);
+}
+.table-scroll .data-table thead th {
+  /* Inside a sideways-scrolling box the header does not need its own background, which would cover the edge shading. */
+  position: static;
+  background: transparent;
+}
+.data-table code {
+  white-space: nowrap;
 }
 .data-table tr:last-child > * {
   border-bottom: 0;
@@ -913,7 +958,7 @@ mark.placeholder {
   white-space: normal;
 }
 .calc__form {
-  align-self: center;
+  align-self: start;
 }
 
 /* ---------- List health check additions ---------- */

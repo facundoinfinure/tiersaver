@@ -71,7 +71,15 @@ export interface BatchResult {
   skippedProfileIds?: string[];
   /** Why each skipped profile was left untouched: machine-readable code, no personal data. Stored in `run_profiles.error_code`. */
   skipReasons?: Record<string, string>;
+  /**
+   * Profiles of `maybeSentProfileIds` that were not sent again because Klaviyo's own state shows the earlier
+   * attempt was applied. They are recorded as submitted; the job that carried them is not known.
+   */
+  confirmedProfileIds?: string[];
 }
+
+/** `run_profiles.error_code` (informative) of a submitted profile whose job id was lost but whose state in Klaviyo proves it was applied. */
+export const CONFIRMED_BY_STATE = "confirmed_by_state";
 
 /** `run_profiles.error_code` of a profile that was sent to Klaviyo without a confirmed outcome. */
 export const OUTCOME_UNKNOWN = "outcome_unknown";
@@ -409,7 +417,15 @@ async function runBatch(
     throw err;
   }
 
-  const skipped = [...new Set(result.skippedProfileIds ?? [])].filter((id) => known.has(id));
+  // Applied by the earlier attempt, as Klaviyo itself shows: done, although that attempt's job id was lost.
+  const confirmed = [...new Set(result.confirmedProfileIds ?? [])].filter((id) => maybeSent.has(id));
+  await eachChunk(confirmed, (part) =>
+    db
+      .update(schema.runProfiles)
+      .set({ status: "submitted", errorCode: CONFIRMED_BY_STATE, updatedAt: args.now })
+      .where(and(inBatch, inArray(schema.runProfiles.profileId, part))),
+  );
+  const skipped = [...new Set(result.skippedProfileIds ?? [])].filter((id) => known.has(id) && !confirmed.includes(id));
   const byReason = new Map<string, string[]>();
   for (const id of skipped) {
     // Left out now, but an earlier attempt sent it: what Klaviyo did with it is unknown, so it is not "untouched".

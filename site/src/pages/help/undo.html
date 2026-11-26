@@ -28,10 +28,10 @@ updated: 2026-11-26
 <h2>The limits of Restore</h2>
 <ul>
   <li><strong>It needs the app installed and connected to Klaviyo.</strong> After you uninstall, remove suppressions in Klaviyo instead.</li>
-  <li><strong>It cannot tell your own later suppressions apart.</strong> Klaviyo records only one kind of manual suppression. If you manually suppressed one of those same profiles yourself after the cleanup, Restore lifts that suppression too. Check before you restore.</li>
+  <li><strong>It cannot always tell your own suppressions apart.</strong> Klaviyo records only one kind of manual suppression and does not say who added it. Restore leaves a profile untouched when Klaviyo's dates show that its suppression was already there before the cleanup, or was added again afterwards. When the dates do not settle it, the suppression is removed. So if you manually suppressed one of those same profiles yourself after the cleanup, Restore can lift that too. Check before you restore.</li>
   <li><strong>Emails are not sent later.</strong> Whatever those profiles did not receive while they were suppressed is not sent to them afterwards.</li>
   <li><strong>The charge.</strong> A cleanup you restore in full within {{fee.holdHours}} hours of its end is not charged. Restoring later, or restoring only part of it, does not refund the charge. See <a href="/help/pricing">how pricing works</a>.</li>
-  <li><strong>Some profiles may be left as they are.</strong> A profile that is no longer in Klaviyo, or has no email address any more, cannot be restored. The restore's page shows the counts.</li>
+  <li><strong>Some profiles may be left as they are.</strong> Each profile is checked again right before the restore, and one that no longer exists in Klaviyo or has no email address cannot be restored. The restore's page shows how many were left untouched and why.</li>
 </ul>
 
 <h2>What happens to restored profiles</h2>

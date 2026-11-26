@@ -16,6 +16,8 @@ async function graphql(query: string, options?: { variables?: Record<string, unk
       },
     });
   }
+  // The shop's time zone, as Shop.ianaTimezone: dates in the app are shown in it (app/settings/timezone.ts).
+  if (query.includes("TierSaverShopTimeZone")) return json({ shop: { ianaTimezone: "America/Los_Angeles" } });
   if (query.includes("appSubscriptionCreate")) {
     return json({ appSubscriptionCreate: { confirmationUrl: "http://localhost:3210/__preview/billing/confirm", appSubscription: { id: "gid://shopify/AppSubscription/1" }, userErrors: [] } });
   }

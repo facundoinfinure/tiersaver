@@ -294,9 +294,9 @@ export function toProfileSignals(profile: KlaviyoProfileRecord, context: Profile
  * Valid only together with `ProfileContext.candidateSegment`, i.e. for
  * profiles that really came out of a verified segment read.
  */
-export function candidateSegmentCoverage(input: { shopifyOrdersSince: Date | null }): DataCoverage {
+export function candidateSegmentCoverage(input: { shopifyOrdersSince: Date | null; shopifyOrdersUntil?: Date | null }): DataCoverage {
   const beginning = new Date(0);
-  return { engagementSince: beginning, purchasesSince: input.shopifyOrdersSince, siteActivitySince: beginning };
+  return { engagementSince: beginning, purchasesSince: input.shopifyOrdersSince, purchasesUntil: input.shopifyOrdersUntil, siteActivitySince: beginning };
 }
 
 /** Events path: the outcome of scanning one signal's events. */
@@ -333,6 +333,8 @@ export function buildDataCoverage(input: {
   click: SignalScan | null;
   purchase: SignalScan | null;
   shopifyOrdersSince: Date | null;
+  /** When Shopify's orders were last read completely; missing or not recent protects everyone (purchase rule). */
+  shopifyOrdersUntil?: Date | null;
   checkout?: SignalScan | null;
   activeOnSite?: SignalScan | null;
 }): DataCoverage {
@@ -351,5 +353,5 @@ export function buildDataCoverage(input: {
       ? latest(input.checkout.since, input.activeOnSite.since)
       : null;
 
-  return { engagementSince, purchasesSince, siteActivitySince };
+  return { engagementSince, purchasesSince, purchasesUntil: input.shopifyOrdersUntil, siteActivitySince };
 }

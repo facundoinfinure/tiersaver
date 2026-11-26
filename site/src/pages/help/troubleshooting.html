@@ -23,7 +23,7 @@ updated: 2026-11-26
   <li><strong>Access to Klaviyo has ended.</strong> Reconnect Klaviyo and run the audit again.</li>
   <li><strong>The TierSaver segment in Klaviyo was edited, or deactivated.</strong> Run the audit again; it restores the segment. Leave the segment named "{{app.segmentName}}" as it is.</li>
   <li><strong>Klaviyo is still preparing the data.</strong> Run the audit again in a few minutes.</li>
-  <li><strong>The list is larger than the audit can read right now.</strong> <a href="/help/contact">Contact support</a>.</li>
+  <li><strong>The list is larger than the audit can read right now.</strong> <a href="/help/contact">Write to support</a>.</li>
   <li><strong>Any other case.</strong> Something went wrong while reading from Klaviyo. Run the audit again.</li>
 </ul>
 <p>If your Klaviyo account has two segments with TierSaver's name, the app cannot tell which one is its own and uses neither. Delete the copy in Klaviyo and run the audit again.</p>
@@ -31,7 +31,7 @@ updated: 2026-11-26
 <h2>The audit found nobody to suppress</h2>
 <ul>
   <li><strong>"Your list is already clean."</strong> No profile matches the cleanup criteria. There is nothing to suppress and nothing to charge.</li>
-  <li><strong>TierSaver could not check the profiles against your full Shopify order history yet.</strong> All of them were kept active. Nobody is suppressed until every profile can be checked against your orders.</li>
+  <li><strong>Profiles could not be checked against your store's full order history.</strong> They were kept active. This happens while your Shopify order history is still being read, or when Shopify has not shared the whole history with the app. A profile is only suppressed once it can be checked against your orders. If the app says the history is still being read, run the audit again later.</li>
   <li><strong>Your Klaviyo account has no record of delivered emails, opens or clicks yet.</strong> Without that data no profile can be called inactive.</li>
   <li><strong>A protected list or segment could not be read.</strong> Every profile was kept active. Run the audit again later.</li>
 </ul>
@@ -43,6 +43,7 @@ updated: 2026-11-26
   <li><strong>"This simulation is out of date", or "Your rules or protected lists changed after this audit."</strong> You changed the criteria or a protected list after it was computed, or a newer audit replaced it. Run the audit again.</li>
   <li><strong>"This simulation was already used for a cleanup."</strong> A simulation runs once. Run the audit again for a new one.</li>
   <li><strong>The approval is refused.</strong> Tick the box that confirms you have read the notices and accept the terms. If the app says it could not identify your Shopify user, reload the page and try again.</li>
+  <li><strong>A scheduled cleanup in automatic mode is waiting for your review.</strong> The app says why: the last cleanup you approved was restored, your criteria or protected lists changed since, or this cleanup is much larger than usual. Review the simulation and approve it yourself if it is right.</li>
   <li><strong>"The file could not be prepared."</strong> The CSV of candidates is read from Klaviyo at the moment you download it. Try again; Klaviyo has to be connected.</li>
 </ul>
 

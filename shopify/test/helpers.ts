@@ -1,6 +1,11 @@
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
+import { validateRuleSettings } from "@tiersaver/core";
 import * as schema from "../app/db/schema";
+import { buildCandidateSegmentDefinition } from "../app/klaviyo/api";
+import { CANDIDATE_SEGMENT_NAME } from "../app/klaviyo/config";
+import type { FakeKlaviyo } from "../app/klaviyo/testing/fake-klaviyo";
+import { rulesOf } from "../app/settings/settings";
 import type { BatchRequest, BatchResult, StepConfig, StepRunner, SuppressionGateway } from "../app/runs/engine";
 
 export const db = drizzle(env.DB, { schema });
@@ -151,4 +156,31 @@ export async function profileStatuses(runId: string): Promise<Record<string, num
   const out: Record<string, number> = {};
   for (const r of rows) out[r.status] = (out[r.status] ?? 0) + 1;
   return out;
+}
+
+export const NATIVE_METRICS = [
+  { id: "M_RECV", name: "Received Email", integration: { name: "Klaviyo", category: "Internal" } },
+  { id: "M_OPEN", name: "Opened Email", integration: { name: "Klaviyo", category: "Internal" } },
+  { id: "M_CLICK", name: "Clicked Email", integration: { name: "Klaviyo", category: "Internal" } },
+  { id: "M_ORDER", name: "Placed Order", integration: { name: "Shopify", category: "eCommerce" } },
+];
+
+/**
+ * Puts TierSaver's managed candidate segment into the fake Klaviyo, as a finished scan leaves it: built-in
+ * metrics, the definition the shop's current rules produce, computed, with `members`. Returns the segment
+ * (mutable: tests remove members, flip `isProcessing`, edit the definition).
+ */
+export async function installCandidateSegment(fake: FakeKlaviyo, shop: string, members: string[]) {
+  if (fake.metrics.length === 0) fake.metrics = NATIVE_METRICS;
+  const settings = await db.query.settings.findFirst({ where: (s, { eq }) => eq(s.shop, shop) });
+  if (!settings) throw new Error("no settings for shop");
+  const built = buildCandidateSegmentDefinition(
+    fake.metrics.map((m) => ({ id: m.id, name: m.name, integrationName: m.integration.name, integrationCategory: m.integration.category })),
+    validateRuleSettings(rulesOf(settings)).settings,
+  );
+  if (!built.ok) throw new Error(built.reason);
+  const segment: FakeKlaviyo["segments"][number] = { id: "SEGCAND", name: CANDIDATE_SEGMENT_NAME, members: [...members], definition: built.definition, isProcessing: false };
+  fake.segments = fake.segments.filter((s) => s.name !== CANDIDATE_SEGMENT_NAME);
+  fake.segments.push(segment);
+  return segment;
 }

@@ -88,8 +88,7 @@ export async function checkLinks() {
     const raw = ref.url.trim();
     links++;
     if (raw === "") return void errors.push(`${from}: empty URL in ${ref.tag}`);
-    // Placeholder links (the App Store URL) are marked in the HTML and covered by the tests.
-    if (raw === "#") return;
+    if (raw === "#") return void errors.push(`${from}: placeholder link "#" in ${ref.tag}`);
     if (/^(mailto|tel):/i.test(raw)) return;
     let url;
     try {
