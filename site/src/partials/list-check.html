@@ -51,17 +51,18 @@
             </ul>
             <dl class="rows">
               <div>
-                <dt>TierSaver price for your list size<br><span class="small" data-out="tiersaver-plan">{{check.tierSaverPlan}}</span></dt>
+                <dt>TierSaver plan for your list size<br><span class="small" data-out="tiersaver-plan">{{check.tierSaverPlan}}</span></dt>
                 <dd class="rows__strong" data-out="tiersaver-price">{{check.tierSaverPrice}}</dd>
               </div>
             </dl>
+            <p class="calc__fine">Free until you approve your first cleanup. Then Shopify charges the plan every {{plan.intervalDays}} days until you cancel.</p>
             <div class="calc__reference">
               <p class="label"><span>For reference</span><span>Estimated Klaviyo plan size</span></p>
               <dl class="rows rows--plain">
                 <div><dt>Today</dt><dd data-out="klaviyo-before">{{check.klaviyoBefore}}</dd></div>
                 <div><dt>After the cleanup</dt><dd data-out="klaviyo-after">{{check.klaviyoAfter}}</dd></div>
               </dl>
-              <p class="calc__fine">An estimate from the numbers you typed and the plan sizes on Klaviyo's price list ({{prices.source}}), read on {{prices.capturedOnLong}}. Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="{{url.activeProfileManagement}}" rel="noopener noreferrer">Klaviyo's help center</a>; on Klaviyo's Advanced KDP plan they can still count toward billing. Whether you change plans is your decision, made in Klaviyo's billing settings. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
+              <p class="calc__fine">An estimate from the numbers you typed and the plan sizes on Klaviyo's price list ({{prices.source}}), read on {{prices.capturedOnLong}}. Suppressed profiles do not count toward your Klaviyo email plan, according to <a href="{{url.activeProfileManagement}}" rel="noopener noreferrer">Klaviyo's help center</a>; on Klaviyo's Advanced KDP plan they still count toward its total. Whether you change plans is your decision, made in Klaviyo's billing settings. TierSaver makes no promise about your Klaviyo plan or invoice.</p>
             </div>
           </div>
         </div>

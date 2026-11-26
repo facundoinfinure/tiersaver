@@ -108,7 +108,7 @@ script: list-check
             <p class="label"><span>04</span><span>Suppress</span></p>
             <div class="steps__body">
               <h3>Repeat it monthly, if you choose</h3>
-              <p>You start the first cleanup yourself. The monthly schedule is off by default. If you turn it on, TierSaver runs a new audit every month, a few days before your Klaviyo plan renews, to give Klaviyo's count time to update. Each scheduled cleanup waits for your approval. Automatic mode is a separate opt-in: it only repeats the default criteria, and only after you have approved and run a cleanup yourself. It still waits for your review when a cleanup does not look like the one you last approved.</p>
+              <p>You start the first cleanup yourself. The monthly schedule is off by default. If you turn it on, TierSaver runs a new audit every month, a few days before your Klaviyo plan renews, because Klaviyo updates its count on its own schedule. Each scheduled cleanup waits for your approval. Automatic mode is a separate opt-in: it only repeats the default criteria, and only after you have approved and run a cleanup yourself. It still waits for your review when a cleanup does not look like the one you last approved.</p>
             </div>
           </li>
           <li>
@@ -127,7 +127,7 @@ script: list-check
         <div class="section-head">
           <p class="label"><span>List health check</span></p>
           <h2 class="two-tone" id="check-title"><span>How much of your list</span> is still listening?</h2>
-          <p class="lead">Enter your numbers to see how many profiles would stay active and what TierSaver costs for a list of your size.</p>
+          <p class="lead">Enter your numbers to see how many profiles would stay active and which TierSaver plan covers a list of your size.</p>
         </div>
 {{> list-check}}
       </div>
@@ -137,11 +137,17 @@ script: list-check
       <div class="container">
         <div class="section-head">
           <p class="label"><span>Pricing</span></p>
-          <h2 class="two-tone" id="pricing-title"><span>A flat monthly price,</span> by the size of your list.</h2>
-          <p class="lead">The audit is free. You are charged only when a cleanup suppresses profiles.</p>
+          <h2 class="two-tone" id="pricing-title"><span>A monthly plan,</span> by the size of your list.</h2>
+          <p class="lead">Free until your first cleanup. Installing, connecting Klaviyo, the audit and the simulation cost nothing and need no plan.</p>
         </div>
         {{plans.cards}}
-        <p class="text-muted small pricing-note">Prices in US dollars, charged through your Shopify invoice; Shopify may add taxes. Your list size is your number of active profiles in Klaviyo, and the price is the same whether a cleanup suppresses a few profiles or many. There is at most one charge every {{fee.minDays}} days and never more than {{fee.maxPerWindow}} in a {{fee.windowDays}}-day period. The charge is created {{fee.holdHours}} hours after the cleanup finishes; a cleanup you fully restore within those {{fee.holdHours}} hours is not charged. Lists above {{plans.maxProfiles}} profiles are not charged automatically: write to <a href="mailto:{{contact.email}}">{{contact.email}}</a>. <a href="/help/pricing">How pricing works</a>.</p>
+        <ul class="pricing-terms">
+          <li><strong>When it starts.</strong> The plan starts when you approve your first cleanup, on Shopify's approval screen. Nothing is charged before that.</li>
+          <li><strong>How it renews.</strong> Shopify charges the plan every {{plan.intervalDays}} days, whether or not a cleanup runs that month, until you cancel.</li>
+          <li><strong>How to cancel.</strong> In the app, under Settings, then Plan, or by uninstalling. The period already paid is not refunded.</li>
+          <li><strong>If your list changes size.</strong> A higher price only applies after you approve it in Shopify. There is no charge per cleanup, and restoring a cleanup does not refund the month.</li>
+        </ul>
+        <p class="text-muted small pricing-note">Prices in US dollars, charged through your Shopify invoice; Shopify may add taxes. Your list size is your number of active profiles in Klaviyo. Lists above {{plans.maxProfiles}} active profiles are not sold automatically: write to <a href="mailto:{{contact.email}}">{{contact.email}}</a>. <a href="/help/pricing">How pricing works</a>.</p>
       </div>
     </section>
 
@@ -198,14 +204,14 @@ script: list-check
           <details>
             <summary>When am I charged?</summary>
             <div>
-              <p>Only when a cleanup suppresses profiles. The charge is the flat price for your list size, created {{fee.holdHours}} hours after the cleanup finishes. If you restore the whole cleanup within those {{fee.holdHours}} hours, it is not charged. Restoring later, or restoring only part of it, does not refund the charge.</p>
+              <p>Not until you approve your first cleanup. Installing, connecting Klaviyo, the audit and the simulation are free. When you approve your first cleanup, Shopify asks you to approve the monthly plan for your list size. From then on Shopify charges it every {{plan.intervalDays}} days, whether or not a cleanup runs that month, until you cancel in Settings or uninstall. The period already paid is not refunded, and restoring a cleanup does not refund the month.</p>
               <p><a href="/help/pricing">How pricing works</a>.</p>
             </div>
           </details>
           <details>
             <summary>Does a cleaner list change my Klaviyo plan?</summary>
             <div>
-              <p>Not by itself. Klaviyo's help center says that suppressed profiles do not count toward your email plan's active profile count; on Klaviyo's Advanced KDP plan they can still count toward billing. If your count drops, changing plans is your decision, made in Klaviyo's billing settings. TierSaver never changes your plan, and makes no promise about your Klaviyo invoice.</p>
+              <p>Not by itself. Klaviyo's help center says that suppressed profiles do not count toward your email plan's active profile count, and that a lower active profile count does not necessarily lower your bill; on Klaviyo's Advanced KDP plan suppressed profiles still count toward its total. If your count drops, changing plans is your decision, made in Klaviyo's billing settings. TierSaver never changes your plan, and makes no promise about your Klaviyo invoice.</p>
               <p><a href="/help/monthly-schedule-and-your-klaviyo-plan">The monthly schedule and your Klaviyo plan</a>.</p>
             </div>
           </details>
