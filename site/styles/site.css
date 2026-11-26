@@ -1105,3 +1105,233 @@ mark.placeholder {
 .data-table td {
   min-width: 7rem;
 }
+
+/* ---------- Light fields and orbs ----------
+   A "field" is a dark panel with slow, blurred light behind its content: three
+   soft shapes that drift, a film grain and, where text sits on it, a veil that
+   keeps the text readable. An "orb" is the same light held in a small circle,
+   used as a status mark. Colour lives only here, on dark surfaces; the rest of
+   the interface stays neutral. Everything is CSS and one local SVG: no photos,
+   no third-party requests. Motion stops under prefers-reduced-motion. */
+:root {
+  --glow-1: #e8c9a2;
+  --glow-2: #c9714a;
+  --glow-3: #6e4a63;
+  --glow-4: #f4e6cf;
+  --on-field: #f6f4ef;
+  --on-field-muted: #cfcbc2;
+}
+.field {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--surface-deep);
+  color: var(--on-field);
+}
+.field > :where(:not(.field__glow, .field__grain, .field__veil)) {
+  position: relative;
+}
+.field__glow,
+.field__grain,
+.field__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.field__glow {
+  filter: blur(56px) saturate(1.15);
+  opacity: 0.9;
+}
+.field__glow i {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.field__glow i:nth-child(1) {
+  left: -12%;
+  top: -18%;
+  width: 62%;
+  height: 70%;
+  background: var(--glow-2);
+  animation: field-a 26s ease-in-out infinite alternate;
+}
+.field__glow i:nth-child(2) {
+  right: -16%;
+  bottom: -24%;
+  width: 70%;
+  height: 78%;
+  background: var(--glow-3);
+  animation: field-b 34s ease-in-out infinite alternate;
+}
+.field__glow i:nth-child(3) {
+  left: 30%;
+  top: 28%;
+  width: 46%;
+  height: 46%;
+  background: var(--glow-1);
+  opacity: 0.85;
+  animation: field-c 21s ease-in-out infinite alternate;
+}
+.field--dusk .field__glow i:nth-child(1) {
+  left: 48%;
+  top: -30%;
+  background: var(--glow-3);
+}
+.field--dusk .field__glow i:nth-child(2) {
+  right: -10%;
+  bottom: -30%;
+  background: var(--glow-2);
+}
+.field--dusk .field__glow i:nth-child(3) {
+  left: 62%;
+  top: 20%;
+  width: 34%;
+  height: 50%;
+}
+.field__grain {
+  inset: -20%;
+  background-image: url("/assets/grain.svg");
+  background-size: 240px;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  animation: field-grain 1.2s steps(6) infinite;
+}
+.field__veil {
+  background: linear-gradient(90deg, rgb(16 16 16 / 0.94) 0%, rgb(16 16 16 / 0.78) 48%, rgb(16 16 16 / 0.18) 100%);
+}
+@keyframes field-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(18%, 14%) scale(1.2); }
+}
+@keyframes field-b {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to { transform: translate(-22%, -16%) rotate(24deg); }
+}
+@keyframes field-c {
+  from { transform: translate(-16%, 8%) scale(0.9); }
+  to { transform: translate(20%, -22%) scale(1.3); }
+}
+@keyframes field-grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-4%, 3%); }
+  40% { transform: translate(3%, -2%); }
+  60% { transform: translate(-2%, -4%); }
+  80% { transform: translate(4%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+.orb {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--glow-1);
+}
+.orb i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(5px);
+}
+.orb i:nth-child(1) {
+  left: -14%;
+  top: -14%;
+  width: 78%;
+  height: 78%;
+  background: var(--glow-4);
+  animation: orb-a 7s ease-in-out infinite alternate;
+}
+.orb i:nth-child(2) {
+  left: 38%;
+  top: 36%;
+  width: 82%;
+  height: 82%;
+  background: var(--glow-2);
+  animation: orb-b 9s ease-in-out infinite alternate;
+}
+.orb i:nth-child(3) {
+  left: 14%;
+  top: 48%;
+  width: 52%;
+  height: 52%;
+  background: var(--glow-3);
+  animation: orb-c 5.5s ease-in-out infinite alternate;
+}
+.orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: url("/assets/grain.svg");
+  background-size: 96px;
+  opacity: 0.3;
+  mix-blend-mode: overlay;
+}
+.orb--xl {
+  width: clamp(9rem, 16vw, 13rem);
+  height: clamp(9rem, 16vw, 13rem);
+}
+.orb--xl i {
+  filter: blur(26px);
+}
+.orb--wait {
+  animation: orb-wait 2.6s ease-in-out infinite;
+}
+@keyframes orb-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(30%, 24%) scale(1.25); }
+}
+@keyframes orb-b {
+  from { transform: translate(0, 0) rotate(0); }
+  to { transform: translate(-40%, -32%) rotate(45deg); }
+}
+@keyframes orb-c {
+  from { transform: translate(-28%, 12%) scale(0.9); }
+  to { transform: translate(32%, -38%) scale(1.35); }
+}
+@keyframes orb-wait {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.92); }
+}
+
+.hero__stage {
+  border-radius: var(--radius-panel);
+  padding: clamp(1rem, 0.6rem + 1.6vw, 1.75rem);
+}
+.hero__stage .sim {
+  color: var(--ink);
+  border-color: transparent;
+  box-shadow: 0 1.5rem 3rem rgb(0 0 0 / 0.28);
+}
+.stage__status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: clamp(0.875rem, 0.6rem + 1vw, 1.25rem);
+  padding-inline: 0.25rem;
+  color: var(--on-field);
+  font-size: 0.9375rem;
+}
+.closing__orb {
+  display: none;
+}
+@media (min-width: 62rem) {
+  .field > .closing__orb {
+    display: block;
+    position: absolute;
+    right: clamp(2rem, 7vw, 6rem);
+    top: 50%;
+    margin-top: calc(clamp(9rem, 16vw, 13rem) / -2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field__glow i,
+  .field__grain,
+  .orb,
+  .orb i {
+    animation: none;
+  }
+}
