@@ -37,6 +37,28 @@ La numeración cambió: se agregó "13. Indemnification" y "17. General". Limita
 | 17. General (nueva) | Acuerdo completo; derechos sobre la app y sobre los datos del merchant; cesión; fuerza mayor; divisibilidad; no renuncia; relación entre las partes; avisos | Estándar | Lectura general |
 | 18. Contact | Suma support@tiersaver.com | Dato de la empresa | Nada |
 
+#### Cambios de la revisión de términos (2026-11-26)
+
+Después del borrador, una revisión crítica comparó cada afirmación de los términos con el código. Esta tabla reemplaza a las filas de arriba donde difieren. Las preguntas que salieron de la revisión están en la sección 3.
+
+| Cláusula | Qué dice ahora | De dónde sale | Qué tiene que confirmar el abogado |
+| --- | --- | --- | --- |
+| 1. The agreement | Se acepta al instalar y otra vez al confirmar en la app, al aprobar una limpieza. Esa aceptación cubre las limpiezas posteriores, incluidas las del modo automático | La casilla de aprobación incluye "I accept the TierSaver Terms of Service" con enlaces, y cada aprobación manual guarda `termsVersion` en `events_log` (`shopify/app/legal.ts`, `shopify/app/simulations/review.ts`) | Si ese diseño alcanza como aceptación y si cubre el modo automático, que aprueba sin casilla. Ver pregunta R1 |
+| 2. What the app does | Criterios: nunca interactuaron o, con criterios ampliados, no interactuaron en los períodos elegidos. Se calcula una simulación antes de cada limpieza; sin modo automático nada cambia hasta aprobarla. Algunos perfiles de la simulación pueden quedar sin tocar | Modo "wider" (`packages/core/src/rules.ts`), aprobación automática (`shopify/app/schedule/automatic.ts`), perfiles salteados y corridas que frenan (`shopify/app/runs/engine.ts`) | Nada |
+| 4. Suppression and its effects | Agrega: un perfil restaurado queda fuera de las limpiezas por 365 días; deshacer exige la app instalada y conectada a Klaviyo | `rules.ts` (`reactivationLockDays`), `engine.ts` | Nada |
+| 6. When you are charged / How often | Se cobra por limpieza que suprimió al menos un perfil, después de que Klaviyo confirma. Precio completo aunque la limpieza sea parcial. Como máximo un cargo en cualquier período de 28 días. Ya no se usa "billing cycle" sin definir | `packages/core/src/charge.ts`, `shopify/app/billing/billing.ts` | Nada de fondo |
+| 6. Más de 150.000 perfiles | La app no crea ningún cargo; podemos contactar al merchant para acordar un precio por seguir usándola | `charge.ts` (`above_price_tiers`) y decisión del dueño | Nada |
+| 6. Undo and refunds | El cargo se crea a los minutos de terminar la limpieza, cuando Klaviyo confirma. Solo si todos los perfiles fueron restaurados antes de eso no se cobra; en cualquier otro caso deshacer no anula ni reembolsa. Cargos creados no reembolsables salvo ley | `billing.ts` y `shopify/workers/suppression-run.ts` (primer intento de confirmación a los 30 segundos). Describe el código actual; la ventana real es decisión pendiente del dueño (ver sección 3) | Si la redacción es clara y no engañosa. Ver pregunta R5 |
+| 6. Cambios de precio | Un precio nuevo aplica solo después de que la app lo mostró y, donde Shopify lo exige, el merchant lo aprobó en Shopify. Ya no se promete aviso por mail | Los precios figuran en el texto que el merchant aprueba en Shopify (`billing.ts`, `subscriptionTerms`). La app no envía mails | Ver pregunta R10 |
+| 8. Privacy and data | Uso propio: se exceptúa calcular el precio y estadísticas que no identifican a nadie. Borrado: "after you uninstall the app, within the periods described in the privacy policy" | El cobro usa el conteo de perfiles; el borrado completo llega con el `shop/redact` de Shopify (`shopify/app/data/privacy.ts`) | Si la excepción de uso propio es compatible con el rol de encargado |
+| 9. Dependence on Klaviyo and Shopify | Incluye a Shopify. Si se corta el acceso: la app deja de correr limpiezas, no se crean cargos nuevos y la app muestra un aviso la próxima vez que se abre. Es la única obligación | El único aviso que existe es dentro de la app (`shopify/app/components/home-screen.tsx`) | Nada |
+| 11. Disclaimer of warranties | Encabezado y párrafos operativos en mayúsculas y negrita. Agrega que no se promete que una limpieza suprima todos los perfiles de la simulación ni que un deshacer los restaure a todos | Revisión | Si alcanza como "conspicuous" |
+| 12. Limitation of liability | Encabezado, exclusión y límite en mayúsculas y negrita; ejemplos y "fails of its essential purpose" en negrita. El límite se mide por los cargos pagados por Shopify en los 12 meses anteriores, o USD 100 | El merchant le paga a Shopify, no a Digital Solvers LLC | Lo mismo que antes, más la pregunta R5 |
+| 13. Indemnification | Segundo punto acotado a la falta de derechos o consentimientos sobre los datos y a los criterios, ajustes y aprobaciones elegidos. No aplica si el reclamo resulta de nuestro incumplimiento, culpa grave o dolo. Los límites de la 12 no limitan las obligaciones del merchant | Revisión | Ver pregunta R3 |
+| 14. Ending the agreement | Antes de suspender, donde sea razonable, aviso en la app y deshacer disponible. El segmento creado por la app queda en Klaviyo hasta que el merchant lo borre. Reinstalar no recupera el historial. La 14 se suma a las cláusulas que sobreviven | La app nunca borra el segmento (`shopify/app/klaviyo/api.ts` solo crea y actualiza). El historial se borra con el `shop/redact` | Nada |
+| 16. Changes to these terms | Aviso dentro de la app antes de un cambio que reduce derechos o suma obligaciones. Los cambios rigen solo hacia adelante: no alcanzan cargos ya creados ni disputas anteriores | Revisión | Ver preguntas R1 y R10 |
+| 17. General | Acuerdo completo: la política de privacidad forma parte solo donde la cláusula 8 la cita; si el texto de precios de Shopify difiere, valen los términos, sin superar nunca el máximo aprobado en Shopify. Relación: las personas nombradas en la 12 y la 13 pueden invocarlas. Avisos: dentro de la app; por mail solo cuando la app lo soporte; se fija cuándo se considera dado un aviso | Revisión | Ver preguntas R7 y R10 |
+
 ### Privacidad (`privacy.html`)
 
 | Cláusula | Qué dice ahora | De dónde sale | Qué tiene que confirmar el abogado |
@@ -66,6 +88,32 @@ La numeración cambió: se agregó "13. Indemnification" y "17. General". Limita
 10. **Klaviyo.** Los API Terms de Klaviyo exigen indemnidad a favor de Klaviyo, ley de Massachusetts y coordinar con Klaviyo los comunicados ante un incidente (`docs/12-CUMPLIMIENTO-KLAVIYO.md` §1.4). ¿Algo de eso tiene que reflejarse en los términos con el merchant?
 11. **Segmento al desinstalar.** Los textos no dicen qué pasa con el segmento que la app crea en Klaviyo cuando el merchant desinstala. Falta el dato técnico.
 12. **Datos del personal del merchant.** La política dice que el registro de acciones guarda el id de usuario de Shopify. La tabla de sesiones de Shopify tiene columnas para nombre y mail del usuario (`shopify/app/db/schema.ts`). Hay que confirmar con desarrollo que quedan vacías; si no, la política tiene que decirlo.
+
+### Preguntas de la revisión de términos
+
+Agregadas el 2026-11-26 por la revisión de los términos contra el código.
+
+- **R1. Aceptación.** La casilla de aprobación de la simulación incluye la aceptación de los términos, con enlaces, y se registra la versión aceptada. ¿Ese diseño alcanza? ¿Cubre las limpiezas del modo automático, que se aprueban sin casilla? ¿Hace falta volver a pedir aceptación en cada cambio de términos?
+- **R2. Evidencia contra borrado.** La cláusula 3 se apoya en "your approvals are recorded", pero ese registro se borra entero con el `shop/redact` de Shopify (`shopify/app/data/privacy.ts`). ¿Se puede conservar un registro sin datos personales (tienda, fecha, versión de términos, aprobaciones, cargos) durante el plazo de prescripción? ¿Cómo se concilia con Shopify y con los 365 días de logs que pide Klaviyo para listar la app? Es más amplio que la pregunta contable de la tabla de privacidad.
+- **R3. Indemnidad.** ¿La regla de Florida sobre indemnidad por negligencia propia del indemnizado obliga a reescribir la cláusula 13? ¿Conviene exceptuar la culpa grave también ahí, como quedó redactado?
+- **R4. Honorarios.** ¿Conviene una cláusula de honorarios para la parte vencedora, dado que Fla. Stat. §57.105(7) vuelve recíproca cualquier cláusula unilateral?
+- **R5. FDUTPA.** ¿Hay exposición entre empresas por las afirmaciones de precio y de "undo"? ¿Cambia algo el límite de la cláusula 12 frente a un reclamo de ese tipo?
+- **R6. Shopify.** ¿El Partner Program Agreement y los API Terms de Shopify exigen cláusulas en los términos con el merchant (exención a favor de Shopify, reglas de reembolso o créditos)? No se pudieron leer.
+- **R7. Política de privacidad.** ¿Conviene que forme parte del contrato solo donde la cláusula 8 la cita, como quedó, o de otra forma?
+- **R8. Nombre comercial.** Si Digital Solvers LLC opera como "TierSaver", ¿hace falta registrar el nombre de fantasía en Florida (Fla. Stat. §865.09)?
+- **R9. Medidas cautelares.** ¿Conviene exceptuarlas del foro exclusivo, para poder frenar un abuso de la app donde esté el merchant?
+- **R10. Avisos solo dentro de la app.** Hoy la app no envía mails. ¿Un aviso dentro de la app alcanza para cambios de precio y de términos, o hace falta el mail antes de publicar los términos como vigentes?
+
+La pregunta 11 de arriba ya tiene el dato técnico: la app nunca borra el segmento que crea en Klaviyo, y la cláusula 14 ahora lo dice.
+
+### Decisión pendiente del dueño: ventana para deshacer sin cargo
+
+Regla decidida el 2026-11-25: una limpieza deshecha por completo antes de emitirse su cargo no se cobra. En el código el cargo se crea cuando Klaviyo confirma los jobs, y el primer intento es 30 segundos después de terminar la limpieza (`shopify/workers/suppression-run.ts`). En la práctica la ventana es de segundos o minutos, y la cláusula 6 ahora lo describe así. Falta decidir entre dos caminos:
+
+- dejarlo como está, con el texto actual;
+- dar una ventana real (por ejemplo, retener el cargo 24 o 72 horas) y cambiar el código y la cláusula 6.
+
+Dato relacionado, fuera de los términos: si el merchant desconecta Klaviyo entre la limpieza y la confirmación, el cargo no se puede confirmar y a los 7 días deja de reintentarse (`shopify/app/billing/billing.ts`, `runsWithOpenCharges`).
 
 ## 4. Qué no se cambió y por qué
 

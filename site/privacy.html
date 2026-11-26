@@ -78,25 +78,31 @@
 <h2>3. What the app processes</h2>
 <h3>Data we store</h3>
 <ul>
-  <li><strong>Store details:</strong> the store's myshopify.com domain, time zone, installation status and dates.</li>
-  <li><strong>Access credentials:</strong> the Shopify access token and the Klaviyo OAuth access and refresh tokens, stored encrypted, with the permissions granted and the Klaviyo account ID.</li>
+  <li><strong>Store details:</strong> the store's myshopify.com domain, installation status and dates.</li>
+  <li><strong>Access credentials:</strong> the Shopify access and refresh tokens and the Klaviyo OAuth access and refresh tokens, stored encrypted, with the permissions granted and the Klaviyo account ID.</li>
   <li><strong>Settings:</strong> cleanup criteria, protected lists or segments (by Klaviyo ID), the plan renewal day, run mode and the Klaviyo plan type.</li>
-  <li><strong>Audit and simulation results:</strong> profile counts, the Klaviyo plan size shown as a reference, and the criteria used.</li>
-  <li><strong>Profiles selected for suppression:</strong> for each simulation and each run, the Klaviyo profile ID, the reason the profile was selected, its processing status and, for matching purposes, a SHA-256 hash of the profile's email address.</li>
+  <li><strong>Audit and simulation results:</strong> profile counts, the active-profile usage figures and billing period dates reported by Klaviyo, the Klaviyo plan size shown as a reference, estimates, and the criteria used.</li>
+  <li><strong>Profiles selected for suppression:</strong> for each simulation and each run, the Klaviyo profile ID, the reason the profile was selected, its processing status, the identifier of the Klaviyo job that processed it and, for matching purposes, a SHA-256 hash of the profile's email address. The per-profile list of a simulation that was never run is deleted after 7 days. Its counts are kept.</li>
   <li><strong>Hashed purchase records:</strong> for each buyer found in the store's Shopify orders, a SHA-256 hash of the normalized order email address, the date of the most recent order, and a SHA-256 hash of the Shopify customer ID.</li>
-  <li><strong>Activity log:</strong> which action was taken or approved, when, and by whom (a Shopify user ID, the schedule, a webhook or the system). Log details do not contain customer personal data.</li>
+  <li><strong>Activity log:</strong> which action was taken or approved, when, and by whom (the Shopify user ID of the staff member, the schedule, a webhook or the system). The same user ID is recorded on the audits, simulations and cleanups that person started or approved. Each manual approval also records the version of the terms of service that was accepted. We do not store staff names or email addresses. Log details do not contain customer personal data.</li>
+  <li><strong>Klaviyo connection attempts:</strong> a short-lived marker for each attempt to connect a Klaviyo account (a hash of a one-time value, the store and the result). It contains no token and is deleted about 24 hours later.</li>
   <li><strong>Charge records:</strong> the price band that applied and the identifiers of the charges created through Shopify. Shopify handles payment. We do not receive or store payment details.</li>
 </ul>
 
 <h3>Data we process but do not store</h3>
 <ul>
-  <li><strong>Email addresses from Shopify orders</strong> are read in order to compute the hash described above. The address itself is not stored.</li>
-  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo at the moment they are needed: when a batch of profiles is suppressed or restored, because Klaviyo's suppression interface works with email addresses, and when the merchant downloads the list of profiles in a simulation as a CSV file to review it before approving. They are not stored and not written to logs.</li>
-  <li><strong>Klaviyo engagement data</strong> (such as emails received, opens, clicks, purchases, site activity, SMS consent and list membership) is read to evaluate the cleanup criteria. While a scan is running, the dates and the consent and suppression status read for each profile are held as working data, without the email address, and are deleted when the scan ends.</li>
+  <li><strong>Shopify orders.</strong> The app reads the store's orders (its full order history where Shopify has granted that access) and uses only the order's email address, date and customer ID to compute the hashed purchase record described above. The email address itself is not stored. Order notifications sent by Shopify can contain other order details. The app does not use or store them.</li>
+  <li><strong>Email addresses of Klaviyo profiles</strong> are read from Klaviyo in three situations: during each audit, to compute the hash described above for the profiles being evaluated (and, when Klaviyo's own profile count is unavailable, to count the profiles that have an email address); when a batch of profiles is suppressed or restored, because Klaviyo's suppression interface works with email addresses; and when the merchant downloads the list of profiles in a simulation as a CSV file to review it before approving. In each case the address is used in memory for that operation. It is not written to our database or to our logs.</li>
+  <li><strong>Klaviyo profile and account data.</strong> Klaviyo evaluates the engagement criteria (emails received, opens, clicks, site activity, purchases) inside the segment the app maintains. The app does not read individual opens, clicks or other events. From Klaviyo the app reads: for each profile being evaluated, its ID, email address, creation date, date of last activity, and email and SMS consent and suppression status; the IDs of the members of that segment and of the lists or segments the merchant protected; the names of the account's metrics; and the account's ID, organization name, time zone and active-profile usage figures.</li>
+  <li><strong>Working data of an audit.</strong> While an audit is running, we hold working data for each profile being evaluated: its Klaviyo profile ID, the hash of its email address, the dates it was created and last active, and its email and SMS consent and suppression status. It does not include the email address. It is deleted when the audit finishes or fails, and in any case about 24 hours after the audit started.</li>
 </ul>
 
 <h3>Data we do not collect</h3>
 <p>We do not store customer email addresses in readable form, customer names, postal addresses, phone numbers, payment details, order contents or the content of the merchant's emails.</p>
+<p>The hashes and Klaviyo profile IDs we store are pseudonymized data, not anonymous data: they still relate to a person, someone who already knows an email address can compute its hash, and we treat them as personal data.</p>
+
+<h3>Cookies in the app</h3>
+<p>The app sets one cookie, <code>__Host-ts_klaviyo_oauth</code>, when you start connecting your Klaviyo account. It ties Klaviyo's authorization response to your browser to prevent forged requests, contains no personal data, lasts at most 10 minutes and is removed when the connection step ends. It is strictly necessary and is not used for analytics or advertising. The app runs inside the Shopify admin and loads Shopify's own scripts. Shopify's cookies are governed by Shopify's policies.</p>
 
 <h3>Email from the app</h3>
 <p>On the effective date of this policy the app sends no email, and we do not store a merchant email address for that purpose. We plan to add operational notices for merchants: that a scheduled simulation is ready to approve, the result of a cleanup, and a monthly summary. When we do, they will go to the contact address of the store, they will be about the merchant's own use of the app and not marketing, and we will first update this policy and add the delivery provider to the list in section 6. The app never sends email to a merchant's customers.</p>
@@ -123,7 +129,7 @@
       <tr><th scope="col">Sub-processor</th><th scope="col">Location</th><th scope="col">What it does</th></tr>
     </thead>
     <tbody>
-      <tr><td>Cloudflare, Inc.</td><td>United States</td><td>Hosts the app and this website (Cloudflare Workers), the app's database (D1) and its background jobs (Workflows), and keeps operational logs</td></tr>
+      <tr><td>Cloudflare, Inc.</td><td>United States (database); global network (request handling)</td><td>Hosts the app and this website (Cloudflare Workers), the app's database (D1) and its background jobs (Workflows), and keeps operational logs</td></tr>
     </tbody>
   </table>
 </div>
@@ -142,26 +148,27 @@
 <h2>8. Security</h2>
 <ul>
   <li>Access tokens are encrypted before storage (AES-GCM), and the key is kept separately from the database.</li>
-  <li>Customer email addresses are stored only as one-way SHA-256 hashes.</li>
+  <li>Customer email addresses are stored only as SHA-256 hashes, never in readable form.</li>
   <li>Data in transit is protected with TLS.</li>
-  <li>The app requests the minimum permissions it needs in Shopify and in Klaviyo.</li>
+  <li>The app requests only the permissions it uses in Shopify and in Klaviyo.</li>
 </ul>
-<p>No system is perfectly secure. If we learn of a breach affecting personal data, we will notify the affected merchants as the law requires.</p>
+<p>No system is perfectly secure. If we learn of a breach affecting personal data, we will notify the affected merchants without undue delay and give them the information they need to meet their own obligations.</p>
 
 <h2>9. How long we keep data</h2>
 <ul>
-  <li><strong>While the app is installed:</strong> the data described in section 3 is kept so the app can work and so runs can be undone.</li>
-  <li><strong>On uninstall:</strong> the Shopify and Klaviyo access tokens are deleted immediately.</li>
-  <li><strong>After uninstall:</strong> all remaining data stored for the store is deleted when Shopify sends its shop deletion request, which Shopify sends 48 hours after an app is uninstalled.</li>
-  <li><strong>When a customer asks a store to erase their data:</strong> on Shopify's customer deletion request we delete that customer's hashed purchase record and remove their hash from past simulations and runs. Klaviyo profile IDs in the run history are kept so a run can still be undone.</li>
-  <li><strong>When a customer asks a store for their data:</strong> the only data we hold that is derived from a customer is a one-way hash and the date of their last order. There is nothing readable to export.</li>
+  <li><strong>While the app is installed:</strong> the data described in section 3 is kept so the app can work and so runs can be undone, except for the working data of an audit and the per-profile lists of simulations that were never run, which are deleted on the schedule given in section 3.</li>
+  <li><strong>On uninstall:</strong> the Shopify and Klaviyo access tokens are deleted from our database as soon as Shopify notifies us, and we revoke our access at Klaviyo.</li>
+  <li><strong>After uninstall:</strong> all remaining data stored for the store is deleted from our database when Shopify sends its shop deletion request, which Shopify sends 48 hours after an app is uninstalled. You can ask us to delete it sooner by writing to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>.</li>
+  <li><strong>When a customer asks a store to erase their data:</strong> on Shopify's customer deletion request we delete that customer's hashed purchase record and remove their hash from past simulations and runs. Klaviyo profile IDs in past simulations and in the run history are kept so a run can still be undone.</li>
+  <li><strong>When a customer asks a store for their data:</strong> what we hold about a customer is limited to a SHA-256 hash of their email address, the date of their most recent order, and, if their Klaviyo profile was included in a simulation or a cleanup, the Klaviyo profile ID, the reason it was selected, its processing status and the dates involved. On request from the store, we provide that information to the store so it can answer its customer. Write to <a href="mailto:hello@tiersaver.com">hello@tiersaver.com</a>.</li>
 </ul>
-<p>Uninstalling the app does not restore suppressed profiles in Klaviyo, and does not delete anything in the merchant's Klaviyo or Shopify accounts.</p>
+<p>Uninstalling the app does not restore suppressed profiles in Klaviyo, and does not delete anything in the merchant's Klaviyo or Shopify accounts. The segment the app created in the merchant's Klaviyo account also stays there. The merchant can delete it in Klaviyo.</p>
+<p>Deleted data can remain for a limited period in our hosting provider's encrypted backups before it is overwritten.</p>
 <p>We keep no charge records after that deletion. Invoices and charges remain in the merchant's Shopify account, under Shopify's own retention rules.</p>
-<p>Operational logs kept by Cloudflare do not contain email addresses or access tokens. They are kept for the period set by Cloudflare's own log retention.</p>
+<p>Our hosting provider keeps operational logs of requests to the app, such as the time, the address requested, the store domain, the IP address and error codes. The app does not write customer email addresses, names or access tokens to logs. Logs are kept for a limited period set by our hosting provider.</p>
 
 <h2>10. This website</h2>
-<p>tiersaver.com sets no cookies, has no forms, and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site, and pages make no requests to other sites. The list health check runs in your browser, and the numbers you enter are not sent to us.</p>
+<p>tiersaver.com sets no cookies, has no forms that send data, and uses no analytics, advertising or third-party scripts. Fonts and all other files are served from the same site, and pages make no requests to other sites. The list health check runs in your browser, and the numbers you enter are not sent to us.</p>
 <p>Like any website, the hosting provider processes technical data such as IP addresses to deliver pages and protect the service.</p>
 <p>If you email us, we use your message and address to reply.</p>
 
