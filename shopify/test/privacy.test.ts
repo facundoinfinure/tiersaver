@@ -110,4 +110,39 @@ describe("privacy", () => {
     expect((await rowCounts(b.shop, b.simulationId)).purchase_hashes).toBe(0);
     await redactCustomer(db, b.shop, {});
   });
+
+  it("housekeeping: abandoned audit rows, unused simulation lists and old OAuth markers do not linger", async () => {
+    const { purgeStaleData } = await import("../app/data/housekeeping");
+    const now = new Date("2026-12-01T00:00:00Z");
+    const old = new Date(now.getTime() - 2 * 86_400_000);
+    const { shop, simulationId } = await seedSimulation({ candidates: 3, approved: false, createdAt: new Date(now.getTime() - 9 * 86_400_000) });
+    const fresh = await seedSimulation({ shop, candidates: 2, approved: false, createdAt: new Date(now.getTime() - 3600_000) });
+    const executed = await seedSimulation({ shop, candidates: 2, createdAt: new Date(now.getTime() - 30 * 86_400_000) });
+    await db.update(schema.simulations).set({ executedAt: old }).where(eq(schema.simulations.id, executed.simulationId));
+
+    await db.insert(schema.scans).values([
+      { id: `dead-${shop}`, shop, createdBy: "user:1", status: "running", createdAt: old },
+      { id: `live-${shop}`, shop, createdBy: "user:1", status: "running", createdAt: new Date(now.getTime() - 60_000) },
+    ]);
+    await db.insert(schema.scanProfiles).values([
+      { scanId: `dead-${shop}`, profileId: "P1", shop, page: 0, facts: {} },
+      { scanId: `live-${shop}`, profileId: "P2", shop, page: 0, facts: {} },
+    ]);
+    await db.insert(schema.klaviyoOauthAttempts).values([
+      { stateHash: `old-${shop}`, shop, createdAt: old },
+      { stateHash: `new-${shop}`, shop, createdAt: now },
+    ]);
+
+    await purgeStaleData(db, now);
+
+    const count = async (table: string, where: string, value: string) => (await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where} = ?`).bind(value).first<{ n: number }>())!.n;
+    expect(await count("scan_profiles", "scan_id", `dead-${shop}`)).toBe(0);
+    expect(await count("scan_profiles", "scan_id", `live-${shop}`)).toBe(1);
+    expect((await db.query.scans.findFirst({ where: eq(schema.scans.id, `dead-${shop}`) }))?.status).toBe("failed");
+    expect(await count("simulation_candidates", "simulation_id", simulationId)).toBe(0);
+    expect(await count("simulation_candidates", "simulation_id", fresh.simulationId)).toBe(2);
+    expect(await count("simulation_candidates", "simulation_id", executed.simulationId)).toBe(2);
+    expect(await count("klaviyo_oauth_attempts", "state_hash", `old-${shop}`)).toBe(0);
+    expect(await count("klaviyo_oauth_attempts", "state_hash", `new-${shop}`)).toBe(1);
+  });
 });

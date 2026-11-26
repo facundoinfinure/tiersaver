@@ -49,6 +49,8 @@
     // metrics, intended profile age from a profile property) only for a connection to exactly this
     // account that Klaviyo also flags as a test account. It has no effect on any other account.
     "KLAVIYO_SEEDED_ACCOUNT_ID": "SGKvLG",
+    // Where the app links to the terms and the privacy policy. Remove once tiersaver.com serves the site.
+    "SITE_URL": "https://tiersaver-site.tiersaver.workers.dev",
     "SHOPIFY_APP_URL": "https://tiersaver-app.tiersaver.workers.dev"
   }
 }

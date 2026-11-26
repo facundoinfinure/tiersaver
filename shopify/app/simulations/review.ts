@@ -56,7 +56,7 @@ export type ApproveResult =
  */
 export async function approveSimulation(
   db: Db,
-  args: { shop: string; simulationId: string; approvedBy: string; acknowledged: boolean; now?: Date },
+  args: { shop: string; simulationId: string; approvedBy: string; acknowledged: boolean; /** Version of the terms shown next to the confirmation (app/legal.ts). */ termsVersion?: string; now?: Date },
 ): Promise<ApproveResult> {
   const now = args.now ?? new Date();
   if (!args.acknowledged) return { ok: false, reason: "not_acknowledged" };
@@ -90,10 +90,10 @@ export async function approveSimulation(
       .prepare(
         `INSERT INTO events_log (id, shop, at, actor, action, simulation_id, detail)
          SELECT ?1, ?2, ?3, ?4, 'simulation.approved', id,
-                json_object('candidates', candidate_count, 'activeProfiles', active_profiles, 'settingsVersion', settings_version, 'rules', json(rule_settings))
+                json_object('candidates', candidate_count, 'activeProfiles', active_profiles, 'settingsVersion', settings_version, 'rules', json(rule_settings), 'termsVersion', ?6)
          FROM simulations WHERE id = ?5 AND approved_at = ?3 AND approved_by = ?4`,
       )
-      .bind(`simulation:${sim.id}:approved`, args.shop, nowMs, args.approvedBy, sim.id),
+      .bind(`simulation:${sim.id}:approved`, args.shop, nowMs, args.approvedBy, sim.id, args.termsVersion ?? null),
   ]);
   if (!update || update.meta.changes !== 1) return { ok: false, reason: "superseded" };
   return { ok: true };

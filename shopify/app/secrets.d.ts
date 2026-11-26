@@ -17,6 +17,8 @@ interface TierSaverSecrets {
   SUPPRESSION_ALLOWED_ACCOUNT_ID?: string;
   /** Plain variable in wrangler.jsonc: id of the seeded Klaviyo test account. See app/scans/engine.ts. */
   KLAVIYO_SEEDED_ACCOUNT_ID?: string;
+  /** Plain variable: base URL of the public site (terms, privacy). Defaults to https://tiersaver.com. */
+  SITE_URL?: string;
 }
 
 declare namespace Cloudflare {

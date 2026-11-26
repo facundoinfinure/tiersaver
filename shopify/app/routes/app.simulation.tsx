@@ -11,6 +11,7 @@ import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { getConnection } from "../klaviyo/connection.server";
 import { embeddedAppUrl } from "../klaviyo/flow.server";
+import { legalUrls, TERMS_VERSION } from "../legal";
 import { suppressionAllowed } from "../runs/gateway.server";
 import { startSuppressionRun } from "../runs/start.server";
 import type { ScanSummary } from "../scans/engine";
@@ -68,6 +69,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
     subscribed,
     terms: subscriptionTerms(),
+    legal: legalUrls(env),
     cleanupsEnabled: suppressionAllowed(env, connection?.klaviyoAccountId),
     // The seeded test account can run without a Shopify subscription, so the flow can be tried before billing is set up.
     billingOptional: isSeededAccount(connection?.klaviyoAccountId),
@@ -75,7 +77,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 const ERRORS: Record<string, string> = {
-  not_acknowledged: "Tick the box to confirm you have read the notices before approving.",
+  not_acknowledged: "Tick the box to confirm you have read the notices and accept the terms before approving.",
   approver_unknown: "We could not identify your Shopify user. Reload the page and try again.",
   no_candidates: "This simulation has no profiles to suppress, so there is nothing to approve.",
   already_approved: "This simulation is already approved.",
@@ -99,7 +101,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const actor = sessionActor(sessionToken);
 
   if (intent === "approve") {
-    const result = await approveSimulation(db, { shop: session.shop, simulationId, approvedBy: actor, acknowledged: form.get("acknowledged") === "yes" });
+    const result = await approveSimulation(db, { shop: session.shop, simulationId, approvedBy: actor, acknowledged: form.get("acknowledged") === "yes", termsVersion: TERMS_VERSION });
     return result.ok ? redirect("/app/simulation") : { error: result.reason };
   }
 
@@ -299,8 +301,19 @@ export default function Simulation() {
                   <s-checkbox
                     name="acknowledged"
                     value="yes"
-                    label={`I have read the notices above and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`}
+                    label={`I have read the notices above, I accept the TierSaver Terms of Service, and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`}
                   />
+                  <s-text color="subdued">
+                    Read the{" "}
+                    <s-link href={data.legal.terms} target="_blank">
+                      Terms of Service
+                    </s-link>{" "}
+                    and the{" "}
+                    <s-link href={data.legal.privacy} target="_blank">
+                      Privacy Policy
+                    </s-link>
+                    .
+                  </s-text>
                   <s-button type="submit" variant="primary" {...flags({ disabled: busy })}>
                     Approve simulation
                   </s-button>

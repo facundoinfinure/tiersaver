@@ -34,6 +34,12 @@ export default {
         ]);
         const db = drizzle(env.DB, { schema });
         try {
+          const { purgeStaleData } = await import("../app/data/housekeeping");
+          await purgeStaleData(db);
+        } catch (error) {
+          console.error(`housekeeping failed: ${error instanceof Error ? error.name : "error"}`);
+        }
+        try {
           const tick = await runScheduleTick({ db, startScan });
           if (tick.due > 0) console.log(`schedule: ${tick.started.length} of ${tick.due} scans started`);
         } catch (error) {
