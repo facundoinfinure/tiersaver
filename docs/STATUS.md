@@ -536,3 +536,10 @@ Pedido de Facundo: que el abogado no tenga que contestar 43 preguntas.
 - Hecho: investigación con fuentes primarias y decisiones en `docs/16-LEGALES.md` (reemplaza a `16-LEGALES-PARA-ABOGADO.md`, que queda como renglón). Entidad cerrada: Digital Solvers LLC (Delaware), 153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA. Términos con arbitraje individual AAA y exclusión a 30 días, tope y exclusión de indirectos mutuos, párrafo de Shopify exigido por sus API Terms 6.1.2 y sin prohibición de competir. DPA con art. 28 completo, Addendum británico con el texto obligatorio, Suiza, CCPA §7051 y APP 8. `LEGAL_DRAFT = false`.
 - Verificado: `npm run build -w @tiersaver/site` y `npm test -w @tiersaver/site` (309 tests) pasan.
 - Pendiente: desplegar el sitio solo después de C2 y C3 (`17-POLITICAS-INTERNAS.md`); brechas de código de `16-LEGALES.md` §4 (casilla del plan, "no se devuelve al cancelar" en la aprobación, borrado completo al desinstalar por el plazo de 30 días de Shopify); decisión C9 (representante del art. 27). `TERMS_VERSION` sigue en 2026-11-27 aunque el contenido cambió, porque ningún merchant real aceptó una versión.
+
+### 2026-11-27: distribución pública elegida y mercados excluidos
+
+- Facundo eligió **distribución pública** en el Partner Dashboard y completó el registro: la app figura como "TierSaver for Klaviyo — App pública — Borrador". Shopify informa 0 % de comisión sobre el primer millón de dólares por año desde el 2026-11-26 y 15 % por encima (captura del 2026-11-27).
+- Siguen pendientes en el Dev Dashboard: pedir `read_all_orders` (texto en `docs/18` §6.2) y mirar "Pricing method".
+- Decisión de Facundo: **no se ofrece TierSaver a tiendas de la UE/EEE, el Reino Unido y Suiza** por ahora, para no quedar alcanzado por el art. 27 del GDPR (representante), que no va a contratar. En implementación (control en la app y textos).
+- DPA de Cloudflare: rige automáticamente para cuentas self-serve (verificado el 2026-11-27); compromiso C2 cumplido.
