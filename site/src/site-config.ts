@@ -39,4 +39,4 @@ export const KLAVIYO_SCOPES = [
   "usage:read",
 ] as const;
 /** shopify/shopify.app.toml, [access_scopes]: what Shopify asks for on install. */
-export const SHOPIFY_SCOPES = ["read_orders"] as const;
+export const SHOPIFY_SCOPES = ["read_orders", "read_all_orders"] as const;

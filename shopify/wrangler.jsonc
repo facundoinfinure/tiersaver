@@ -46,7 +46,7 @@
   // Hourly: monthly schedule (starts read-only scans) and retry of open charges. See workers/app.ts.
   "triggers": { "crons": ["17 * * * *"] },
   "vars": {
-    "SCOPES": "read_orders",
+    "SCOPES": "read_orders,read_all_orders",
     // Id of the Klaviyo TEST account filled by scripts/seed-klaviyo. A scan reads seeded data (API-owned
     // metrics, intended profile age from a profile property) only for a connection to exactly this
     // account that Klaviyo also flags as a test account. It has no effect on any other account.

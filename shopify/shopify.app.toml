@@ -13,7 +13,7 @@ redirect_urls = ["https://tiersaver-app.tiersaver.workers.dev/auth/callback"]
 [access_scopes]
 # read_all_orders and protected customer data (email) are requested in Phase 3,
 # after Shopify approves them in the Dev Dashboard.
-scopes = "read_orders"
+scopes = "read_orders,read_all_orders"
 
 [webhooks]
 api_version = "2026-10"

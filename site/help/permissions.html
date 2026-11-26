@@ -73,10 +73,11 @@
     </thead>
     <tbody>
       <tr><th scope="row"><code>read_orders</code></th><td>Reading your orders, to find which email addresses have bought from your store. A profile matched to an order is kept active. TierSaver reads them every hour and before each audit. It stores a keyed hash of the address and the date of the last order, not the order itself.</td></tr>
+      <tr><th scope="row"><code>read_all_orders</code></th><td>Reading orders older than 60 days. Without it Shopify only returns the last 60 days of orders, and TierSaver would have to keep almost every profile active because it could not tell a past buyer from someone who never bought. Like <code>read_orders</code>, it only reads and never changes orders, and the same rule applies: only a keyed hash of the address and the date of the last order are stored.</td></tr>
     </tbody>
   </table>
 </div>
-<p>TierSaver does not change anything in your store: it has no write permission in Shopify. With this permission alone Shopify only returns recent orders. As long as TierSaver cannot check a profile against enough of your order history, that profile is kept active.</p>
+<p>TierSaver does not change anything in your store: it has no write permission in Shopify. As long as TierSaver cannot check a profile against enough of your order history, that profile is kept active.</p>
 <p>The monthly plan is billed through Shopify's own billing, which you approve separately on Shopify's screen. See <a href="/help/billing">billing and your plan</a>.</p>
 
 <h2 id="in-klaviyo">In Klaviyo</h2>
