@@ -428,3 +428,5 @@ Worker versión `f952e23d`. 263 tests más el de integración en vivo (salteado 
 - Preparado para Klaviyo: `brand/logo/final/klaviyo-app-logo.svg` (48 × 48) y textos en `14-PASOS-DASHBOARD.md`.
 - Verificado: el sitio usa los tokens de `brand/tokens.css` (idénticos) y los logos finales de la opción B; la app embebida usa Polaris, como define `03-MARCA.md`.
 - Pendiente de decisión: Facundo quiere elegir la distribución pública cuando la landing esté publicada (dominio desde el 2026-12-05, scripts de build y datos legales pendientes).
+- **CSV de candidatos probado desde la interfaz (Facundo, 2026-11-26 00:30 UTC): funciona.** Tras archivar el historial de prueba, la auditoría volvió a dar 984 / 696. El archivo descargado tiene 696 filas, 696 ids distintos, un mail por fila (todos del dominio del seed), el motivo y el enlace al perfil, con fin de línea CRLF. La descarga quedó en `events_log` con su usuario (`simulation.candidates_downloaded`, 696 filas). Confirma que App Bridge agrega el token de sesión al `fetch` de la descarga.
+- Sin probar con clics todavía: "Check jobs in Klaviyo", Disconnect y reconexión, suscripción y cargo en Shopify.
