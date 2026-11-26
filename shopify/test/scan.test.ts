@@ -190,7 +190,8 @@ describe("scan: audit and simulation in one resumable pass", () => {
       skippedCount: 0,
       activeProfiles: 5000,
       activeProfilesSource: "klaviyo_usage",
-      estimatedFeeCents: 1500,
+      // The monthly plan a list of 5,000 active profiles needs. Nothing is charged per cleanup.
+      estimatedFeeCents: 900,
       approvedAt: null,
       approvedBy: null,
       supersededAt: null,

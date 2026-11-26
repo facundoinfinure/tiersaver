@@ -46,6 +46,12 @@ export interface HomeView {
   lastCleanup: { id: string; status: string; error: string | null; finishedAt: Stamp | null; total: number; submitted: number; restored: boolean } | null;
   /** `nextAuditOn` is a calendar day, already formatted. */
   schedule: { enabled: boolean; automatic: boolean; nextAuditOn: string | null };
+  /**
+   * The shop's TierSaver plan as last seen (billing/billing.ts, `shop_plans`): "none" while it never had one.
+   * "cancelled", "declined" and "frozen" mean cleanups are off. `price` is "US$9/month" while a plan is active.
+   * `lowest`, `largestList` and `intervalDays` come from the price table, for the pricing box.
+   */
+  plan: { status: "none" | "active" | "cancelled" | "declined" | "frozen"; price: string | null; lowest: string; largestList: string; intervalDays: number };
   links: { help: string; support: string; supportEmail: string; sales: string; salesEmail: string; schedule: string; pricing: string };
 }
 
@@ -129,7 +135,7 @@ export function HomeScreen({
   /** Wraps its content (a submit button, or a dialog that holds one) in the form that posts `intent` to the home route. */
   renderForm: (intent: "scan" | "disconnect", content: ReactNode) => ReactNode;
 }) {
-  const { connection, result, scan, simulation, lastCleanup, schedule, links } = view;
+  const { connection, result, scan, simulation, lastCleanup, schedule, links, plan } = view;
   const connected = connection?.status === "connected";
   const scanning = scan?.status === "queued" || scan?.status === "running";
   const audited = Boolean(result);
@@ -196,7 +202,7 @@ export function HomeScreen({
               {CLEANUP_ERRORS[cleanupFailed.error ?? ""] ?? "Something went wrong while talking to Klaviyo."}{" "}
               {cleanupFailed.submitted > 0
                 ? `It stopped after ${number(cleanupFailed.submitted)} of ${number(cleanupFailed.total)} profiles. The rest were left untouched.`
-                : "No profiles were suppressed and nothing is charged."}{" "}
+                : "No profiles were suppressed."}{" "}
               Run the audit again to get a current simulation, then approve it to try again.
             </s-text>
             <s-stack direction="inline" gap="base">
@@ -262,8 +268,38 @@ export function HomeScreen({
     return null;
   })();
 
+  // Always shown while it is true, whatever else is going on: without a plan no cleanup can start.
+  const planBanner =
+    plan.status === "cancelled" || plan.status === "declined" || plan.status === "frozen" ? (
+      <s-banner
+        tone="warning"
+        heading={
+          plan.status === "frozen"
+            ? "Your TierSaver plan is on hold, so cleanups are off"
+            : plan.status === "declined"
+              ? "The TierSaver plan was declined, so cleanups are off"
+              : "Your TierSaver plan is cancelled, so cleanups are off"
+        }
+      >
+        <s-stack gap="base">
+          <s-text>
+            {plan.status === "frozen"
+              ? "Shopify put the plan on hold because of a billing issue with your store. No cleanup, manual or automatic, can start until Shopify reactivates it."
+              : plan.status === "declined"
+                ? "The plan was not approved in Shopify. No cleanup, manual or automatic, can start without a plan. It starts when you approve a cleanup and then approve the plan in Shopify."
+                : "No cleanup, manual or automatic, can start without a plan. A new plan starts when you approve a cleanup; nothing is charged until then."}{" "}
+            Audits stay free, and profiles already suppressed stay suppressed.
+          </s-text>
+          <div>
+            <s-button href="/app/settings">See your plan in Settings</s-button>
+          </div>
+        </s-stack>
+      </s-banner>
+    ) : null;
+
   return (
     <s-page heading="TierSaver">
+      {planBanner}
       {banner}
 
       {!cleaned ? (
@@ -404,10 +440,10 @@ export function HomeScreen({
                 {result.candidates === 0 && !result.note && !historyPending ? (
                   <s-paragraph>
                     {result.matchingKlaviyoCriteria === 0
-                      ? "Your list is already clean. No profiles match the cleanup criteria, so there is nothing to suppress and nothing to charge."
+                      ? "Your list is already clean. No profiles match the cleanup criteria, so there is nothing to suppress."
                       : result.restoreLocked > 0
-                        ? `Nothing to suppress right now. ${number(result.restoreLocked)} profiles meet the criteria but were restored in the last 365 days, so TierSaver leaves them out until 365 days have passed since their restore. Nothing is charged.`
-                        : "Nothing to suppress right now: the profiles that meet the criteria are kept active for the reasons above, or are already suppressed in Klaviyo. Nothing is charged."}
+                        ? `Nothing to suppress right now. ${number(result.restoreLocked)} profiles meet the criteria but were restored in the last 365 days, so TierSaver leaves them out until 365 days have passed since their restore.`
+                        : "Nothing to suppress right now: the profiles that meet the criteria are kept active for the reasons above, or are already suppressed in Klaviyo."}
                   </s-paragraph>
                 ) : null}
                 <s-stack direction="inline" gap="base" alignItems="center">
@@ -468,7 +504,9 @@ export function HomeScreen({
               {schedule.enabled && schedule.automatic ? (
                 <s-text>
                   Automatic cleanups are on: after that audit, TierSaver suppresses the profiles it finds without asking you again.{" "}
-                  {result?.price ? `Price if it suppresses profiles: ${result.price}, at most one charge every 28 days. ` : ""}
+                  {plan.status === "active"
+                    ? "It is covered by your monthly plan; nothing extra is charged per cleanup. "
+                    : "It needs an active TierSaver plan: without one, the cleanup waits for you. "}
                   You can turn this off in Settings at any time.
                 </s-text>
               ) : null}
@@ -493,16 +531,28 @@ export function HomeScreen({
         <s-stack gap="small">
           {result && !result.price ? (
             <s-text>
-              Lists above 150,000 active profiles are priced by agreement and nothing is charged automatically. Write to{" "}
+              TierSaver is not sold automatically for lists above {plan.largestList} active profiles. Write to{" "}
               <s-link href={links.sales} target="_blank">
                 {links.salesEmail}
-              </s-link>{" "}
-              to agree a price.
+              </s-link>
+              .
             </s-text>
+          ) : plan.status === "active" && plan.price ? (
+            <>
+              <s-text>Your plan: {plan.price}.</s-text>
+              <s-text color="subdued">
+                Charged by Shopify every {plan.intervalDays} days until you cancel. Nothing extra per cleanup. You manage it in Settings.
+              </s-text>
+            </>
           ) : (
-            <s-text>{result?.price ? `${result.price} per month for a list of this size.` : "A flat monthly price by list size, from $15."}</s-text>
+            <>
+              <s-text>{result?.price ? `${result.price} for a list of this size.` : `A monthly plan by list size, from ${plan.lowest}.`}</s-text>
+              <s-text color="subdued">
+                {plan.status === "none" ? "Free until you approve your first cleanup. Then" : "A new plan starts when you approve a cleanup. It is then"}{" "}
+                charged by Shopify every {plan.intervalDays} days until you cancel. The audit is always free.
+              </s-text>
+            </>
           )}
-          <s-text color="subdued">Charged through Shopify, only in a month when a cleanup suppresses profiles. The audit is free.</s-text>
           <s-link href={links.pricing} target="_blank">
             How pricing works
           </s-link>

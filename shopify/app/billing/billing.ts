@@ -263,13 +263,14 @@ export async function cancelPlan(graphql: AdminGraphql): Promise<CancelPlanResul
 
 // ---- The app's copy of the plan (`shop_plans`) ---------------------------------------------------------------
 
-export type PlanEnd = "cancelled" | "declined";
+export type PlanEnd = "cancelled" | "declined" | "frozen";
 
 /**
  * Brings `shop_plans` in line with what Shopify just reported, and writes the audit trail (product rule 3):
  * `plan.started` when a plan becomes active (first plan, or a change of plan) and `plan.ended` when it stops.
- * `endedAs` says why a plan that is no longer there ended; `declined` is also recorded for a shop that never
- * had a plan (the merchant said no on Shopify's approval page).
+ * `endedAs` says why a plan that is no longer there ended (default: cancelled; "frozen" when Shopify reported a
+ * hold that its list of subscriptions no longer shows); `declined` is also recorded for a shop that never had a
+ * plan (the merchant said no on Shopify's approval page).
  */
 export async function syncPlanState(db: Db, shop: string, status: BillingStatus, opts: { actor?: string; endedAs?: PlanEnd; now?: Date } = {}): Promise<void> {
   const now = opts.now ?? new Date();
@@ -318,11 +319,11 @@ export async function syncPlanState(db: Db, shop: string, status: BillingStatus,
   }
 
   // No plan at Shopify.
-  if (previous && (previous.status === "active" || previous.status === "frozen")) {
-    const endedAs = opts.endedAs ?? "cancelled";
+  const endedAs = opts.endedAs ?? "cancelled";
+  if (previous && (previous.status === "active" || (previous.status === "frozen" && endedAs !== "frozen"))) {
     await db.batch([
-      db.update(schema.shopPlans).set({ status: endedAs, endedAt: now, currentPeriodEnd: null, updatedAt: now }).where(eq(schema.shopPlans.shop, shop)),
-      db.insert(schema.eventsLog).values({ id: crypto.randomUUID(), shop, at: now, actor, action: "plan.ended", detail: { subscriptionId: previous.subscriptionId, monthlyCents: previous.monthlyCents, endedAs } }),
+      db.update(schema.shopPlans).set({ status: endedAs, endedAt: endedAs === "frozen" ? null : now, currentPeriodEnd: null, updatedAt: now }).where(eq(schema.shopPlans.shop, shop)),
+      db.insert(schema.eventsLog).values({ id: crypto.randomUUID(), shop, at: now, actor, action: endedAs === "frozen" ? "plan.frozen" : "plan.ended", detail: { subscriptionId: previous.subscriptionId, monthlyCents: previous.monthlyCents, endedAs } }),
     ]);
     return;
   }
@@ -458,4 +459,36 @@ export async function cancelPlanForShop(deps: { db: Db; graphql: AdminGraphql; n
     ]);
   }
   return { ok: true, hadPlan: Boolean(cancelled), automaticTurnedOff };
+}
+
+// ---- Shopify's webhook -----------------------------------------------------------------------------------------
+
+const PAYLOAD_END: Record<string, PlanEnd> = { CANCELLED: "cancelled", EXPIRED: "cancelled", DECLINED: "declined", FROZEN: "frozen" };
+
+/**
+ * APP_SUBSCRIPTIONS_UPDATE: a subscription of this shop changed status at Shopify (approved, declined, cancelled
+ * there or by an uninstall, frozen for non-payment, reactivated). The payload only says what happened to ONE
+ * subscription, and a replaced or declined one says nothing about the plan that is still active, so Shopify is
+ * asked for the current state with the shop's offline token; the payload's status only explains why a plan is
+ * gone. If Shopify cannot be asked, the payload is believed only about the subscription the app has on record.
+ * Safe to receive more than once and out of order.
+ */
+export async function handleSubscriptionUpdate(
+  deps: { db: Db; graphql: AdminGraphql; now?: Date },
+  args: { shop: string; subscriptionId: string | null; status: string | null },
+): Promise<"ignored" | "synced" | "from_payload"> {
+  const shop = await deps.db.query.shops.findFirst({ where: eq(schema.shops.shop, args.shop), columns: { status: true } });
+  // Unknown or uninstalled shop: Shopify cancels the subscription on uninstall, and the stored plan went with it.
+  if (!shop || shop.status !== "installed") return "ignored";
+  const endedAs = PAYLOAD_END[(args.status ?? "").toUpperCase()];
+  try {
+    const status = await getBillingStatus(deps.graphql);
+    await syncPlanState(deps.db, args.shop, status, { actor: "webhook", endedAs, now: deps.now });
+    return "synced";
+  } catch {
+    const stored = await deps.db.query.shopPlans.findFirst({ where: eq(schema.shopPlans.shop, args.shop), columns: { subscriptionId: true } });
+    if (!endedAs || !args.subscriptionId || (stored ? stored.subscriptionId !== args.subscriptionId : endedAs !== "declined")) return "ignored";
+    await syncPlanState(deps.db, args.shop, { developmentStore: false, plan: null, frozen: false }, { actor: "webhook", endedAs, now: deps.now });
+    return "from_payload";
+  }
 }

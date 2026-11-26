@@ -1,6 +1,6 @@
 # TierSaver — instrucciones del proyecto
 
-TierSaver es una app embebida de Shopify que mantiene limpia la lista de Klaviyo del merchant: suprime, con simulación y aprobación previas, los perfiles que nunca interactuaron, según los criterios publicados por Klaviyo. Cobra un precio fijo mensual según el tamaño de la lista. Dueño: Facundo Bonfigli. Marca independiente (no mencionar Infinure, dnuvi ni Alupont en nada público).
+TierSaver es una app embebida de Shopify que mantiene limpia la lista de Klaviyo del merchant: suprime, con simulación y aprobación previas, los perfiles que nunca interactuaron, según los criterios publicados por Klaviyo. Cobra un plan mensual fijo según el tamaño de la lista, que empieza con la primera limpieza. Dueño: Facundo Bonfigli. Marca independiente (no mencionar Infinure, dnuvi ni Alupont en nada público).
 
 Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y estado.
 
@@ -20,7 +20,7 @@ Leé primero `docs/00-HANDOVER.md`. Es la fuente de verdad sobre decisiones y es
 3. **Todo es reversible y queda registrado**: quién, cuándo, qué perfiles, por qué regla.
 4. **Suprimir, nunca borrar.** La app no elimina perfiles.
 5. **Mínimo de permisos** en Shopify y en Klaviyo. No pedir scopes que el MVP no usa.
-6. **Si no hay limpieza, no se cobra.**
+6. **Gratis hasta la primera limpieza.** Conectar, auditar y simular no cuestan nada ni piden plan. El plan mensual empieza cuando el merchant aprueba su primera limpieza y se cobra cada 30 días hasta que lo cancela. (Reemplaza "si no hay limpieza, no se cobra"; decisión de Facundo del 2026-11-26.)
 7. **Datos personales**: guardar lo mínimo (IDs y hashes antes que mails en claro cuando alcance), cifrar tokens en reposo, borrar todo al desinstalar según los webhooks de privacidad de Shopify.
 
 ## Frenos: parar y preguntarle a Facundo

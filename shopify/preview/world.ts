@@ -13,7 +13,31 @@ export const PREVIEW_USER = "1001";
 const DAY = 86_400_000;
 const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * DAY).toISOString();
 
-export const billing = { subscribed: false, usageRecords: [] as { amount: number; description: string }[] };
+/**
+ * Shopify billing, in memory: the shop's active plan (a 30-day subscription), the one waiting on "Shopify's
+ * approval page", and whether the plan is frozen. `legacyUsage` adds the usage subscription of the old
+ * per-cleanup model, to see that it does not count as a plan.
+ */
+export interface PreviewPlan {
+  id: string;
+  name: string;
+  monthlyCents: number;
+  test: boolean;
+  returnUrl: string;
+}
+export const billing = {
+  plan: null as PreviewPlan | null,
+  pending: null as PreviewPlan | null,
+  frozen: false,
+  legacyUsage: false,
+  /** Every subscription the app asked Shopify to create, in order. */
+  requested: [] as { name: string; monthlyCents: number; test: boolean }[],
+  cancelled: 0,
+  next: 1,
+};
+export function resetBilling(): void {
+  Object.assign(billing, { plan: null, pending: null, frozen: false, legacyUsage: false, requested: [], cancelled: 0, next: 1 });
+}
 
 export const klaviyo = new FakeKlaviyo();
 /** Preview-only controls (see /__preview/klaviyo in worker.ts): slow Klaviyo down so a running cleanup can be looked at. */

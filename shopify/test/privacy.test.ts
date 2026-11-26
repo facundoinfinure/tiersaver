@@ -45,12 +45,13 @@ async function seedEverything() {
     feeCents: 2900,
     idempotencyKey: `k-${created.runId}`,
   });
+  await db.insert(schema.shopPlans).values({ shop, status: "active", subscriptionId: "gid://shopify/AppSubscription/1", monthlyCents: 1900, tierMaxProfiles: 25_000 });
   return { ...seeded, runId: created.runId };
 }
 
 async function rowCounts(shop: string, simulationId: string): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
-  const byShop = ["session", "shops", "klaviyo_connections", "settings", "audits", "simulations", "runs", "run_profiles", "purchase_hashes", "usage_charges", "events_log"];
+  const byShop = ["session", "shops", "klaviyo_connections", "settings", "audits", "simulations", "runs", "run_profiles", "purchase_hashes", "usage_charges", "shop_plans", "events_log"];
   for (const table of byShop) {
     const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM \`${table}\` WHERE shop = ?`).bind(shop).first<{ n: number }>();
     out[table] = row!.n;

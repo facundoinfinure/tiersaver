@@ -30,6 +30,7 @@ const base: HomeView = {
   simulation: null,
   lastCleanup: null,
   schedule: { enabled: false, automatic: false, nextAuditOn: null },
+  plan: { status: "none", price: null, lowest: "US$9/month", largestList: "150,000", intervalDays: 30 },
   orderHistory: "complete",
   links: (({ help, support, supportEmail, sales, salesEmail, articles }) => ({ help, support, supportEmail, sales, salesEmail, schedule: articles.schedule, pricing: articles.pricing }))(legalUrls({})),
 };
@@ -42,7 +43,7 @@ const result = {
   candidates: 696,
   keptActive: [{ label: "Created or subscribed too recently", count: 288 }],
   note: null,
-  price: "$15",
+  price: "US$9/month",
   seededTestAccount: true,
   resurfaced: 0,
   restoreLocked: 0,

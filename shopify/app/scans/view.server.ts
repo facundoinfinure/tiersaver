@@ -1,4 +1,5 @@
-import { flatTierFor, formatUsd, type ProtectionReason } from "@tiersaver/core";
+import type { ProtectionReason } from "@tiersaver/core";
+import { planForListSize } from "../billing/billing";
 import { desc, eq } from "drizzle-orm";
 import { db, schema } from "../db.server";
 import type { ScanSummary } from "./engine";
@@ -17,7 +18,7 @@ export interface AuditView {
     candidates: number;
     keptActive: { label: string; count: number }[];
     note: string | null;
-    /** TierSaver's monthly price for this list size, e.g. "$15". Null above the public tiers. */
+    /** TierSaver's monthly plan for this list size, e.g. "US$9/month". Null above the largest plan. */
     price: string | null;
     seededTestAccount: boolean;
     /** Cycle detector: profiles a cleanup suppressed that are active again without a TierSaver restore. */
@@ -66,7 +67,6 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
   let result: AuditView["result"] = null;
   if (completed && simulation) {
     const summary = simulation.summary as ScanSummary;
-    const tier = flatTierFor(simulation.activeProfiles);
     result = {
       finishedAt: (completed.finishedAt ?? simulation.createdAt).toISOString(),
       activeProfiles: simulation.activeProfiles,
@@ -82,7 +82,7 @@ export async function loadAuditView(shop: string): Promise<AuditView> {
         : summary.note
           ? (NOTES[summary.note] ?? null)
           : null,
-      price: tier ? formatUsd(tier.monthlyCents) : null,
+      price: planForListSize(simulation.activeProfiles)?.price ?? null,
       seededTestAccount: summary.seededTestAccount === true,
       resurfaced: summary.resurfaced ?? 0,
       restoreLocked: summary.protectedByReason?.recently_reactivated ?? 0,

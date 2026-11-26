@@ -26,6 +26,12 @@ api_version = "2026-10"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
+  # The shop's TierSaver plan changed at Shopify (approved, declined, cancelled, frozen): keeps the app's copy of
+  # the plan current (app/billing/billing.ts). Needs no access scope.
+  [[webhooks.subscriptions]]
+  topics = ["app_subscriptions/update"]
+  uri = "/webhooks/app/subscriptions_update"
+
   # Optional accelerator: makes a new buyer visible within seconds instead of at the
   # next orders sync. Buyer protection does NOT depend on it: purchase data is kept
   # current by the hourly orders sync and by every scan (app/orders/sync.ts), and

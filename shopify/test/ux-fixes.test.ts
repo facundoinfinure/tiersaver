@@ -103,14 +103,14 @@ describe("settings: turning automatic cleanups on", () => {
     const { shop } = await seedSimulation({ candidates: 1, approved: false });
     const on = baseInput({ mode: "automatic", scheduleEnabled: true, billingDay: 3 });
 
-    const first = await saveSettings(db, { shop, actor: "user:42", input: on, termsVersion: TERMS_VERSION, priceShown: "$29 for your list today", now: new Date("2026-11-26T10:00:00Z") });
+    const first = await saveSettings(db, { shop, actor: "user:42", input: on, termsVersion: TERMS_VERSION, priceShown: "US$19/month for your list today", now: new Date("2026-11-26T10:00:00Z") });
     expect(first).toMatchObject({ ok: true, automaticTurnedOn: true });
     // Saving again with it already on is not a new authorisation.
     expect(await saveSettings(db, { shop, actor: "user:42", input: on, termsVersion: TERMS_VERSION, now: new Date("2026-11-26T10:05:00Z") })).toMatchObject({ ok: true, automaticTurnedOn: false });
 
     let log = await events(shop);
     expect(log).toHaveLength(1);
-    expect(log[0]).toMatchObject({ action: "automatic_mode.enabled", actor: "user:42", detail: { termsVersion: TERMS_VERSION, priceShown: "$29 for your list today" } });
+    expect(log[0]).toMatchObject({ action: "automatic_mode.enabled", actor: "user:42", detail: { termsVersion: TERMS_VERSION, priceShown: "US$19/month for your list today" } });
     expect(log[0]!.at.toISOString()).toBe("2026-11-26T10:00:00.000Z");
 
     expect(await saveSettings(db, { shop, actor: "user:43", input: baseInput({ scheduleEnabled: true, billingDay: 3 }), now: new Date("2026-11-27T10:00:00Z") })).toMatchObject({ ok: true, automaticTurnedOn: false });

@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { formatUsd, RULE_LIMITS, type CandidateReason } from "@tiersaver/core";
+import { RULE_LIMITS, type CandidateReason } from "@tiersaver/core";
 import { eq } from "drizzle-orm";
 import { useEffect, useRef, useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
@@ -11,7 +11,7 @@ import { db, schema } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
 import { legalUrls } from "../legal";
-import { CHARGE_HOLD_HOURS, NO_CHARGE_LABELS, OTHER_RUN_ERROR_LABEL, OTHER_SKIP_LABEL, RUN_ERROR_LABELS, SKIP_REASON_LABELS, statusLabel } from "../runs/labels";
+import { OTHER_RUN_ERROR_LABEL, OTHER_SKIP_LABEL, RUN_ERROR_LABELS, SKIP_REASON_LABELS, statusLabel } from "../runs/labels";
 import { confirmRunJobs } from "../runs/confirm";
 import { requestStopRun } from "../runs/engine";
 import { startUndoRun } from "../runs/start.server";
@@ -44,7 +44,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   ]);
   // Every date is formatted here, in the shop's time zone: the browser never formats one (see settings/timezone.ts).
   const at = (iso: string | null | undefined) => (iso ? stamp(iso, zone) : null);
-  const { run, charge, approval } = detail;
+  const { run, approval } = detail;
   const legal = legalUrls(env);
   return {
     run: {
@@ -71,24 +71,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       ? { ...detail.undo, leftAloneReasons: detail.undo.leftAloneReasons.map((s) => ({ ...s, label: SKIP_REASON_LABELS[s.reason] ?? OTHER_SKIP_LABEL })) }
       : null,
     undoRuns: detail.undoRuns.map((u) => ({ id: u.id, createdAt: stamp(u.createdAt, zone), ...statusLabel(u), submitted: u.submitted, skipped: u.skipped })),
-    charge: charge
-      ? {
-          status: charge.status,
-          fee: formatUsd(charge.feeCents),
-          reason: charge.reason,
-          chargedAt: at(charge.chargedAt),
-          sendAt: at(charge.sendAt),
-          // The restore window is still open. Decided here: the browser's clock is not used for anything shown.
-          windowOpen: Boolean(charge.sendAt && Date.parse(charge.sendAt) > Date.now()),
-        }
-      : null,
     approval: approval
       ? { by: actorText(approval.by), automatic: approval.automatic, at: at(approval.at), rules: rulesText(approval.recommendedRules, approval.windows) }
       : null,
     candidateReasons: detail.candidateReasons.map((r) => ({ label: CANDIDATE_REASON_LABELS[r.reason as CandidateReason] ?? r.reason, count: r.count })),
     jobCount: detail.jobCount,
     restoreLockDays: settings?.reactivationLockDays ?? RULE_LIMITS.reactivationLockDays.min,
-    holdHours: CHARGE_HOLD_HOURS,
     help: { undo: legal.articles.undo, support: legal.support, supportEmail: legal.supportEmail },
   };
 };
@@ -165,7 +153,7 @@ const RENEWAL_ERROR = "Tick this box to confirm before restoring.";
 const RESTORE_MODAL = "restore-cleanup";
 
 export default function Run() {
-  const { run, progress, skipReasons, stop, undo, undoRuns, charge, approval, candidateReasons, jobCount, restoreLockDays, holdHours, help } = useLoaderData<typeof loader>();
+  const { run, progress, skipReasons, stop, undo, undoRuns, approval, candidateReasons, jobCount, restoreLockDays, help } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>() as ActionData | undefined;
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
@@ -205,8 +193,6 @@ export default function Run() {
     const modal = document.getElementById(RESTORE_MODAL) as (HTMLElement & { showOverlay?: () => void }) | null;
     modal?.showOverlay?.();
   }, [result, refusedForTick]);
-
-  const chargeLine = !isUndo && charge ? chargeText(charge, Boolean(undo?.fullyRestored), holdHours) : null;
 
   return (
     <s-page heading={isUndo ? "Restore" : "Cleanup"}>
@@ -367,7 +353,6 @@ export default function Run() {
             <s-text color="subdued">Started by {run.startedBy}.</s-text>
           ) : null}
 
-          {chargeLine ? <s-paragraph>{chargeLine}</s-paragraph> : null}
           {!isUndo && !running && run.submitted > 0 && !undo?.fullyRestored ? (
             <s-paragraph>
               Suppressed profiles don't count toward your Klaviyo plan. Klaviyo's count can take up to 72 hours to update. To move to
@@ -512,7 +497,7 @@ export default function Run() {
                         profile that Klaviyo shows as suppressed since more than a day before this cleanup, or suppressed again more than
                         a day after it, is left as it is. Before you send to these profiles again, check that you may lawfully email them.
                       </s-paragraph>
-                      {charge ? <s-paragraph>{restoreChargeText(charge)}</s-paragraph> : null}
+                      <s-paragraph>Restoring does not change or refund your TierSaver plan.</s-paragraph>
                       {needsConfirmation ? (
                         <s-banner tone="warning" heading={needsConfirmation === "yes" ? "Your Klaviyo plan has renewed since this cleanup" : "Your Klaviyo plan may have renewed since this cleanup"}>
                           <s-stack gap="base">
@@ -571,53 +556,3 @@ function ConfirmBox({ error, onChange }: { error: string | undefined; onChange: 
     />
   );
 }
-
-type ChargeView = { status: string; fee: string; reason: string | null; chargedAt: { iso: string; text: string } | null; sendAt: { iso: string; text: string } | null; windowOpen: boolean };
-
-/** What the cleanup page says about the charge. Facts from billing/billing.ts: sent `holdHours` after the cleanup finished, once Klaviyo confirmed; a full restore before that voids it. */
-function chargeText(charge: ChargeView, fullyRestored: boolean, holdHours: number) {
-  if (charge.status === "charged") {
-    return (
-      <>
-        Charged {charge.fee} through Shopify
-        {charge.chargedAt ? (
-          <>
-            {" "}
-            on <Time at={charge.chargedAt} />
-          </>
-        ) : null}
-        .{fullyRestored ? " It had already been charged when you restored this cleanup; restoring does not refund it." : ""}
-      </>
-    );
-  }
-  if (charge.status === "not_charged") return NO_CHARGE_LABELS[charge.reason ?? ""] ?? "Not charged.";
-  // Not out yet (pending, or a try that failed).
-  if (fullyRestored) return "Not charged: you restored this cleanup before the charge was sent.";
-  if (charge.status === "failed") return `The charge of ${charge.fee} could not be sent to Shopify yet. TierSaver will try again; you do not need to do anything.`;
-  if (charge.sendAt && charge.windowOpen) {
-    return (
-      <>
-        Estimated charge: {charge.fee}. It is sent to Shopify on <Time at={charge.sendAt} /> ({holdHours} hours after the cleanup finished), once
-        Klaviyo has confirmed the suppressed profiles, unless you restore the whole cleanup first. If Klaviyo confirms none, nothing is charged.
-      </>
-    );
-  }
-  return `Estimated charge: ${charge.fee}. It is sent to Shopify as soon as Klaviyo has confirmed the suppressed profiles. If Klaviyo confirms none, nothing is charged.`;
-}
-
-/** What restoring does to the charge, for the confirmation dialog. */
-function restoreChargeText(charge: ChargeView) {
-  if (charge.status === "charged") return "This cleanup was already charged. Restoring does not refund it.";
-  if (charge.status === "not_charged") return "This cleanup was not charged, and restoring it does not change that.";
-  if (charge.sendAt && charge.windowOpen) {
-    return (
-      <>
-        This cleanup has not been charged yet. If you restore all of it before <Time at={charge.sendAt} />, it is not charged. Restoring only
-        part of a cleanup does not change its charge.
-      </>
-    );
-  }
-  return "This cleanup has not been charged yet, but its charge can be sent to Shopify at any moment. It is not charged only if the whole cleanup is restored before that. Once charged, restoring does not refund it.";
-}
-
-export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);

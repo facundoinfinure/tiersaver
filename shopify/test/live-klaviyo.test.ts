@@ -1,7 +1,6 @@
 import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { settleRunCharge } from "../app/billing/billing";
 import { getSuppressionJob, listProfilesPage } from "../app/klaviyo/api";
 import { KLAVIYO_SCOPES } from "../app/klaviyo/config";
 import { createKlaviyoClient, saveConnection } from "../app/klaviyo/connection.server";
@@ -145,10 +144,6 @@ describe.skipIf(!relay)("live: audit, cleanup, jobs and undo on the Klaviyo test
         console.log("LIVE", JSON.stringify({ jobs: report.jobs, afterCleanup }));
         expect(jobs.complete).toBe(true);
         expect(afterCleanup.suppressed).toBe(before.suppressed + 696);
-
-        // The charge: estimated first, settled on what Klaviyo confirmed (no Shopify here: it must stay open, not vanish).
-        report.chargeEstimate = await settleRunCharge({ db, graphql: null }, created.runId);
-        report.chargeAfterConfirmation = await settleRunCharge({ db, graphql: null }, created.runId, { done: jobs.complete, suppressed: jobs.suppressed });
       } finally {
         // ---- undo: always, so the account is left as it was --------------------
         const undo = await createUndoRun(db, { shop, runId: created.runId, createdBy: "user:1", confirmAfterRenewal: true });

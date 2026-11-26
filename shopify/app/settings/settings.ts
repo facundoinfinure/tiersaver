@@ -88,7 +88,7 @@ export async function saveSettings(
     input: SettingsInput;
     now?: Date;
     /**
-     * Turning automatic cleanups on authorises recurring cleanups and charges. The version of the terms shown
+     * Turning automatic cleanups on authorises recurring cleanups under the monthly plan. The version of the terms shown
      * next to the control (app/legal.ts) and the price shown there are recorded with who turned it on and when.
      */
     termsVersion?: string;
@@ -194,7 +194,7 @@ export async function saveSettings(
       action: "settings.updated",
       detail: { changed, version, rules, protectedGroups: sortedGroups.length, billingDay: input.billingDay, leadDays: input.leadDays, scheduleEnabled: input.scheduleEnabled, mode: input.mode },
     }),
-    // The authorisation of recurring cleanups and charges, on its own line of the trail: who, when, which terms, which price was on screen.
+    // The authorisation of recurring cleanups under the monthly plan, on its own line of the trail: who, when, which terms, which price was on screen.
     ...(automaticTurnedOn || (input.mode !== "automatic" && current.mode === "automatic")
       ? [
           db.insert(schema.eventsLog).values({

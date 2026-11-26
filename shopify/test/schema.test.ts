@@ -25,6 +25,7 @@ describe("migrations match the Drizzle schema", () => {
         "scans",
         "session",
         "settings",
+        "shop_plans",
         "shops",
         "simulation_candidates",
         "simulations",

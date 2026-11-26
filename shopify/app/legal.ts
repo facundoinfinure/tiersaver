@@ -3,7 +3,9 @@
  * the effective date printed on the published terms; bump it whenever the
  * terms change, so the audit trail says which version each approval accepted.
  */
-export const TERMS_VERSION = "2026-11-26";
+// 2026-11-27: the pricing terms changed (monthly plan by list size that starts with the first cleanup, instead of
+// one charge per cleanup). The published terms must carry this date and describe that model.
+export const TERMS_VERSION = "2026-11-27";
 
 /** Where merchants write for help with the app, and to agree a price above the public tiers. */
 export const SUPPORT_EMAIL = "support@tiersaver.com";

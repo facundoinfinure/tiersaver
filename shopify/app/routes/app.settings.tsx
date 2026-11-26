@@ -1,18 +1,21 @@
 import { env } from "cloudflare:workers";
-import { DEFAULT_FEE_POLICY, DEFAULT_SCHEDULE, flatTierFor, FLAT_PRICE_TIERS, formatUsd, RULE_LIMITS } from "@tiersaver/core";
+import { DEFAULT_SCHEDULE, RULE_LIMITS } from "@tiersaver/core";
 import { and, eq, isNull } from "drizzle-orm";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { flags } from "../components/home-screen";
-import { downloadFile, errorFocus, Time, useRevealError } from "../components/ui";
+import { downloadFile, errorFocus, number, Time, useRevealError } from "../components/ui";
+import { cancelPlanForShop, LARGEST_PLAN_PROFILES, PLAN_INTERVAL_DAYS, planCoversList, planForListSize, PLANS, refreshPlan, requestPlanFor, storedPlanState, usd, type BillingStatus } from "../billing/billing";
+import { requestAdminGraphql } from "../billing/billing.server";
 import { db, schema } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { listDataRequests } from "../data/privacy";
 import { listGroupsPage, type GroupKind } from "../klaviyo/api";
 import { CANDIDATE_SEGMENT_NAME } from "../klaviyo/config";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
+import { embeddedAppUrl } from "../klaviyo/flow.server";
 import { legalUrls, TERMS_VERSION } from "../legal";
 import { ensureShop } from "../orders/purchases";
 import { effectiveBillingDay } from "../schedule/schedule";
@@ -20,29 +23,42 @@ import { isKlaviyoRecommended, LEAD_DAYS_LIMITS, MAX_PROTECTED_GROUPS, rulesOf, 
 import { dayStamp, shopTimeZone } from "../settings/timezone";
 import { authenticate } from "../shopify.server";
 
+/** The list size of the shop's latest audit, or null while there is none. */
+async function latestListSize(shop: string): Promise<number | null> {
+  const latest = await db.query.simulations.findFirst({ where: (s, { eq }) => eq(s.shop, shop), orderBy: (s, { desc }) => desc(s.createdAt), columns: { activeProfiles: true } });
+  return latest?.activeProfiles ?? null;
+}
+
 /**
- * What a month with a cleanup costs this shop: the price for the list size of its latest audit, or the
- * whole price list while there is no audit. Shown next to the automatic-mode control and recorded when it is turned on.
+ * What the plan costs this shop: the plan for the list size of its latest audit, or the whole list of plans
+ * while there is no audit. Shown next to the automatic-mode control and recorded when it is turned on.
+ * Every figure comes from billing/billing.ts.
  */
 async function monthlyPrice(shop: string): Promise<{ text: string; known: boolean }> {
-  const latest = await db.query.simulations.findFirst({ where: (s, { eq }) => eq(s.shop, shop), orderBy: (s, { desc }) => desc(s.createdAt), columns: { activeProfiles: true } });
-  const largest = FLAT_PRICE_TIERS[FLAT_PRICE_TIERS.length - 1]!;
-  if (latest) {
-    const tier = flatTierFor(latest.activeProfiles);
-    return tier
-      ? { known: true, text: `${formatUsd(tier.monthlyCents)} for your list today (up to ${tier.maxProfiles.toLocaleString("en-US")} active profiles)` }
-      : { known: true, text: `agreed with you beforehand, because your list is above ${largest.maxProfiles.toLocaleString("en-US")} active profiles` };
+  const size = await latestListSize(shop);
+  if (size !== null) {
+    const plan = planForListSize(size);
+    return plan
+      ? { known: true, text: `${plan.price} for your list today (up to ${number(plan.maxProfiles)} active profiles)` }
+      : { known: true, text: `not sold automatically for your list, which is above ${number(LARGEST_PLAN_PROFILES)} active profiles` };
   }
-  return { known: false, text: FLAT_PRICE_TIERS.map((t) => `${formatUsd(t.monthlyCents)} up to ${t.maxProfiles.toLocaleString("en-US")} active profiles`).join(", ") };
+  return { known: false, text: PLANS.map((p) => `${p.price} up to ${number(p.maxProfiles)} active profiles`).join(", ") };
 }
 
 /** Lists and segments offered as protected groups: up to 5 pages of 10 of each kind. */
 const GROUP_PAGES = 5;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin, sessionToken } = await authenticate.admin(request);
   await ensureShop(db, session.shop);
-  const [settings, connection, audit, price, requests, zone] = await Promise.all([
+  // The plan as Shopify reports it now; if Shopify cannot be asked, the page says so and shows the last known state.
+  let billing: BillingStatus | null = null;
+  try {
+    billing = await refreshPlan({ db, graphql: requestAdminGraphql(admin), actor: sessionActor(sessionToken) }, session.shop);
+  } catch {
+    billing = null;
+  }
+  const [settings, connection, audit, price, requests, zone, listSize, storedPlan] = await Promise.all([
     db.query.settings.findFirst({ where: (s, { eq }) => eq(s.shop, session.shop) }),
     getConnection(db, session.shop),
     db.query.audits.findFirst({
@@ -53,8 +69,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     monthlyPrice(session.shop),
     listDataRequests(db, session.shop),
     shopTimeZone(db, session.shop),
+    latestListSize(session.shop),
+    storedPlanState(db, session.shop),
   ]);
   if (!settings) throw new Response("Settings not found", { status: 404 });
+
+  const current = billing?.plan ?? null;
+  const needed = listSize === null ? null : planForListSize(listSize);
+  const coverage = current && listSize !== null ? planCoversList(current, listSize) : null;
+  const plan = {
+    /** False when Shopify could not be asked just now. */
+    known: billing !== null,
+    current: current
+      ? {
+          price: `${usd(current.monthlyCents)}/month`,
+          maxProfiles: current.maxProfiles,
+          test: current.test,
+          // Formatted here, in the shop's time zone, like every date in the app.
+          periodEnds: current.currentPeriodEnd ? dayStamp(current.currentPeriodEnd, zone) : null,
+        }
+      : null,
+    /** Why there is no plan, when there was one or one was refused: "cancelled", "declined" or "frozen". */
+    ended: current ? null : billing?.frozen ? ("frozen" as const) : storedPlan && storedPlan.status !== "active" ? storedPlan.status : null,
+    listSize,
+    needed: needed ? { price: needed.price, maxProfiles: needed.maxProfiles, terms: needed.terms } : null,
+    /** The list moved to a smaller plan than the one being paid: offered as a switch, never left unsaid. */
+    lowerAvailable: Boolean(coverage?.covered && coverage.overpaying && needed),
+    /** The list moved to a larger plan: the next cleanup needs the merchant to approve it in Shopify. */
+    higherNeeded: Boolean(coverage && !coverage.covered && coverage.reason === "plan_price_too_low" && needed),
+    aboveLargest: listSize !== null && !needed,
+    largest: number(LARGEST_PLAN_PROFILES),
+    intervalDays: PLAN_INTERVAL_DAYS,
+    plans: PLANS.map((p) => `${p.price} up to ${number(p.maxProfiles)} active profiles`),
+  };
 
   const groups: { ref: string; kind: GroupKind; name: string }[] = [];
   let groupsError = false;
@@ -100,7 +147,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     scheduleEnabled: settings.scheduleEnabled,
     mode: settings.mode,
     price: price.text,
-    minDaysBetweenCharges: DEFAULT_FEE_POLICY.minDaysBetweenCharges,
+    plan,
     legal: legalUrls(env),
     // Customer data requests Shopify sent for this shop in the last 90 days. Dates are formatted here, in the shop's time zone.
     dataRequests: requests.map((r) => ({
@@ -131,9 +178,34 @@ function optionalInt(value: FormDataEntryValue | null): number | null | undefine
   return Number.isFinite(n) ? n : Number.NaN;
 }
 
+const NO_FIELD_ERRORS = {} as Partial<Record<SettingsField, string>>;
+const PLAN_ERRORS: Record<string, string> = {
+  billing_unavailable: "Shopify could not be reached, so your plan was not changed. Please try again.",
+  plan_not_cancelled: "Shopify did not cancel the plan. Nothing was changed. Please try again.",
+  above_price_tiers: "TierSaver is not sold automatically for a list of this size. Write to hello@tiersaver.com.",
+  no_audit: "Run the audit first, so TierSaver knows your list size.",
+};
+
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken, admin, redirect } = await authenticate.admin(request);
   const form = await request.formData();
+  const intent = form.get("intent");
+
+  if (intent === "cancel_plan") {
+    // Cancels the subscription at Shopify. Its consequences (no more cleanups, automatic cleanups off) are in billing/billing.ts.
+    const result = await cancelPlanForShop({ db, graphql: requestAdminGraphql(admin) }, { shop: session.shop, actor: sessionActor(sessionToken) });
+    if (!result.ok) return { saved: null, planError: PLAN_ERRORS[result.reason] ?? PLAN_ERRORS.billing_unavailable!, errors: [] as string[], fieldErrors: NO_FIELD_ERRORS };
+    return { saved: null, planCancelled: true as const, automaticTurnedOff: result.automaticTurnedOff, errors: [] as string[], fieldErrors: NO_FIELD_ERRORS };
+  }
+  if (intent === "switch_plan") {
+    // Moves to the plan of the list size of the latest audit. Shopify asks the merchant to approve it.
+    const size = await latestListSize(session.shop);
+    if (size === null) return { saved: null, planError: PLAN_ERRORS.no_audit!, errors: [] as string[], fieldErrors: NO_FIELD_ERRORS };
+    const requested = await requestPlanFor({ db, graphql: requestAdminGraphql(admin) }, { shop: session.shop, activeProfiles: size, returnUrl: embeddedAppUrl(env, session.shop, "/app/settings"), actor: sessionActor(sessionToken), termsVersion: TERMS_VERSION });
+    if (!requested.ok) return { saved: null, planError: PLAN_ERRORS[requested.reason] ?? PLAN_ERRORS.billing_unavailable!, errors: [] as string[], fieldErrors: NO_FIELD_ERRORS };
+    return requested.next === "approve_in_shopify" ? redirect(requested.confirmationUrl, { target: "_top" }) : redirect("/app/settings");
+  }
+
   const wider = form.get("wider") === "yes";
   const billingDay = optionalInt(form.get("billingDay"));
   const input: SettingsInput = {
@@ -241,12 +313,28 @@ function DataRequests({ requests }: { requests: ReturnType<typeof useLoaderData<
   );
 }
 
+/** What the action answers: a save of the settings form (`saved` true or false) or one of the plan actions (`saved` null). */
+type SettingsResult = {
+  saved: boolean | null;
+  errors: string[];
+  fieldErrors: Partial<Record<SettingsField, string>>;
+  rulesChanged?: boolean;
+  automaticTurnedOn?: boolean;
+  planCancelled?: boolean;
+  automaticTurnedOff?: boolean;
+  planError?: string;
+};
+
+const CANCEL_PLAN_MODAL = "cancel-plan";
+
 export default function Settings() {
   const data = useLoaderData<typeof loader>();
-  const result = useActionData<typeof action>();
+  const result = useActionData<typeof action>() as SettingsResult | undefined;
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
-  const saving = navigation.state !== "idle" && navigation.formMethod === "POST";
+  const pendingIntent = navigation.state !== "idle" ? navigation.formData?.get("intent") : undefined;
+  const saving = navigation.state !== "idle" && navigation.formMethod === "POST" && !pendingIntent;
+  const { plan } = data;
   const { rules } = data;
   // React 18 does not deliver custom-element events through props, so the checkbox is listened to directly.
   const [wider, setWider] = useState(!data.recommended);
@@ -262,7 +350,7 @@ export default function Settings() {
     `Leave empty for "ever". Otherwise between ${RULE_LIMITS[key].min} and ${RULE_LIMITS[key].max} days.`;
 
   // A refused save shows each problem next to its field and takes the merchant to the first one; a save that worked, to its confirmation.
-  const fieldErrors: Partial<Record<SettingsField, string>> = result && !result.saved ? result.fieldErrors : {};
+  const fieldErrors: Partial<Record<SettingsField, string>> = result && result.saved === false ? result.fieldErrors : {};
   const firstError = FIELD_ORDER.find((key) => fieldErrors[key]);
   const field = (key: SettingsField) => ({ error: fieldErrors[key], ...errorFocus(firstError === key) });
   useRevealError(result, Boolean(result));
@@ -273,11 +361,23 @@ export default function Settings() {
         <s-banner tone="success" heading="Settings saved" {...errorFocus(true)}>
           {result.rulesChanged ? "Your rules changed, so run the audit again before the next cleanup. " : ""}
           {result.automaticTurnedOn
-            ? "Automatic cleanups are on: each scheduled audit is followed by its cleanup without asking you again, and a month with a cleanup is charged. You can turn this off on this page at any time."
+            ? "Automatic cleanups are on: each scheduled audit is followed by its cleanup without asking you again. They are covered by your monthly plan; nothing extra is charged per cleanup. You can turn this off on this page at any time."
             : ""}
         </s-banner>
       ) : null}
-      {result && !result.saved ? (
+      {result?.planCancelled ? (
+        <s-banner tone="success" heading="Your plan is cancelled" {...errorFocus(true)}>
+          Shopify will not charge it again. Cleanups cannot start without a plan
+          {result.automaticTurnedOff ? ", and automatic cleanups were turned off" : ""}. Profiles already suppressed stay suppressed, and you
+          can still restore them from History. A new plan starts if you approve another cleanup.
+        </s-banner>
+      ) : null}
+      {result?.planError ? (
+        <s-banner tone="warning" heading="Your plan was not changed" {...errorFocus(true)}>
+          {result.planError}
+        </s-banner>
+      ) : null}
+      {result && result.saved === false ? (
         <s-banner tone="critical" heading="Settings were not saved" {...errorFocus(!firstError)}>
           <s-unordered-list>
             {result.errors.map((e) => (
@@ -406,11 +506,18 @@ export default function Settings() {
             </s-paragraph>
             <s-unordered-list>
               <s-list-item>
-                Each month with a cleanup is charged through Shopify at the price for your list size: {data.price}. At most one charge every{" "}
-                {data.minDaysBetweenCharges} days; a month in which nothing is suppressed is not charged.
+                Automatic cleanups need an active TierSaver plan: {data.price}, charged by Shopify every {plan.intervalDays} days whether or
+                not a cleanup runs that month, until you cancel the plan. Nothing extra is charged per cleanup.
               </s-list-item>
-              <s-list-item>It repeats every month until you turn it off. TierSaver does not send email: each cleanup and its charge are listed in History.</s-list-item>
-              <s-list-item>To turn it off, untick the box below and save: it takes effect at once and costs nothing. Uninstalling the app stops everything.</s-list-item>
+              <s-list-item>
+                If your list grows into a larger plan, the automatic cleanup waits until you approve the new monthly price in Shopify. A
+                higher price is never charged without your approval.
+              </s-list-item>
+              <s-list-item>It repeats every month until you turn it off. TierSaver does not send email: each cleanup is listed in History.</s-list-item>
+              <s-list-item>
+                To turn it off, untick the box below and save: it takes effect at once. Turning it off does not cancel your plan; you cancel
+                the plan in the Plan section of this page. Uninstalling the app stops everything.
+              </s-list-item>
               <s-list-item>
                 Only with Klaviyo's published criteria and the monthly schedule on, and only after you have approved and run at least one cleanup
                 yourself. Until then, scheduled audits keep waiting for your approval.
@@ -419,7 +526,7 @@ export default function Settings() {
             <s-checkbox
               name="automatic"
               value="yes"
-              label="Run each scheduled cleanup automatically, without asking me again. I authorize the monthly charges described above and accept the TierSaver Terms of Service."
+              label="Run each scheduled cleanup automatically, without asking me again. I accept the monthly plan described above and the TierSaver Terms of Service."
               {...checked(data.mode === "automatic")}
               {...field("automatic")}
             />
@@ -440,6 +547,114 @@ export default function Settings() {
         </s-section>
         </s-stack>
       </Form>
+
+      <s-section heading="Plan">
+        <s-stack gap="base">
+          {!plan.known ? <s-banner tone="warning">Shopify could not be asked about your plan just now. Reload the page to see it.</s-banner> : null}
+          {plan.current ? (
+            <>
+              <s-stack gap="small-200">
+                <s-text type="strong">
+                  {plan.current.price}
+                  {plan.current.maxProfiles ? ` for lists up to ${number(plan.current.maxProfiles)} active profiles` : ""}
+                </s-text>
+                <s-text color="subdued">
+                  Charged by Shopify every {plan.intervalDays} days, whether or not a cleanup runs that month, until you cancel.
+                  {plan.current.periodEnds ? (
+                    <>
+                      {" "}
+                      The current period ends on <Time at={plan.current.periodEnds} />.
+                    </>
+                  ) : null}
+                </s-text>
+                {plan.current.test ? <s-text color="subdued">Test plan (development store): Shopify does not bill it.</s-text> : null}
+              </s-stack>
+              {plan.higherNeeded && plan.needed ? (
+                <s-banner tone="info" heading="Your list has grown into a larger plan">
+                  Your last audit counted {number(plan.listSize ?? 0)} active profiles. The plan for that size is {plan.needed.price} (lists up
+                  to {number(plan.needed.maxProfiles)} active profiles). Your next cleanup waits until you approve the new price in Shopify,
+                  which you do when you approve that cleanup. Until then you keep paying {plan.current.price}.
+                </s-banner>
+              ) : null}
+              {plan.lowerAvailable && plan.needed ? (
+                <s-banner tone="info" heading="Your list now fits a smaller plan">
+                  <s-stack gap="base">
+                    <s-text>
+                      Your last audit counted {number(plan.listSize ?? 0)} active profiles. The plan for that size is {plan.needed.price} (lists
+                      up to {number(plan.needed.maxProfiles)} active profiles); you are paying {plan.current.price}. Shopify asks you to approve
+                      the lower price and credits the difference for the rest of the current {plan.intervalDays} days.
+                    </s-text>
+                    <Form method="post">
+                      <input type="hidden" name="intent" value="switch_plan" />
+                      <s-button type="submit" {...flags({ disabled: busy, loading: pendingIntent === "switch_plan" })}>
+                        Switch to the {plan.needed.price} plan
+                      </s-button>
+                    </Form>
+                  </s-stack>
+                </s-banner>
+              ) : null}
+              <Form method="post">
+                <input type="hidden" name="intent" value="cancel_plan" />
+                <s-button tone="critical" commandFor={CANCEL_PLAN_MODAL} command="--show" {...flags({ disabled: busy })}>
+                  Cancel plan
+                </s-button>
+                <s-modal id={CANCEL_PLAN_MODAL} heading="Cancel your TierSaver plan?">
+                  <s-stack gap="base">
+                    <s-paragraph>
+                      Shopify stops charging {plan.current.price}. The period you already paid for is not refunded.
+                    </s-paragraph>
+                    <s-paragraph>
+                      Cleanups stop: no cleanup can start without a plan{data.mode === "automatic" ? ", and automatic cleanups are turned off" : ""}.
+                      Scheduled audits keep running and stay free.
+                    </s-paragraph>
+                    <s-paragraph>
+                      Profiles already suppressed stay suppressed in Klaviyo, and you can still restore them from History. A new plan starts
+                      if you approve another cleanup.
+                    </s-paragraph>
+                  </s-stack>
+                  <s-button slot="primary-action" type="submit" variant="primary" tone="critical" {...flags({ disabled: busy, loading: pendingIntent === "cancel_plan" })}>
+                    Cancel plan
+                  </s-button>
+                  <s-button slot="secondary-actions" commandFor={CANCEL_PLAN_MODAL} command="--hide">
+                    Keep plan
+                  </s-button>
+                </s-modal>
+              </Form>
+            </>
+          ) : (
+            <s-stack gap="small-200">
+              <s-text type="strong">
+                {plan.ended === "frozen"
+                  ? "Your plan is on hold in Shopify."
+                  : plan.ended === "cancelled"
+                    ? "Your plan was cancelled."
+                    : plan.ended === "declined"
+                      ? "No plan: it was declined in Shopify."
+                      : "No plan yet. It starts when you approve your first cleanup."}
+              </s-text>
+              {plan.ended === "frozen" ? (
+                <s-text>
+                  Shopify put it on hold because of a billing issue with your store, and reactivates it when that is solved. Cleanups cannot
+                  start until then.
+                </s-text>
+              ) : plan.ended ? (
+                <s-text>Cleanups cannot start without a plan. A new plan starts when you approve a cleanup; nothing is charged until then.</s-text>
+              ) : null}
+              <s-text color="subdued">
+                {plan.aboveLargest
+                  ? `TierSaver is not sold automatically for lists above ${plan.largest} active profiles. Write to ${data.legal.salesEmail}.`
+                  : plan.needed
+                    ? `For your list today: ${plan.needed.terms}`
+                    : `Plans by list size: ${plan.plans.join(", ")}. Charged by Shopify every ${plan.intervalDays} days until you cancel.`}{" "}
+                Connecting, the audit and the simulation are free.
+              </s-text>
+            </s-stack>
+          )}
+          <s-link href={data.legal.articles.pricing} target="_blank">
+            How pricing works
+          </s-link>
+        </s-stack>
+      </s-section>
 
       <DataRequests requests={data.dataRequests} />
 
