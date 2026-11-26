@@ -12,7 +12,7 @@ Armado el 2026-11-26 (prospección inicial y, el mismo día, creadores, comunida
 
 | Archivo | Qué es |
 | --- | --- |
-| `prospects.csv` | Una fila por agencia, freelancer o hilo de comunidad (53). Es la planilla de seguimiento. |
+| `prospects.csv` | Una fila por agencia, freelancer o hilo de comunidad (53). Es la planilla de seguimiento. **15 en `on-hold: market excluded`** (ver abajo). |
 | `creators.csv` | Una fila por canal de YouTube, podcast, newsletter o cuenta que publica sobre Klaviyo, email para Shopify o retención (40; 4 en español). 27 están `on-hold` porque falta el nombre del canal o un contacto publicado. |
 | `drafts/<id>.md` | Agencias, versión de fase 2: primer mensaje (menos de 110 palabras), pie obligatorio y un único seguimiento (menos de 50 palabras). Para hilos (`T..`), la respuesta. |
 | `drafts/phase1/<id>.md` | Agencias, variante de fase 1. |
@@ -26,6 +26,8 @@ Armado el 2026-11-26 (prospección inicial y, el mismo día, creadores, comunida
 | `AUTOMATION.md` | Qué puede hacer una sesión programada y qué no, requisitos y el texto listo para pegar. |
 | `tools/check_outreach.py` | Verificador de frases prohibidas, montos, largos y evidencia. Se corre antes de cada commit. |
 | `do-not-contact.csv` | Lista de supresión. Quien pide no ser contactado va acá y no se le escribe nunca más. |
+
+**Mercados excluidos (decisión de Facundo del 2026-11-27).** TierSaver no se ofrece a tiendas ubicadas en la UE/EEE, el Reino Unido (con Gibraltar, Guernsey, Jersey e Isla de Man) ni Suiza (`docs/16-LEGALES.md` §2.4; lista exacta en `shopify/app/markets.ts`). En `prospects.csv` quedaron en `status` `on-hold`, con `next_step` "on-hold: market excluded", las 15 filas cuyo país es de esa zona: A03 (GR), B01 y C08 (DE/AT/CH), B02 (UK sin verificar), B03 (FI), B06 (IT), B08, C03, N06, N07, N09 y N10 (UK), N03 (CZ), N04 (LT) y N08 (FR/BE). No se contactan mientras dure la exclusión, aunque una agencia de esa zona pueda tener clientes en otros países. Las filas con país `unknown` siguen como estaban: confirmar el país antes de escribir y, si es de la zona, pasarlas a `on-hold`. `creators.csv` no se tocó: los creadores importan por su audiencia, no por dónde está su tienda; si se les escribe, aclarar que la app solo está disponible para tiendas fuera de la UE/EEE, el Reino Unido y Suiza, y no proponer pruebas a tiendas de esa zona.
 
 Segmentos de `prospects.csv`: `A` (publicaron sobre limpieza de lista), `B` (boutiques y freelancers), `C` (Elite Master, sin borrador: el plan dice solo con un caso real), `new` (encontrados por búsqueda el 2026-11-26), `community` (hilos).
 

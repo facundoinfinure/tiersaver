@@ -18,7 +18,7 @@ Resumen de compromisos pendientes de adoptar:
 | C6 | Confirmar los canales de aviso de incidentes: Shopify, por soporte de partners (https://help.shopify.com/questions/partners, API Terms 6.2.10), dentro de 24 horas; Klaviyo, contacto de los API Terms (legal@klaviyo.com figura en sus API Terms) | 1 | Antes del primer merchant real |
 | C7 | Revisar este documento una vez por año y después de cada incidente | todas | 2027-11-26 |
 | C8 | Confirmar que el buzón de 153 E Flagler St, Suite 1640-6389 está registrado a nombre de Digital Solvers LLC ante la agencia receptora (pie CAN-SPAM, 16 CFR 316.2(p)) | 8 | Antes del primer mail en frío |
-| C9 | Decidir el representante del art. 27 en la UE y en el Reino Unido (`16-LEGALES.md` §2.4) y, si se nombra, agregarlo a privacidad 1 y al Anexo I.A del DPA | 5 | Antes del primer merchant de la UE o el Reino Unido |
+| C9 | ~~Decidir el representante del art. 27~~. Decidido el 2026-11-27: no se nombra y la app no se ofrece a tiendas de la UE/EEE, el Reino Unido (con Gibraltar y las dependencias de la Corona) ni Suiza (`16-LEGALES.md` §2.4; control en `shopify/app/markets.ts`). Si se reabre esa zona, nombrar representante antes del primer merchant de allí | 5 | Cerrado |
 | C10 | Registrar las exclusiones de arbitraje recibidas en hello@ (tienda, fecha, mail) y guardarlas mientras dure la relación más 5 años | 11 | Desde el primer merchant real |
 | C11 | Revisar la inscripción ante la AAIP si ocurre un disparador de la sección 10 | 10 | Cuando ocurra |
 
@@ -99,12 +99,12 @@ Alta o cambio de un subencargado: actualizar privacidad 6 y el Anexo III del DPA
 | --- | --- |
 | Encargado | Digital Solvers LLC, LLC de Delaware, 153 E Flagler St, Suite 1640-6389, Miami, FL 33131, USA. Contacto: hello@tiersaver.com |
 | Responsables por cuenta de quienes se trata | Cada merchant con la app instalada, identificado por su dominio `myshopify.com`. La lista vigente es la tabla `shops` |
-| Representante en la UE / Reino Unido | Sin nombrar; decisión pendiente C9 (`docs/16-LEGALES.md` §2.4) |
+| Representante en la UE / Reino Unido | No se nombra: la app no se ofrece a tiendas de la UE/EEE, el Reino Unido ni Suiza (decisión del 2026-11-27, C9) |
 | DPO | No hay; no es obligatorio |
 | Categorías de tratamiento | (a) Auditoría de la lista de Klaviyo; (b) reconocimiento de compradores con los pedidos de Shopify; (c) simulación; (d) supresión de los perfiles aprobados y deshacer; (e) comprobación del plan de la tienda antes de cada limpieza; (f) atención de pedidos de acceso y borrado recibidos de Shopify |
 | Titulares | Clientes, suscriptores y contactos del merchant con perfil en Klaviyo o pedido en Shopify |
 | Datos | Guardados: id de perfil de Klaviyo, hash con clave del mail, motivo y estado, fecha del último pedido, hash del id de cliente de Shopify. En memoria, sin guardar: mail, fechas de creación y última actividad, estado de consentimiento y supresión. Sin categorías especiales |
-| Transferencias a terceros países | EE.UU. (alojamiento, Cloudflare): cláusulas contractuales tipo de la UE y addendum del Reino Unido, vía el DPA. Argentina (acceso del operador): decisión de adecuación 2003/490/CE y normas de adecuación del Reino Unido |
+| Transferencias a terceros países | EE.UU. (alojamiento, Cloudflare): cláusulas contractuales tipo de la UE y addendum del Reino Unido, vía el DPA, como respaldo si la ley de la UE, Suiza o el Reino Unido igual aplica (la app no se ofrece a tiendas de esa zona). Argentina (acceso del operador): decisión de adecuación 2003/490/CE y normas de adecuación del Reino Unido |
 | Medidas de seguridad (art. 32) | Anexo II del DPA y sección 2 de este documento |
 | Plazos | Sección 3 |
 
@@ -140,7 +140,11 @@ No es una evaluación de impacto formal (art. 35 GDPR). Es la nota que respalda 
 
 ## 8. Regla de prospección
 
-Regla adoptada (`16-LEGALES.md`): mails en frío solo a empresas de EE.UU.; cada mensaje lleva el nombre legal, el domicilio postal y cómo dejar de recibirlos; lista propia de no contactar; nada a Canadá, la UE ni el Reino Unido. Todo mail a terceros sale como borrador que el operador revisa y envía. Los datos de prospectos nunca salen de las cuentas de Shopify o de Klaviyo de un merchant.
+Regla adoptada (`16-LEGALES.md`): mails en frío solo a empresas de EE.UU.; cada mensaje lleva el nombre legal, el domicilio postal y cómo dejar de recibirlos; lista propia de no contactar; nada a Canadá, la UE ni el Reino Unido. Desde el 2026-11-27, además, ninguna prospección a agencias o tiendas de la UE/EEE, el Reino Unido o Suiza, por ningún canal, mientras la app no se ofrezca allí: esas filas de `docs/outreach/prospects.csv` están en `on-hold` ("market excluded"). Todo mail a terceros sale como borrador que el operador revisa y envía. Los datos de prospectos nunca salen de las cuentas de Shopify o de Klaviyo de un merchant.
+
+## 8 bis. Mercados excluidos (cómo se controla)
+
+Decisión del 2026-11-27 (`16-LEGALES.md` §2.4). La lista de países está solo en `shopify/app/markets.ts`; cambiarla es cambiar una decisión de Facundo. La app guarda el país de la tienda (`shops.country_code`) al instalar y desde el layout, y lo relee cada 7 días. País desconocido: se permite y queda un `console.warn` ("shop country not returned by Shopify"); revisar esos avisos en los logs del Worker una vez por semana y, si hay muchos, decidir con Facundo. Una tienda excluida que escriba a hello@ para que le avisemos se anota (dominio y país, nada más) y se le contesta cuando cambie la decisión. Si aparece una tienda excluida con conexión a Klaviyo (no debería), dejarle restaurar y no hacer nada más; avisar a Facundo.
 
 ## 9. Avisos dentro de la app (cómo publicar uno)
 
