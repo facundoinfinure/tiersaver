@@ -2,6 +2,7 @@ import { chargeIdempotencyKey, DEFAULT_FEE_POLICY, FLAT_PRICE_TIERS, formatUsd, 
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
+import { CHARGE_HOLD_HOURS } from "../runs/labels";
 
 /**
  * TierSaver's own charge, through Shopify's Billing API ("Manual Pricing"):
@@ -25,6 +26,12 @@ export type AdminGraphql = <T>(query: string, variables: Record<string, unknown>
 
 export const SUBSCRIPTION_NAME = "TierSaver list hygiene";
 export const CAPPED_AMOUNT_CENTS = DEFAULT_FEE_POLICY.windowCapCents;
+/**
+ * (Defined in runs/labels.ts, which the browser can load.) A confirmed charge waits this long after the cleanup finished before it is sent to Shopify, so a merchant
+ * who undoes the whole cleanup inside the window is not charged (decided 2026-11-26).
+ */
+export { CHARGE_HOLD_HOURS };
+const CHARGE_HOLD_MS = CHARGE_HOLD_HOURS * 60 * 60 * 1000;
 
 /** Shown by Shopify on the approval screen. Built from the price table, so it cannot drift from what is charged. */
 export function subscriptionTerms(): string {
@@ -141,6 +148,8 @@ export type SettleResult =
   | { status: "charged"; feeCents: number }
   /** Quoted from what the run sent; waiting for Klaviyo's jobs to confirm before anything is charged. */
   | { status: "estimated"; feeCents: number }
+  /** Confirmed by Klaviyo, waiting out the undo window; `chargeAt` is when it goes to Shopify. */
+  | { status: "held"; feeCents: number; chargeAt: string }
   | { status: "not_charged"; reason: string }
   | { status: "failed"; error: string }
   | { status: "skipped"; reason: "run_not_found" | "not_a_cleanup" | "not_finished" };
@@ -151,8 +160,9 @@ const FINISHED = ["completed", "completed_with_errors", "failed", "cancelled"] a
  * Settles the charge of one cleanup. Safe to call any number of times: there
  * is one `usage_charges` row per run, and Shopify gets the same idempotency
  * key every time. A failed attempt stays "failed" and is tried again later.
- * Two stages: first an ESTIMATE from what the run sent, then, once Klaviyo's
- * jobs are complete, the real charge for what Klaviyo confirmed.
+ * Three stages: first an ESTIMATE from what the run sent; once Klaviyo's jobs
+ * are complete the amount is confirmed but HELD for the undo window; after the
+ * window, the real charge for what Klaviyo confirmed.
  */
 export async function settleRunCharge(
   deps: { db: Db; graphql: AdminGraphql | null; now?: () => Date },
@@ -236,7 +246,8 @@ export async function settleRunCharge(
     return { status: "not_charged", reason: "no_cleanup" };
   }
   // "No cleanup, no charge" also covers a cleanup that was undone in full before its charge went out
-  // (decided 2026-11-25). An undo after the charge does not refund it.
+  // (decided 2026-11-25). An undo after the charge does not refund it. The hold below is what gives the
+  // merchant time to do that.
   const [remaining] = await db
     .select({ n: sql<number>`COUNT(*)` })
     .from(schema.runProfiles)
@@ -252,6 +263,9 @@ export async function settleRunCharge(
     await db.update(schema.usageCharges).set({ profilesSuppressed: confirmed }).where(eq(schema.usageCharges.id, charge.id));
     charge = { ...charge, profilesSuppressed: confirmed };
   }
+
+  const chargeAt = (run.finishedAt ?? charge.createdAt).getTime() + CHARGE_HOLD_MS;
+  if (now.getTime() < chargeAt) return { status: "held", feeCents: charge.feeCents, chargeAt: new Date(chargeAt).toISOString() };
 
   const fail = async (error: string): Promise<SettleResult> => {
     await db.update(schema.usageCharges).set({ status: "failed" }).where(and(eq(schema.usageCharges.id, charge!.id), inArray(schema.usageCharges.status, ["pending", "failed"])));
@@ -283,19 +297,24 @@ export async function settleRunCharge(
   }
 }
 
-/** Runs whose charge still has to be created or retried (cron). Only the last week: an older failure needs a person. */
+/**
+ * Runs whose charge still has to be created or retried (cron). A charge that is waiting out the undo window is
+ * left alone until the window ends. Only ten days back (the window plus a week of retries): an older failure
+ * needs a person.
+ */
 export async function runsWithOpenCharges(db: Db, now = new Date(), limit = 20): Promise<{ runId: string; shop: string }[]> {
-  const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const since = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+  const holdEnded = now.getTime() - CHARGE_HOLD_MS;
   const rows = await db.$client
     .prepare(
       `SELECT r.id AS runId, r.shop AS shop FROM runs r
        LEFT JOIN usage_charges c ON c.run_id = r.id
        WHERE r.kind = 'suppress' AND r.status IN ('completed', 'completed_with_errors', 'failed', 'cancelled')
          AND r.processed_count > 0 AND r.finished_at >= ?1
-         AND (c.id IS NULL OR c.status IN ('pending', 'failed'))
+         AND (c.id IS NULL OR c.status = 'failed' OR (c.status = 'pending' AND r.finished_at <= ?3))
        ORDER BY r.finished_at LIMIT ?2`,
     )
-    .bind(since.getTime(), limit)
+    .bind(since.getTime(), limit, holdEnded)
     .all<{ runId: string; shop: string }>();
   return rows.results;
 }

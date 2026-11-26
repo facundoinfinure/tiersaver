@@ -8,7 +8,7 @@ import { flags } from "../components/home-screen";
 import { db } from "../db.server";
 import { sessionActor } from "../data/events-log";
 import { createKlaviyoClient, getConnection } from "../klaviyo/connection.server";
-import { STATUS_LABELS } from "../runs/labels";
+import { CHARGE_HOLD_HOURS, STATUS_LABELS } from "../runs/labels";
 import { confirmRunJobs } from "../runs/confirm";
 import { startUndoRun } from "../runs/start.server";
 import { checkRunJobs, loadRunDetail, type JobsCheck } from "../runs/view.server";
@@ -189,7 +189,7 @@ export default function Run() {
                 ? `Charged ${formatUsd(charge.feeCents)} through Shopify${charge.chargedAt ? ` on ${dateTime(charge.chargedAt)}` : ""}.`
                 : charge.status === "not_charged"
                   ? (NO_CHARGE[charge.reason ?? ""] ?? "Not charged.")
-                  : `Estimated charge: ${formatUsd(charge.feeCents)}. It becomes final, and is sent to Shopify, once Klaviyo confirms that its jobs suppressed the profiles. If Klaviyo confirms none, nothing is charged.`}
+                  : `Estimated charge: ${formatUsd(charge.feeCents)}. It is sent to Shopify ${CHARGE_HOLD_HOURS} hours after the cleanup finished, once Klaviyo has confirmed that its jobs suppressed the profiles. If Klaviyo confirms none, or you restore the whole cleanup before then, nothing is charged.`}
             </s-paragraph>
           ) : null}
           {!isUndo && !running && run.submitted > 0 ? (

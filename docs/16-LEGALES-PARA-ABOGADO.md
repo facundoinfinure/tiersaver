@@ -106,14 +106,13 @@ Agregadas el 2026-11-26 por la revisión de los términos contra el código.
 
 La pregunta 11 de arriba ya tiene el dato técnico: la app nunca borra el segmento que crea en Klaviyo, y la cláusula 14 ahora lo dice.
 
-### Decisión pendiente del dueño: ventana para deshacer sin cargo
+### Ventana para deshacer sin cargo (decidida el 2026-11-26)
 
-Regla decidida el 2026-11-25: una limpieza deshecha por completo antes de emitirse su cargo no se cobra. En el código el cargo se crea cuando Klaviyo confirma los jobs, y el primer intento es 30 segundos después de terminar la limpieza (`shopify/workers/suppression-run.ts`). En la práctica la ventana es de segundos o minutos, y la cláusula 6 ahora lo describe así. Falta decidir entre dos caminos:
+El dueño eligió una ventana real de 72 horas. El cargo confirmado por Klaviyo se retiene 72 horas desde que termina la limpieza (`CHARGE_HOLD_HOURS` en `shopify/app/runs/labels.ts`, aplicado en `shopify/app/billing/billing.ts`). Si en ese plazo se restauran todos los perfiles de la limpieza, no se cobra. Deshacer una parte, o deshacer después de creado el cargo, no lo cancela ni lo devuelve. La cláusula 6 ("Undo and refunds") ya lo dice así, y la pantalla de la limpieza muestra el mismo plazo.
 
-- dejarlo como está, con el texto actual;
-- dar una ventana real (por ejemplo, retener el cargo 24 o 72 horas) y cambiar el código y la cláusula 6.
+Consecuencia aceptada: si el merchant desinstala la app dentro de las 72 horas, Shopify ya no permite crear el cargo y esa limpieza queda sin cobrar.
 
-Dato relacionado, fuera de los términos: si el merchant desconecta Klaviyo entre la limpieza y la confirmación, el cargo no se puede confirmar y a los 7 días deja de reintentarse (`shopify/app/billing/billing.ts`, `runsWithOpenCharges`).
+Dato relacionado, fuera de los términos: si el merchant desconecta Klaviyo entre la limpieza y la confirmación, el cargo no se puede confirmar y a los 10 días deja de reintentarse (`shopify/app/billing/billing.ts`, `runsWithOpenCharges`).
 
 ## 4. Qué no se cambió y por qué
 

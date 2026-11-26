@@ -72,7 +72,17 @@ export class SuppressionRunWorkflow extends WorkflowEntrypoint<Env, SuppressionR
               if (!complete || page.checked === 0 || offset >= page.jobs) break;
             }
             if (!complete) continue;
-            await step.do(`settle charge ${attempt}`, stepConfig, async () => (await settleRunCharge({ db, graphql: offlineAdminGraphql(shop) }, runId, { done: true, suppressed })).status);
+            const settle = (name: string) =>
+              step.do(name, stepConfig, async () => {
+                const result = await settleRunCharge({ db, graphql: offlineAdminGraphql(shop) }, runId, { done: true, suppressed });
+                return { status: result.status, chargeAt: result.status === "held" ? result.chargeAt : null };
+              });
+            const settled = await settle(`settle charge ${attempt}`);
+            // Confirmed, but held for the undo window: sleep through it and charge what is still suppressed then.
+            if (settled.status === "held" && settled.chargeAt) {
+              await step.sleep("undo window", Math.max(1_000, new Date(settled.chargeAt).getTime() - Date.now() + 60_000));
+              await settle("settle charge after undo window");
+            }
             break;
           }
         }

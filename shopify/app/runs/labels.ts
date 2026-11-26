@@ -8,3 +8,6 @@ export const STATUS_LABELS: Record<string, { label: string; tone: "info" | "succ
   cancelled: { label: "Cancelled", tone: "warning" },
 };
 
+
+/** Hours a confirmed charge waits before it is sent to Shopify, so a full undo inside the window is free. */
+export const CHARGE_HOLD_HOURS = 72;
