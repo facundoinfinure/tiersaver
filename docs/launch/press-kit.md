@@ -60,7 +60,7 @@ Los cinco de `docs/launch/screenshots/2026-11-27/listing/` (1600 × 900, datos d
 
 Imagen de portada: `00-feature-image.png`. Si alguien necesita la pantalla entera, están las de `raw/` (muestran el precio del plan). Los números de todas las capturas son de ejemplo y hay que decirlo si se publican: "Example data".
 
-Video: hay un borrador mudo de 88 segundos (`docs/launch/video-draft.webm`); no es la versión final (`docs/launch/video.md`).
+Video: recorrido mudo de 91 segundos con subtítulos (`docs/launch/tiersaver-walkthrough.mp4`), grabado con datos de ejemplo; detalles en `docs/launch/video.md`.
 
 ## Questions people ask
 

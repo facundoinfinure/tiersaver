@@ -12,7 +12,8 @@ Las secciones "Capturas", "Ficha del Shopify App Store" e "Instrucciones de prue
 | `launch/listing-klaviyo.md` | Ficha del App Marketplace de Klaviyo y datos de la app OAuth, con conteos |
 | `launch/screenshots/2026-11-27/` | `listing/`: imagen destacada y cinco capturas de 1600 × 900 sin precios, con título. `raw/`: la app sin componer. `INDEX.md`: qué muestra cada una. `tools/`: scripts para regenerar todo y el control de frases prohibidas |
 | `launch/video.md` | Guion del recorrido de 60 a 90 segundos y del screencast para el revisor |
-| `launch/video-draft.webm` · `launch/video-frames/` | Borrador mudo de 88 segundos y diez cuadros. Sirve como storyboard, no como pieza final |
+| `launch/tiersaver-walkthrough.mp4` · `.en.srt` · `launch/video-frames/` | Video corto de 91 segundos (2026-11-27), subtítulos y diez cuadros. Para el sitio, redes y Klaviyo; no para la ficha de Shopify |
+| `launch/screencast-guide.html` | Guía para grabar el screencast del revisor; arma los subtítulos (publicada en https://claude.ai/artifact/38J2MRoKjjpxoTksF5w7bc) |
 | `launch/press-kit.md` | Qué es, tres puntos, línea del fundador, logos, capturas y respuestas tipo |
 
 Cambios de criterio respecto de lo que dice más abajo:
@@ -112,7 +113,7 @@ Pendiente para que estas instrucciones sean verdad: credenciales de una cuenta d
 | Webhooks de cumplimiento con HMAC | Cumple (smoke test en cada despliegue) |
 | Scopes mínimos | `read_orders` hoy; `read_all_orders` y datos protegidos por pedir |
 | Capturas reales | Listas en `launch/screenshots/2026-11-27/listing/` (entorno local, datos de ejemplo, sin precios). Opcional: repetirlas dentro del admin |
-| Video | Guion listo (`launch/video.md`) y borrador mudo (`launch/video-draft.webm`). Falta grabar el screencast del revisor en la tienda de desarrollo |
+| Video | Guion, video corto en MP4 y guía de grabación (`launch/video.md`). Falta grabar el screencast del revisor en la tienda de desarrollo |
 | Privacidad y términos publicados | Términos, privacidad y DPA publicados como borrador en el staging, con cartel de borrador y sin indexar; esperan el visto bueno del abogado (`16-LEGALES.md`) |
 | Mail y URL de soporte | Las casillas no existen todavía |
 | Monitoreo de errores | Logs de Workers activos; sin alertas |

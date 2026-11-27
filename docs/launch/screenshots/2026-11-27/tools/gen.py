@@ -1,3 +1,5 @@
+# DESACTUALIZADO desde el 2026-11-27: listing-shopify.md se edita a mano (alt texts de 64 caracteres,
+# texto de revisión de 2522 caracteres, requisito geográfico). Correr este script pisa esos cambios.
 import textwrap
 L='/home/user/tiersaver/docs/launch/'
 def c(s): return len(s)

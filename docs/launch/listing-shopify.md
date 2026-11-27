@@ -176,7 +176,7 @@ Términos, privacidad y DPA adoptados por el dueño sin revisión externa el 202
 
 ## 7. Revisión: instrucciones de prueba
 
-**Versión para el formulario (el campo admite 2800 caracteres, visto el 2026-11-27): 2522 caracteres.** Etiquetas comparadas con `shopify/app/routes/` y `shopify/app/components/` el 2026-11-27. Reemplaza al texto largo de abajo, que queda como referencia (su nota sobre la desinstalación está desactualizada: los datos se borran al desinstalar).
+**Versión para el formulario (el campo admite 2800 caracteres, visto el 2026-11-27): 2522 caracteres.** Etiquetas comparadas con `shopify/app/routes/` y `shopify/app/components/` el 2026-11-27. Reemplaza al texto largo de abajo, que queda como referencia (su nota sobre la desinstalación se corrigió el 2026-11-27: los datos se borran al desinstalar).
 
 ```
 TierSaver for Klaviyo suppresses Klaviyo profiles that never engaged, after the merchant reviews and approves a simulation. Nothing is deleted, cleanups can be restored, and the app sends no email.
@@ -262,8 +262,8 @@ Notes
 - There is no charge per cleanup. A cleanup only starts while the store has an active plan that covers
   its list size. Restoring a cleanup does not refund the month. Cancelling the plan stops cleanups; the
   audit and the simulation need no plan.
-- Uninstalling deletes the store's data from our systems (on Shopify's shop/redact, or 10 days after
-  the uninstall if that request does not arrive). It does not unsuppress profiles in Klaviyo.
+- Uninstalling deletes the store's data from our systems right away. It does not unsuppress profiles
+  in Klaviyo.
 - Screencast: [URL, added by the owner]. Support during the review: support@tiersaver.com.
 ```
 
@@ -281,7 +281,7 @@ Qué se corrigió respecto del borrador de `docs/15-LANZAMIENTO-MATERIALES.md` p
 | (no figuraba) | menú `Home`, `Review cleanup`, `History`, `Settings`; página `Review cleanup` con `Simulation`, `Check the candidates`, `Before you approve` | `routes/app.tsx`, `routes/app.simulation.tsx` |
 | "takes one or two minutes" | "usually takes a minute or two" (no hay medición contra una cuenta real) | — |
 
-Pendiente para que las instrucciones sean verdad: credenciales de una cuenta de Klaviyo de prueba sin 2FA, supresión encendida en producción, cobro probado contra Shopify, acceso a `read_all_orders` y a datos protegidos, y el link del screencast (`video.md`, parte B).
+Pendiente para que las instrucciones sean verdad (al 2026-11-27): usuario de Klaviyo para el revisor sin 2FA en la cuenta de prueba (`docs/18-RUNBOOK-LANZAMIENTO.md`, sección 4), supresión encendida y trabada a esa cuenta, pedido de datos protegidos guardado y el link del screencast (`video.md`, parte B). Ya verificados el 2026-11-27: cobro contra Shopify en la tienda de desarrollo y acceso a `read_all_orders`.
 
 ## 8. Antes de pegar
 

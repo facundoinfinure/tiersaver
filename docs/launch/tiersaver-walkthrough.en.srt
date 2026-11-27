@@ -1,0 +1,55 @@
+1
+00:00:01,230 --> 00:00:04,730
+TierSaver keeps your Klaviyo list clean. You approve every cleanup.
+
+2
+00:00:04,730 --> 00:00:11,990
+Step 1: run the audit. It changes no profile.
+
+3
+00:00:11,990 --> 00:00:15,990
+The audit counts profiles that never opened, clicked, visited or purchased.
+
+4
+00:00:15,990 --> 00:00:20,820
+Buyers, SMS subscribers and new profiles are kept active.
+
+5
+00:00:20,820 --> 00:00:26,840
+Step 2: review the simulation.
+
+6
+00:00:26,840 --> 00:00:30,760
+Download the candidate list and check it.
+
+7
+00:00:30,760 --> 00:00:39,940
+Read the notices: what suppressing does, how to restore, the plan.
+
+8
+00:00:39,940 --> 00:00:48,460
+Step 3: tick the box and approve. Shopify asks you to confirm the plan.
+
+9
+00:00:48,460 --> 00:00:53,490
+Step 4: start the cleanup. Profiles are suppressed, never deleted.
+
+10
+00:00:53,490 --> 00:01:00,860
+Each profile is checked again right before it is sent to Klaviyo.
+
+11
+00:01:00,860 --> 00:01:05,860
+Done. The cleanup is logged: who approved it, which rule, how many profiles.
+
+12
+00:01:05,860 --> 00:01:14,670
+Made a mistake? Restore removes the suppression this cleanup added.
+
+13
+00:01:14,670 --> 00:01:25,860
+Settings: criteria, protected lists, monthly schedule and your plan.
+
+14
+00:01:25,860 --> 00:01:30,860
+TierSaver: list hygiene for Klaviyo.

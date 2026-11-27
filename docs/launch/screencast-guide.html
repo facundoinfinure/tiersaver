@@ -1,0 +1,228 @@
+<title>TierSaver screencast guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column; the current step is a large card, the full list and the subtitle output sit below. Brand tokens from site/styles/tokens.css. */
+:root {
+  --bg: #eeeeec; --surface: #ffffff; --surface-2: #e4e4e1; --ink: #141414; --muted: #5f5e59;
+  --line: #dedcd7; --accent: #e8c9a2; --deep: #101010; --on-deep: #f6f4ef; --alert: #b34a23; --ok-bg: #dcebd5; --ok-ink: #24502a;
+  --sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161615; --surface: #1f1f1d; --surface-2: #2a2a27; --ink: #f1efea; --muted: #a9a59c;
+  --line: #34332f; --accent: #e8c9a2; --deep: #e8c9a2; --on-deep: #141414; --alert: #e0876a; --ok-bg: #22361f; --ok-ink: #b7d9ad; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161615; --surface: #1f1f1d; --surface-2: #2a2a27; --ink: #f1efea; --muted: #a9a59c;
+  --line: #34332f; --accent: #e8c9a2; --deep: #e8c9a2; --on-deep: #141414; --alert: #e0876a; --ok-bg: #22361f; --ok-ink: #b7d9ad; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--sans); }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.5rem; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.label { font: 500 0.72rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+details.panel > summary { cursor: pointer; font-weight: 600; }
+ol.prep { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.stage { background: var(--deep); color: var(--on-deep); border-radius: 14px; padding: 22px; display: grid; gap: 14px; }
+.stage .label { color: inherit; opacity: 0.7; }
+.stage .do { font-size: 1.15rem; font-weight: 500; }
+.stage .say { font-size: 1.45rem; line-height: 1.35; font-weight: 600; text-wrap: pretty; }
+.clock { font: 500 1rem var(--mono); font-variant-numeric: tabular-nums; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+button { font: 600 1rem var(--sans); border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); padding: 14px 16px; cursor: pointer; min-height: 52px; }
+button.primary { background: var(--accent); color: #141414; border-color: transparent; font-size: 1.15rem; }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.stage button { border-color: transparent; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 8px; padding: 8px 6px; border-radius: 8px; align-items: baseline; }
+ol.steps li::before { content: counter(s); font: 500 0.85rem var(--mono); color: var(--muted); }
+ol.steps li.now { background: var(--surface-2); }
+ol.steps li.done .t { color: var(--ok-ink); }
+ol.steps .t { font: 400 0.8rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+ol.steps .en { color: var(--muted); font-size: 0.9rem; }
+textarea { width: 100%; min-height: 180px; box-sizing: border-box; font: 400 0.82rem/1.45 var(--mono); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.note { font-size: 0.9rem; }
+.ok { background: var(--ok-bg); color: var(--ok-ink); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; }
+@media (prefers-reduced-motion: no-preference) { button { transition: transform 0.08s; } button:active:not(:disabled) { transform: scale(0.98); } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <span class="label">TierSaver · screencast para la revisión de Shopify</span>
+    <h1>Guía para grabar, con subtítulos automáticos</h1>
+    <p class="muted">Grabás la pantalla de la PC y tenés esta página abierta en el celular. Tocás <b>Siguiente</b> cada vez que hacés el clic del paso. Al final la página arma el archivo de subtítulos en inglés con los tiempos reales, listo para YouTube.</p>
+  </header>
+
+  <details class="panel" id="prep" open>
+    <summary>Antes de grabar (5 minutos, fuera de cámara)</summary>
+    <ol class="prep">
+      <li>En la tienda de desarrollo: <b>Settings → Apps → TierSaver → Uninstall</b>, para poder grabar la instalación. Borra solo datos de prueba.</li>
+      <li>Chrome maximizado, zoom al 100 %, barra de marcadores oculta (Ctrl+Shift+B), sin otras pestañas a la vista.</li>
+      <li>Tené a mano el link de instalación (Dev Dashboard → TierSaver → Home → Installs → Install app) y la sesión de Klaviyo de la cuenta de prueba iniciada en otra pestaña.</li>
+      <li>Para grabar: en Windows, <b>Win+Alt+R</b> graba la ventana activa (Xbox Game Bar); OBS también sirve. Grabá sin audio si no querés poner voz: los subtítulos alcanzan.</li>
+      <li>Si querés voz, leé en voz alta la frase en inglés de cada paso. Es opcional.</li>
+    </ol>
+  </details>
+
+  <section class="stage" aria-live="polite">
+    <div class="row">
+      <span class="label" id="stepLabel">Listo para empezar</span>
+      <span class="clock" id="clock">0:00</span>
+    </div>
+    <p class="do" id="doText">Empezá a grabar la pantalla y, en el mismo momento, tocá <b>Empezar</b>.</p>
+    <p class="say" id="sayText">This is TierSaver for Klaviyo.</p>
+    <div class="controls">
+      <button id="backBtn" type="button" disabled>Atrás</button>
+      <button id="nextBtn" class="primary" type="button">Empezar</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="row"><h2>Pasos</h2><button id="resetBtn" type="button">Reiniciar</button></div>
+    <p class="note muted">En gris, lo que se ve en los subtítulos. La hora de la derecha es la marca de cada paso desde que empezaste.</p>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <section class="panel">
+    <h2>Subtítulos (archivo .srt)</h2>
+    <p class="note muted" id="srtHint">Aparecen cuando terminás el último paso. También podés armarlos antes con lo que llevás.</p>
+    <div class="row" style="justify-content:flex-start">
+      <button id="buildBtn" type="button">Armar subtítulos con lo que llevo</button>
+      <button id="copyBtn" type="button" disabled>Copiar</button>
+    </div>
+    <label class="label" for="srt">Contenido del archivo</label>
+    <textarea id="srt" readonly placeholder="1&#10;00:00:00,000 --> 00:00:06,500&#10;This is TierSaver for Klaviyo..."></textarea>
+    <div id="copied" class="ok" hidden>Copiado. Pegalo en un archivo de texto y guardalo como tiersaver-screencast.en.srt</div>
+  </section>
+
+  <section class="panel">
+    <h2>Después de grabar</h2>
+    <ol class="prep">
+      <li>Pegá los subtítulos en el Bloc de notas y guardalos como <code>tiersaver-screencast.en.srt</code> (codificación UTF-8).</li>
+      <li>YouTube → Crear → Subir video. Visibilidad: <b>No listado</b>. En "Subtítulos": subir archivo → "Con tiempos" → el .srt, idioma inglés.</li>
+      <li>Si no grabaste voz, poné el mismo texto también en la descripción del video.</li>
+      <li>Copiá el link y pegalo en Partner Dashboard → la ficha → <b>App testing information</b> → screencast. Si querés, pasámelo y reviso el video cuadro por cuadro antes de enviar.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const STEPS = [
+  { do: "Abrí el link de instalación. Se ve la pantalla de permisos de Shopify.", say: "This is TierSaver for Klaviyo. Installing it asks Shopify for one thing: reading the store's orders, to know who has bought." },
+  { do: "Clic en Install. La app abre en el inicio con \"Get started\".", say: "The app opens on Get started. Nothing changes in Klaviyo until the merchant approves it." },
+  { do: "Clic en \"Connect Klaviyo\". Se ve la pantalla de consentimiento de Klaviyo.", say: "Connecting Klaviyo uses OAuth. These are the permissions the app asks for." },
+  { do: "Aprobá en Klaviyo. Volvés con \"Klaviyo is connected\".", say: "Klaviyo is connected. Nothing has changed in the Klaviyo account." },
+  { do: "Clic en \"Run the free audit\". Esperá a que termine.", say: "The free audit changes no profile. It creates one segment and counts the profiles that meet the criteria." },
+  { do: "Bajá hasta \"Your list\" y quedate unos segundos en los números.", say: "The audit shows how many profiles meet Klaviyo's inactive criteria, and which ones are kept active and why." },
+  { do: "Clic en \"Review and approve\". Página \"Review cleanup\".", say: "Before anything is suppressed, the merchant reviews the simulation." },
+  { do: "En \"Check the candidates\", clic en \"Download candidates (CSV)\".", say: "The merchant can download the exact list of candidates and check it." },
+  { do: "Bajá despacio por \"Before you approve\": qué hace suprimir, restaurar, el plan.", say: "These notices explain what suppressing does, how restoring works, and how the plan is billed." },
+  { do: "Tildá la casilla y clic en \"Approve and start plan\".", say: "The merchant ticks the box and approves. The monthly plan starts here." },
+  { do: "Pantalla de Shopify \"Approve subscription\" (cargo de prueba). Aprobá.", say: "This is Shopify's own approval screen. It is a test charge on a development store." },
+  { do: "De vuelta en la app, clic en \"Start cleanup: suppress N profiles\".", say: "Back in the app, the merchant starts the cleanup. Profiles are suppressed, never deleted." },
+  { do: "Página \"Cleanup\" en \"In progress\". Mostrá \"Stop cleanup\" sin tocarlo.", say: "The cleanup runs in the background. Each profile is checked again right before it is sent." },
+  { do: "Cuando dice \"Completed\", quedate en el resumen.", say: "Done. The cleanup is logged: who approved it, which rule, and how many profiles." },
+  { do: "Clic en \"Restore N profiles\". Se abre el diálogo.", say: "A cleanup can be restored. The dialog explains what restoring does." },
+  { do: "Clic en \"Restore profiles\" para confirmar. Esperá la página \"Restore\".", say: "Restore removes the suppression this cleanup added." },
+  { do: "Menú \"History\".", say: "History lists every cleanup and every restore." },
+  { do: "Menú \"Settings\". Bajá por las tarjetas hasta \"Plan\" y \"Customer data requests\".", say: "Settings has the criteria, protected lists, the monthly schedule, automatic cleanups (off by default) and the plan, with Cancel plan." },
+  { do: "Menú \"Home\". Mostrá \"Disconnect Klaviyo\" (abrilo y tocá Cancel).", say: "Disconnect Klaviyo removes the app's access to the Klaviyo account at any time." },
+  { do: "Opcional: desinstalá la app desde Settings → Apps. Si no, terminá acá.", say: "Uninstalling deletes the store's data from TierSaver right away. Thank you for reviewing TierSaver." },
+];
+
+const KEY = "tiersaver-screencast-v1";
+let state = { t0: null, marks: [], i: -1, done: false };
+try { const saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved && Array.isArray(saved.marks)) state = saved; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+const $ = (id) => document.getElementById(id);
+const fmt = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+const srtTime = (ms) => { ms = Math.max(0, Math.round(ms)); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60, x = ms % 1000; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")},${String(x).padStart(3, "0")}`; };
+
+function buildSrt(endMs) {
+  const out = [];
+  state.marks.forEach((start, i) => {
+    let end = i + 1 < state.marks.length ? state.marks[i + 1] : endMs;
+    if (end - start < 1500) end = start + 1500;
+    out.push(`${i + 1}\n${srtTime(start)} --> ${srtTime(end)}\n${STEPS[i].say}\n`);
+  });
+  return out.join("\n");
+}
+
+function render() {
+  const list = $("steps");
+  list.innerHTML = "";
+  STEPS.forEach((s, i) => {
+    const li = document.createElement("li");
+    if (i === state.i && !state.done) li.className = "now"; else if (i < state.marks.length) li.className = "done";
+    const body = document.createElement("div");
+    const d = document.createElement("div"); d.textContent = s.do;
+    const e = document.createElement("div"); e.className = "en"; e.textContent = s.say;
+    body.append(d, e);
+    const t = document.createElement("span"); t.className = "t"; t.textContent = i < state.marks.length ? fmt(state.marks[i]) : "";
+    li.append(body, t);
+    list.append(li);
+  });
+  const next = $("nextBtn"), back = $("backBtn");
+  if (state.t0 === null) {
+    $("stepLabel").textContent = "Listo para empezar";
+    $("doText").innerHTML = "Empezá a grabar la pantalla y, en el mismo momento, tocá <b>Empezar</b>. Después, tocá <b>Siguiente</b> justo cuando hacés el clic de cada paso.";
+    $("sayText").textContent = STEPS[0].say;
+    next.textContent = "Empezar"; next.disabled = false; back.disabled = true;
+  } else if (state.done) {
+    $("stepLabel").textContent = "Terminado";
+    $("doText").textContent = "Pará la grabación. Los subtítulos están abajo.";
+    $("sayText").textContent = "";
+    next.textContent = "Terminado"; next.disabled = true; back.disabled = false;
+  } else {
+    const s = STEPS[state.i];
+    $("stepLabel").textContent = `Paso ${state.i + 1} de ${STEPS.length}`;
+    $("doText").textContent = s.do;
+    $("sayText").textContent = s.say;
+    next.textContent = state.i + 1 < STEPS.length ? "Siguiente" : "Terminar";
+    next.disabled = false; back.disabled = false;
+  }
+}
+
+function showSrt(endMs) {
+  if (!state.marks.length) return;
+  $("srt").value = buildSrt(endMs);
+  $("copyBtn").disabled = false;
+  $("srtHint").textContent = `${state.marks.length} subtítulos, ${fmt(endMs)} en total.`;
+}
+
+$("nextBtn").addEventListener("click", () => {
+  const now = Date.now();
+  if (state.t0 === null) { state.t0 = now; state.marks = [0]; state.i = 0; }
+  else if (state.i + 1 < STEPS.length) { state.marks.push(now - state.t0); state.i += 1; }
+  else { state.done = true; state.end = now - state.t0 + 2500; showSrt(state.end); }
+  save(); render();
+});
+$("backBtn").addEventListener("click", () => {
+  if (state.done) { state.done = false; }
+  else if (state.marks.length > 1) { state.marks.pop(); state.i -= 1; }
+  else { state.t0 = null; state.marks = []; state.i = -1; }
+  save(); render();
+});
+$("resetBtn").addEventListener("click", () => {
+  const b = $("resetBtn");
+  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tocá otra vez para borrar"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "Reiniciar"; }, 3000); return; }
+  state = { t0: null, marks: [], i: -1, done: false }; save();
+  $("srt").value = ""; $("copyBtn").disabled = true; b.dataset.armed = ""; b.textContent = "Reiniciar"; render();
+});
+$("buildBtn").addEventListener("click", () => { if (state.t0 !== null) showSrt(state.done ? state.end : Date.now() - state.t0 + 2500); });
+$("copyBtn").addEventListener("click", () => {
+  const ta = $("srt");
+  const done = () => { $("copied").hidden = false; setTimeout(() => { $("copied").hidden = true; }, 6000); };
+  try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); done(); }); } catch (e) { ta.select(); done(); }
+});
+setInterval(() => { $("clock").textContent = state.t0 !== null && !state.done ? fmt(Date.now() - state.t0) : (state.done ? fmt(state.end) : "0:00"); }, 250);
+if (navigator.wakeLock) { const lock = () => navigator.wakeLock.request("screen").catch(() => {}); lock(); document.addEventListener("visibilitychange", () => { if (!document.hidden) lock(); }); }
+if (state.done) showSrt(state.end);
+render();
+</script>
