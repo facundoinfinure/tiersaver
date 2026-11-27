@@ -588,7 +588,7 @@ export default function Simulation() {
                     value="yes"
                     label={
                       needsPlan && plan.required
-                        ? `I have read the notices above, I accept the TierSaver Terms of Service, I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo, and I agree to the ${plan.required.price}/month plan, which renews every ${plan.intervalDays} days until I cancel it.`
+                        ? `I have read the notices above, I accept the TierSaver Terms of Service, I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo, and I agree to the ${plan.required.price} plan, which renews every ${plan.intervalDays} days until I cancel it.`
                         : `I have read the notices above, I accept the TierSaver Terms of Service, and I approve suppressing these ${number(sim.candidates)} profiles in Klaviyo.`
                     }
                     error={notAcknowledged ? ERRORS.not_acknowledged : undefined}
