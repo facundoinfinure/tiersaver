@@ -4,6 +4,40 @@ Escrito el 2026-11-26 (jueves). Documento interno. Es la lista única y ordenada
 
 Toda afirmación sobre una plataforma lleva su fuente entre corchetes (lista al final, todas leídas el 2026-11-26). **"Sin verificar"** quiere decir que la página oficial no lo dice o que no se pudo abrir desde esta sesión. Las páginas se leyeron con un extractor que resume: las frases entre comillas son textuales; el resto es paráfrasis.
 
+## Estado al 2026-11-27 y lista final para el 5 de diciembre
+
+Esta sección manda sobre las listas con casillas de las secciones 3 y 4, que quedan como historia.
+
+**Hecho y verificado**
+
+| Qué | Evidencia |
+| --- | --- |
+| Distribución pública, `read_all_orders` concedido y declarado, ficha cargada, cuatro planes en manual pricing | `STATUS.md`, entradas del 2026-11-27 |
+| Ciclo completo dentro del admin: auditoría, aprobación del plan en la pantalla de Shopify (cargo de prueba), limpieza de 702, restore de 702 | `STATUS.md`, 2026-11-27 |
+| Legales adoptados; sitio construido sin cartel de borrador, sin menciones de otras marcas; build sin diferencias | `site/build/build.mjs` (`LEGAL_DRAFT = false`) |
+| Script del día del dominio probado sobre el árbol actual (simulación y 6 tests) | `node scripts/dia-d.mjs --domain tiersaver.com --app-host app.tiersaver.com` |
+| Video corto de 91 segundos en MP4 con subtítulos, para sitio, redes y Klaviyo | `docs/launch/video.md` |
+| Guía para grabar el screencast del revisor, que arma los subtítulos en inglés | https://claude.ai/artifact/38J2MRoKjjpxoTksF5w7bc |
+
+**Facundo, antes del 5 de diciembre (en este orden)**
+
+1. **Darle a la sesión el OK para encender la supresión trabada a la cuenta de prueba** (`SUPPRESSION_ENABLED=true`, `SUPPRESSION_ALLOWED_ACCOUNT_ID=SGKvLG`). La pide el screencast y la revisión. El control de permisos de la sesión no deja hacerlo sin ese OK escrito.
+2. **Grabar el screencast** con la guía (10 a 15 minutos con la preparación). Se puede grabar antes del dominio: la URL de la app no se ve dentro del admin. Subirlo a YouTube como no listado con el `.srt`.
+3. **Elegir y contratar el proveedor de casilla** (sección 1.5). Tiene que poder enviar como hello@tiersaver.com. Los registros DNS se cargan el Día D.
+4. **Contratar Workers Paid** (US$ 5 por mes [C6]). Después la sesión agrega `limits.subrequests` y despliega.
+5. **Guardar el pedido de datos protegidos** (Dev Dashboard → Settings → Access requests → Protected customer data; textos en 6.1), contestando solo lo que hoy es verdad. La pregunta "test and production data separate" depende de la decisión 8.
+6. Políticas internas: 2FA en Shopify, Klaviyo, Cloudflare y GitHub (`17-POLITICAS-INTERNAS.md`); archivar el PDF del DPA de Cloudflare.
+7. Confirmar que la casilla de Flagler (Suite 1640-6389) está a nombre de Digital Solvers LLC (formulario USPS 1583).
+8. **Decidir la separación de prueba y producción** (sección 7). Recomendación: hacerla el Día D, porque la URL de la app cambia ese día igual. Requiere que Facundo cree una segunda app "TierSaver (dev)" en el Dev Dashboard (gratis) y le dé a la sesión el OK para crear una D1 nueva (gratis). Si no se hace, a la pregunta del formulario hay que contestar que no.
+
+**Día D (desde el sábado 2026-12-05)**: el orden de la tabla de la sección 4 sigue valiendo, con tres cambios:
+
+- El paso 3:00 ya no espera a ningún abogado: el sitio sale sin cartel en el paso 0:30.
+- Después de la casilla (1:20): **crear el usuario de Klaviyo para el revisor** en la cuenta de prueba. Klaviyo → Settings → Users → Add user, con `reviewer@tiersaver.com` como alias de hello@ (la invitación llega por mail, por eso va después de la casilla), rol **Manager** (Owner, Admin o Manager pueden autorizar apps OAuth; STATUS, duda 4), sin 2FA. Cargar mail y contraseña en Partner Dashboard → ficha → App testing information, junto con el link del screencast.
+- Cambiar "Merchant review email" y "App submission email" a hello@tiersaver.com.
+
+**Después del Día D**: enviar a revisión **solo con el OK de Facundo**, con visibilidad limitada. Shopify no publica un plazo; estimar unos 30 días.
+
 ## 0. Lo que hay que saber antes de leer el resto
 
 1. **Ningún merchant real puede instalar la app antes de que Shopify la apruebe.** La distribución pública exige aprobación ("Approval required: Yes") [S1]. La distribución personalizada sirve para una sola tienda o una organización Plus, no puede cobrar por Shopify y no se puede cambiar después [S1, S2]. Por eso **el camino crítico es la revisión de Shopify**, y el outreach previo a la aprobación consigue conversaciones y lista de espera, no instalaciones.
@@ -179,7 +213,7 @@ Nadie debe estar usando la app mientras se despliega (`STATUS.md`, página "200"
 | 1:20 | Casilla: cargar MX, SPF, DKIM y DMARC del proveedor elegido. Crear `hello@` con alias `support@`. Mandar y recibir un mail de prueba con otra dirección | F carga, C dicta los valores |
 | 2:00 | Prueba de humo: `npm run smoke:worker -- https://app.tiersaver.com`; abrir la app en la tienda de desarrollo; desconectar y reconectar Klaviyo (prueba el redirect nuevo); abrir términos y privacidad desde la app | C y F |
 | 2:30 | Verificar desde afuera: `tiersaver.com` sin `X-Robots-Tag: noindex`; `tiersaver-site.tiersaver.workers.dev` con noindex; `sitemap.xml` y `robots.txt` | F |
-| 3:00 | Si el abogado ya firmó: `LEGAL_DRAFT = false`, fechas de vigencia, reconstruir y desplegar el sitio | C, con OK de F |
+| 3:00 | (Ya no aplica: los legales están adoptados y el sitio sale sin cartel en el paso 0:30) | — |
 | 3:30 | Klaviyo → app → cargar sitio, política de privacidad y soporte (`14-PASOS-DASHBOARD.md`, paso 4). No apretar "Review submission" | F |
 | Días D+1 a D+3 | Capturas reales y video en la tienda de desarrollo, ya con `app.tiersaver.com` | F graba, C guía |
 | D+3 (si `read_all_orders` está aprobado y el abogado firmó) | Enviar a revisión con visibilidad limitada | F |
